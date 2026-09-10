@@ -7,6 +7,7 @@ use App\Filament\Resources\FiscalYearResource\Pages\CreateFiscalYear;
 use App\Filament\Resources\FiscalYearResource\Pages\EditFiscalYear;
 use App\Filament\Resources\FiscalYearResource\Pages\ListFiscalYears;
 use App\Models\FiscalYear;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -15,6 +16,7 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
@@ -87,29 +89,34 @@ class FiscalYearResource extends Resource
                 TrashedFilter::make()->label('سلة المحذوفات'),
             ])
             ->actions([
-                EditAction::make()->label('تعديل'),
+                ActionGroup::make([
+                    ViewAction::make()->label('عرض'),
+                    EditAction::make()->label('تعديل'),
 
-                DeleteAction::make()
-                    ->label('حذف مؤقت')
-                    ->modalHeading('نقل السنة المالية إلى سلة المحذوفات')
-                    ->before(function (FiscalYear $record, DeleteAction $action) {
-                        if ($record->monthlyPortRecords()->exists() || $record->revenueRecords()->exists()) {
-                            Notification::make()
-                                ->title('لا يمكن حذف السنة المالية')
-                                ->body('توجد سجلات تشغيلية أو مالية مرتبطة بهذه السنة المالية. يجب حذف السجلات التابعة أولاً.')
-                                ->danger()
-                                ->send();
-                            $action->cancel();
-                        }
-                    }),
+                    DeleteAction::make()
+                        ->label('حذف مؤقت')
+                        ->modalHeading('نقل السنة المالية إلى سلة المحذوفات')
+                        ->before(function (FiscalYear $record, DeleteAction $action) {
+                            if ($record->monthlyPortRecords()->exists() || $record->revenueRecords()->exists()) {
+                                Notification::make()
+                                    ->title('لا يمكن حذف السنة المالية')
+                                    ->body('توجد سجلات تشغيلية أو مالية مرتبطة بهذه السنة المالية. يجب حذف السجلات التابعة أولاً.')
+                                    ->danger()
+                                    ->send();
+                                $action->cancel();
+                            }
+                        }),
 
-                RestoreAction::make()
-                    ->label('استرداد')
-                    ->modalHeading('استرداد السنة المالية'),
+                    RestoreAction::make()
+                        ->label('استرداد')
+                        ->modalHeading('استرداد السنة المالية'),
 
-                ForceDeleteAction::make()
-                    ->label('حذف نهائي')
-                    ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                    ForceDeleteAction::make()
+                        ->label('حذف نهائي')
+                        ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                ])
+                ->tooltip('قائمة الإجراءات')
+                ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

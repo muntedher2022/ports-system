@@ -19,6 +19,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        if (!class_exists('Report')) {
+            class_alias(\App\Models\Report::class, 'Report');
+        }
     }
 }

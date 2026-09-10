@@ -9,6 +9,7 @@ use App\Filament\Resources\PortResource\Pages\EditPort;
 use App\Filament\Resources\PortResource\Pages\ListPorts;
 use App\Filament\Resources\PortResource\Pages\ViewPort;
 use App\Models\Port;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -139,13 +140,14 @@ class PortResource extends Resource
 
                 TextColumn::make('name_ar')
                     ->label('اسم الميناء')
-                    ->searchable()
+                    ->searchable(isIndividual: true)
                     ->sortable(),
 
                 TextColumn::make('code')
                     ->label('الرمز')
                     ->badge()
-                    ->color('primary'),
+                    ->color('primary')
+                    ->searchable(isIndividual: true),
 
                 TextColumn::make('type')
                     ->label('النوع')
@@ -193,30 +195,34 @@ class PortResource extends Resource
                 TrashedFilter::make()->label('سلة المحذوفات'),
             ])
             ->actions([
-                EditAction::make()->label('تعديل'),
-                ViewAction::make()->label('عرض'),
+                ActionGroup::make([
+                    ViewAction::make()->label('عرض'),
+                    EditAction::make()->label('تعديل'),
 
-                DeleteAction::make()
-                    ->label('حذف مؤقت')
-                    ->modalHeading('نقل الميناء إلى سلة المحذوفات')
-                    ->before(function (Port $record, DeleteAction $action) {
-                        if ($record->monthlyPortRecords()->exists() || $record->revenueCenters()->exists() || $record->users()->exists()) {
-                            Notification::make()
-                                ->title('لا يمكن حذف الميناء')
-                                ->body('توجد سجلات تشغيلية أو مراكز إيراد أو مستخدمين مرتبطين بهذا الميناء. يجب معالجة الارتباطات أولاً.')
-                                ->danger()
-                                ->send();
-                            $action->cancel();
-                        }
-                    }),
+                    DeleteAction::make()
+                        ->label('حذف مؤقت')
+                        ->modalHeading('نقل الميناء إلى سلة المحذوفات')
+                        ->before(function (Port $record, DeleteAction $action) {
+                            if ($record->monthlyPortRecords()->exists() || $record->revenueCenters()->exists() || $record->users()->exists()) {
+                                Notification::make()
+                                    ->title('لا يمكن حذف الميناء')
+                                    ->body('توجد سجلات تشغيلية أو مراكز إيراد أو مستخدمين مرتبطين بهذا الميناء. يجب معالجة الارتباطات أولاً.')
+                                    ->danger()
+                                    ->send();
+                                $action->cancel();
+                            }
+                        }),
 
-                RestoreAction::make()
-                    ->label('استرداد')
-                    ->modalHeading('استرداد الميناء'),
+                    RestoreAction::make()
+                        ->label('استرداد')
+                        ->modalHeading('استرداد الميناء'),
 
-                ForceDeleteAction::make()
-                    ->label('حذف نهائي')
-                    ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                    ForceDeleteAction::make()
+                        ->label('حذف نهائي')
+                        ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                ])
+                ->tooltip('قائمة الإجراءات')
+                ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

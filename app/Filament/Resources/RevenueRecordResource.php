@@ -13,6 +13,7 @@ use App\Models\RevenueCenter;
 use App\Models\RevenueRecord;
 use Illuminate\Database\Eloquent\Builder;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -250,74 +251,78 @@ class RevenueRecordResource extends Resource
                     ->label('سلة المحذوفات / سجلات الإيراد المحذوفة مؤقتاً'),
             ])
             ->actions([
-                ViewAction::make()->label('عرض'),
-                EditAction::make()->label('تعديل'),
+                ActionGroup::make([
+                    ViewAction::make()->label('عرض'),
+                    EditAction::make()->label('تعديل'),
 
-                Action::make('submit')
-                    ->label('تقديم للاعتماد')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->modalHeading('تقديم سجل الإيراد للاعتماد')
-                    ->modalDescription('هل أنت متأكد من صحة أرقام الإيراد وتقديمها للاعتماد المالي؟')
-                    ->visible(fn (RevenueRecord $record) => $record->status === 'draft' && !$record->trashed())
-                    ->action(function (RevenueRecord $record) {
-                        $record->update([
-                            'status'       => 'submitted',
-                            'submitted_by' => Auth::id(),
-                            'submitted_at' => now(),
-                        ]);
+                    Action::make('submit')
+                        ->label('تقديم للاعتماد')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('تقديم سجل الإيراد للاعتماد')
+                        ->modalDescription('هل أنت متأكد من صحة أرقام الإيراد وتقديمها للاعتماد المالي؟')
+                        ->visible(fn (RevenueRecord $record) => $record->status === 'draft' && !$record->trashed())
+                        ->action(function (RevenueRecord $record) {
+                            $record->update([
+                                'status'       => 'submitted',
+                                'submitted_by' => Auth::id(),
+                                'submitted_at' => now(),
+                            ]);
 
-                        Notification::make()
-                            ->title('تم تقديم سجل الإيراد للاعتماد بنجاح')
-                            ->success()
-                            ->send();
-                    }),
-
-                Action::make('approve')
-                    ->label('اعتماد')
-                    ->icon('heroicon-o-check-badge')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->modalHeading('اعتماد سجل الإيراد المالي')
-                    ->modalDescription('سيتم تثبيت واعتماد مبالغ الإيراد للشهر.')
-                    ->visible(fn (RevenueRecord $record) => $record->status === 'submitted' && !$record->trashed() && Auth::user()?->hasRole(['admin', 'general_manager', 'finance_manager', 'reviewer']))
-                    ->action(function (RevenueRecord $record) {
-                        $record->update([
-                            'status'      => 'approved',
-                            'approved_by' => Auth::id(),
-                            'approved_at' => now(),
-                        ]);
-
-                        Notification::make()
-                            ->title('تم اعتماد سجل الإيراد بنجاح')
-                            ->success()
-                            ->send();
-                    }),
-
-                DeleteAction::make()
-                    ->label('حذف مؤقت')
-                    ->modalHeading('نقل سجل الإيراد إلى سلة المحذوفات')
-                    ->modalDescription('سيتم نقل هذا السجل المالي إلى سلة المحذوفات مع إمكانية استرداده.')
-                    ->before(function (RevenueRecord $record, DeleteAction $action) {
-                        if (in_array($record->status, ['approved', 'locked']) && !Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
                             Notification::make()
-                                ->title('لا يمكن حذف سجل إيراد معتمد')
-                                ->body('هذا السجل المالي معتمد رسمياً. يجب إلغاء اعتماده أولاً قبل حذفه.')
-                                ->danger()
+                                ->title('تم تقديم سجل الإيراد للاعتماد بنجاح')
+                                ->success()
                                 ->send();
-                            $action->cancel();
-                        }
-                    }),
+                        }),
 
-                RestoreAction::make()
-                    ->label('استرداد من الحذف')
-                    ->modalHeading('استرداد سجل الإيراد المالي')
-                    ->successNotificationTitle('تم استرداد سجل الإيراد المالي بنجاح وإعادته للنظام'),
+                    Action::make('approve')
+                        ->label('اعتماد')
+                        ->icon('heroicon-o-check-badge')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('اعتماد سجل الإيراد المالي')
+                        ->modalDescription('سيتم تثبيت واعتماد مبالغ الإيراد للشهر.')
+                        ->visible(fn (RevenueRecord $record) => $record->status === 'submitted' && !$record->trashed() && Auth::user()?->hasRole(['admin', 'general_manager', 'finance_manager', 'reviewer']))
+                        ->action(function (RevenueRecord $record) {
+                            $record->update([
+                                'status'      => 'approved',
+                                'approved_by' => Auth::id(),
+                                'approved_at' => now(),
+                            ]);
 
-                ForceDeleteAction::make()
-                    ->label('حذف نهائي')
-                    ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                            Notification::make()
+                                ->title('تم اعتماد سجل الإيراد بنجاح')
+                                ->success()
+                                ->send();
+                        }),
+
+                    DeleteAction::make()
+                        ->label('حذف مؤقت')
+                        ->modalHeading('نقل سجل الإيراد إلى سلة المحذوفات')
+                        ->modalDescription('سيتم نقل هذا السجل المالي إلى سلة المحذوفات مع إمكانية استرداده.')
+                        ->before(function (RevenueRecord $record, DeleteAction $action) {
+                            if (in_array($record->status, ['approved', 'locked']) && !Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
+                                Notification::make()
+                                    ->title('لا يمكن حذف سجل إيراد معتمد')
+                                    ->body('هذا السجل المالي معتمد رسمياً. يجب إلغاء اعتماده أولاً قبل حذفه.')
+                                    ->danger()
+                                    ->send();
+                                $action->cancel();
+                            }
+                        }),
+
+                    RestoreAction::make()
+                        ->label('استرداد من الحذف')
+                        ->modalHeading('استرداد سجل الإيراد المالي')
+                        ->successNotificationTitle('تم استرداد سجل الإيراد المالي بنجاح وإعادته للنظام'),
+
+                    ForceDeleteAction::make()
+                        ->label('حذف نهائي')
+                        ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                ])
+                ->tooltip('قائمة الإجراءات')
+                ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

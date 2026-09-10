@@ -17,6 +17,7 @@ use App\Models\RevenueRecord;
 use Illuminate\Database\Eloquent\Builder;
 
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -609,74 +610,78 @@ class MonthlyPortRecordResource extends Resource
                     ->label('سلة المحذوفات / السجلات المحذوفة مؤقتاً'),
             ])
             ->actions([
-                ViewAction::make()->label('عرض'),
-                EditAction::make()->label('تعديل'),
+                ActionGroup::make([
+                    ViewAction::make()->label('عرض'),
+                    EditAction::make()->label('تعديل'),
 
-                Action::make('submit')
-                    ->label('تقديم للاعتماد')
-                    ->icon('heroicon-o-paper-airplane')
-                    ->color('warning')
-                    ->requiresConfirmation()
-                    ->modalHeading('تقديم السجل للاعتماد والتدقيق')
-                    ->modalDescription('هل أنت متأكد من اكتمال إدخال بيانات هذا الشهر وتقديمها للتدقيق؟')
-                    ->visible(fn(MonthlyPortRecord $record) => $record->status === 'draft' && !$record->trashed())
-                    ->action(function (MonthlyPortRecord $record) {
-                        $record->update([
-                            'status' => 'submitted',
-                            'submitted_by' => Auth::id(),
-                            'submitted_at' => now(),
-                        ]);
+                    Action::make('submit')
+                        ->label('تقديم للاعتماد')
+                        ->icon('heroicon-o-paper-airplane')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->modalHeading('تقديم السجل للاعتماد والتدقيق')
+                        ->modalDescription('هل أنت متأكد من اكتمال إدخال بيانات هذا الشهر وتقديمها للتدقيق؟')
+                        ->visible(fn(MonthlyPortRecord $record) => $record->status === 'draft' && !$record->trashed())
+                        ->action(function (MonthlyPortRecord $record) {
+                            $record->update([
+                                'status' => 'submitted',
+                                'submitted_by' => Auth::id(),
+                                'submitted_at' => now(),
+                            ]);
 
-                        Notification::make()
-                            ->title('تم تقديم السجل للاعتماد بنجاح')
-                            ->success()
-                            ->send();
-                    }),
-
-                Action::make('approve')
-                    ->label('اعتماد')
-                    ->icon('heroicon-o-check-badge')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->modalHeading('اعتماد السجل التشغيلي')
-                    ->modalDescription('سيتم تثبيت واعتماد أرقام هذا الشهر بعد مراجعتها.')
-                    ->visible(fn(MonthlyPortRecord $record) => $record->status === 'submitted' && !$record->trashed() && Auth::user()?->hasRole(['admin', 'general_manager', 'operations_manager', 'reviewer']))
-                    ->action(function (MonthlyPortRecord $record) {
-                        $record->update([
-                            'status' => 'approved',
-                            'approved_by' => Auth::id(),
-                            'approved_at' => now(),
-                        ]);
-
-                        Notification::make()
-                            ->title('تم اعتماد السجل بنجاح')
-                            ->success()
-                            ->send();
-                    }),
-
-                DeleteAction::make()
-                    ->label('حذف مؤقت')
-                    ->modalHeading('نقل السجل إلى سلة المحذوفات')
-                    ->modalDescription('سيتم نقل السجل مؤقتاً إلى سلة المحذوفات مع إمكانية استرداده لاحقاً.')
-                    ->before(function (MonthlyPortRecord $record, DeleteAction $action) {
-                        if (in_array($record->status, ['approved', 'locked']) && !Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
                             Notification::make()
-                                ->title('لا يمكن حذف سجل معتمد أو مقفل')
-                                ->body('هذا السجل تم اعتماده رسمياً. يجب إلغاء اعتماده أولاً من قبل الإدارة العامة قبل الحذف.')
-                                ->danger()
+                                ->title('تم تقديم السجل للاعتماد بنجاح')
+                                ->success()
                                 ->send();
-                            $action->cancel();
-                        }
-                    }),
+                        }),
 
-                RestoreAction::make()
-                    ->label('استرداد من الحذف')
-                    ->modalHeading('استرداد السجل التشغيلي')
-                    ->successNotificationTitle('تم استرداد السجل التشغيلي بنجاح وإعادته للنظام'),
+                    Action::make('approve')
+                        ->label('اعتماد')
+                        ->icon('heroicon-o-check-badge')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->modalHeading('اعتماد السجل التشغيلي')
+                        ->modalDescription('سيتم تثبيت واعتماد أرقام هذا الشهر بعد مراجعتها.')
+                        ->visible(fn(MonthlyPortRecord $record) => $record->status === 'submitted' && !$record->trashed() && Auth::user()?->hasRole(['admin', 'general_manager', 'operations_manager', 'reviewer']))
+                        ->action(function (MonthlyPortRecord $record) {
+                            $record->update([
+                                'status' => 'approved',
+                                'approved_by' => Auth::id(),
+                                'approved_at' => now(),
+                            ]);
 
-                ForceDeleteAction::make()
-                    ->label('حذف نهائي')
-                    ->visible(fn() => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                            Notification::make()
+                                ->title('تم اعتماد السجل بنجاح')
+                                ->success()
+                                ->send();
+                        }),
+
+                    DeleteAction::make()
+                        ->label('حذف مؤقت')
+                        ->modalHeading('نقل السجل إلى سلة المحذوفات')
+                        ->modalDescription('سيتم نقل السجل مؤقتاً إلى سلة المحذوفات مع إمكانية استرداده لاحقاً.')
+                        ->before(function (MonthlyPortRecord $record, DeleteAction $action) {
+                            if (in_array($record->status, ['approved', 'locked']) && !Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
+                                Notification::make()
+                                    ->title('لا يمكن حذف سجل معتمد أو مقفل')
+                                    ->body('هذا السجل تم اعتماده رسمياً. يجب إلغاء اعتماده أولاً من قبل الإدارة العامة قبل الحذف.')
+                                    ->danger()
+                                    ->send();
+                                $action->cancel();
+                            }
+                        }),
+
+                    RestoreAction::make()
+                        ->label('استرداد من الحذف')
+                        ->modalHeading('استرداد السجل التشغيلي')
+                        ->successNotificationTitle('تم استرداد السجل التشغيلي بنجاح وإعادته للنظام'),
+
+                    ForceDeleteAction::make()
+                        ->label('حذف نهائي')
+                        ->visible(fn() => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                ])
+                ->tooltip('قائمة الإجراءات')
+                ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

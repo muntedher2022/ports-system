@@ -48,6 +48,8 @@ class ReportPdfController extends Controller
         $portId = $request->filled('port_id') ? $request->integer('port_id') : null;
         $onlyTotal = $request->boolean('only_total') || $request->input('port_id') === 'total';
 
+        ActivityLogger::log('exported_pdf', 'تصدير تقرير ملخص الطاقة الإنتاجية التراكمي (PDF)');
+
         $pdfContent = $this->pdfService->generateTotalCumulativeCapacityPdf($fiscalYearId, $monthNumber, $portId, $onlyTotal);
 
         return response($pdfContent, 200, [
@@ -67,6 +69,8 @@ class ReportPdfController extends Controller
             ?: (FiscalYear::where('year', 2025)->first()?->id ?? $currYearId);
         $monthNumber = $request->integer('month_number', 7);
 
+        ActivityLogger::log('exported_pdf', 'تصدير تقرير مقارنة الطاقة الإنتاجية بين عامين YoY (PDF)');
+
         $pdfContent = $this->pdfService->generateCapacityComparisonPdf($prevYearId, $currYearId, $monthNumber);
 
         return response($pdfContent, 200, [
@@ -84,6 +88,8 @@ class ReportPdfController extends Controller
             ?: (FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id);
         $prevYearId = $request->integer('prev_year_id')
             ?: (FiscalYear::where('year', 2025)->first()?->id ?? $currYearId);
+
+        ActivityLogger::log('exported_pdf', 'تصدير تقرير مقارنة الإيراد لكل التشكيلات بين عامين YoY (PDF)');
 
         $pdfContent = $this->pdfService->generateRevenueComparisonPdf($prevYearId, $currYearId);
 
@@ -109,6 +115,8 @@ class ReportPdfController extends Controller
         }
         $yearIds = array_map('intval', array_filter((array) $yearIds));
 
+        ActivityLogger::log('exported_pdf', 'تصدير تقرير مقارنة الأداء متعددة السنوات (PDF)');
+
         $pdfContent = $this->pdfService->generateMultiYearComparisonPdf(
             $comparisonType,
             $periodScope,
@@ -132,6 +140,8 @@ class ReportPdfController extends Controller
             ?: (FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id);
         $portId = $request->filled('port_id') ? $request->integer('port_id') : null;
         $metric = $request->input('metric', 'tonnage');
+
+        ActivityLogger::log('exported_pdf', 'تصدير تقرير تحليل الانحراف المعياري والاستقرار (PDF)');
 
         $pdfContent = $this->pdfService->generateStandardDeviationPdf($fiscalYearId, $portId, $metric);
 

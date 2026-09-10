@@ -9,6 +9,7 @@ use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Filament\Resources\UserResource\Pages\ListUsers;
 use App\Models\Port;
 use App\Models\User;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -17,6 +18,7 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -170,29 +172,35 @@ class UserResource extends Resource
                 TrashedFilter::make()->label('سلة المحذوفات / المستخدمون المعطلون'),
             ])
             ->actions([
-                EditAction::make()->label('تعديل'),
-                DeleteAction::make()
-                    ->label('تعطيل / نقل للمحذوفات')
-                    ->modalHeading('تعطيل حساب المستخدم')
-                    ->modalDescription('سيتم تعطيل الحساب ونقله إلى سلة المحذوفات المؤقتة.')
-                    ->before(function (User $record, DeleteAction $action) {
-                        if ($record->id === Auth::id()) {
-                            Notification::make()
-                                ->title('إجراء غير مسموح')
-                                ->body('لا يمكنك حذف أو تعطيل حسابك الحالي المسجل به في النظام.')
-                                ->danger()
-                                ->send();
-                            $action->cancel();
-                        }
-                    }),
+                ActionGroup::make([
+                    ViewAction::make()->label('عرض'),
+                    EditAction::make()->label('تعديل'),
 
-                RestoreAction::make()
-                    ->label('إعادة تفعيل الحساب')
-                    ->modalHeading('استرداد وتفعيل حساب المستخدم'),
+                    DeleteAction::make()
+                        ->label('تعطيل / نقل للمحذوفات')
+                        ->modalHeading('تعطيل حساب المستخدم')
+                        ->modalDescription('سيتم تعطيل الحساب ونقله إلى سلة المحذوفات المؤقتة.')
+                        ->before(function (User $record, DeleteAction $action) {
+                            if ($record->id === Auth::id()) {
+                                Notification::make()
+                                    ->title('إجراء غير مسموح')
+                                    ->body('لا يمكنك حذف أو تعطيل حسابك الحالي المسجل به في النظام.')
+                                    ->danger()
+                                    ->send();
+                                $action->cancel();
+                            }
+                        }),
 
-                ForceDeleteAction::make()
-                    ->label('حذف نهائي')
-                    ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                    RestoreAction::make()
+                        ->label('إعادة تفعيل الحساب')
+                        ->modalHeading('استرداد وتفعيل حساب المستخدم'),
+
+                    ForceDeleteAction::make()
+                        ->label('حذف نهائي')
+                        ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                ])
+                ->tooltip('قائمة الإجراءات')
+                ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

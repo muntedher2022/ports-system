@@ -5,6 +5,7 @@ namespace App\Filament\Resources;
 use App\Enums\NavigationGroup;
 use App\Filament\Resources\CargoEntityResource\Pages;
 use App\Models\CargoEntity;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -12,6 +13,7 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
@@ -135,19 +137,24 @@ class CargoEntityResource extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
-                EditAction::make()->color('warning'),
-                DeleteAction::make()
-                    ->label('حذف مؤقت')
-                    ->modalHeading('هل تريد حذف هذه الجهة مؤقتاً؟')
-                    ->modalDescription('سيتم نقلها إلى سلة المحذوفات.')
-                    ->successNotificationTitle('تم الحذف المؤقت'),
-                RestoreAction::make()
-                    ->color('success')
-                    ->successNotificationTitle('تم استرداد الجهة بنجاح'),
-                ForceDeleteAction::make()
-                    ->label('حذف نهائي')
-                    ->modalHeading('⚠️ تحذير: حذف نهائي لا رجعة فيه!')
-                    ->successNotificationTitle('تم الحذف النهائي'),
+                ActionGroup::make([
+                    ViewAction::make()->color('info'),
+                    EditAction::make()->color('warning'),
+                    DeleteAction::make()
+                        ->label('حذف مؤقت')
+                        ->modalHeading('هل تريد حذف هذه الجهة مؤقتاً؟')
+                        ->modalDescription('سيتم نقلها إلى سلة المحذوفات.')
+                        ->successNotificationTitle('تم الحذف المؤقت'),
+                    RestoreAction::make()
+                        ->color('success')
+                        ->successNotificationTitle('تم استرداد الجهة بنجاح'),
+                    ForceDeleteAction::make()
+                        ->label('حذف نهائي')
+                        ->modalHeading('⚠️ تحذير: حذف نهائي لا رجعة فيه!')
+                        ->successNotificationTitle('تم الحذف النهائي'),
+                ])
+                ->tooltip('قائمة الإجراءات')
+                ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make()->label('حذف مؤقت للمحدد'),

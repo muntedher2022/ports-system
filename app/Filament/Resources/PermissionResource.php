@@ -6,8 +6,12 @@ use App\Enums\NavigationGroup;
 use App\Filament\Resources\PermissionResource\Pages\ListPermissions;
 use App\Filament\Resources\PermissionResource\Pages\ViewPermission;
 use App\Models\Permission;
+use Filament\Actions\ActionGroup;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
@@ -46,17 +50,35 @@ class PermissionResource extends Resource
 
     public static function canCreate(): bool
     {
-        return false;
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        return $user->hasRole(['super_admin', 'المدير العام', 'general_manager'])
+            || $user->user_type === 'general_manager';
     }
 
     public static function canEdit(Model $record): bool
     {
-        return false;
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        return $user->hasRole(['super_admin', 'المدير العام', 'general_manager'])
+            || $user->user_type === 'general_manager';
     }
 
     public static function canDelete(Model $record): bool
     {
-        return false;
+        $user = Auth::user();
+        if (!$user) {
+            return false;
+        }
+
+        return $user->hasRole(['super_admin', 'المدير العام', 'general_manager'])
+            || $user->user_type === 'general_manager';
     }
 
     public static function form(Schema $schema): Schema
@@ -67,15 +89,22 @@ class PermissionResource extends Resource
                     Grid::make(2)
                         ->schema([
                             TextInput::make('name')
-                                ->label('المفتاح البرمجي للصلاحية (Key)')
-                                ->disabled(),
+                                ->label('المفتاح البرمجي للصلاحية (Permission Key)')
+                                ->required()
+                                ->unique(ignoreRecord: true)
+                                ->placeholder('مثال: Create:MonthlyPortRecord أو page_CustomReport')
+                                ->helperText('المفتاح الفريد للصلاحية في النظام باللغة الإنجليزية.')
+                                ->disabled(fn (string $operation): bool => $operation === 'view'),
 
                             TextInput::make('guard_name')
                                 ->label('الحارس (Guard)')
-                                ->disabled(),
+                                ->default('web')
+                                ->required()
+                                ->disabled(fn (string $operation): bool => $operation === 'view'),
                         ]),
 
                     Grid::make(3)
+                        ->visible(fn (string $operation): bool => $operation !== 'create')
                         ->schema([
                             Placeholder::make('action_label')
                                 ->label('نوع الإجراء')
@@ -92,18 +121,16 @@ class PermissionResource extends Resource
                 ]),
 
             Section::make('الأدوار المرتبطة بهذه الصلاحية')
-                ->description('قائمة بالأدوار الممنوحة لها هذه الصلاحية حالياً')
+                ->description('تحديد وإسناد الأدوار الممنوحة لها هذه الصلاحية')
                 ->schema([
-                    Placeholder::make('assigned_roles')
+                    Select::make('roles')
                         ->label('الأدوار الممنوحة')
-                        ->content(function (?Permission $record) {
-                            if (!$record) return '-';
-                            $roles = $record->roles()->pluck('name')->toArray();
-                            if (empty($roles)) {
-                                return 'لا توجد أدوار ممنوحة لها هذه الصلاحية حالياً';
-                            }
-                            return implode(' ، ', $roles);
-                        }),
+                        ->relationship('roles', 'name')
+                        ->multiple()
+                        ->preload()
+                        ->searchable()
+                        ->helperText('اختر الأدوار التي تمتلك هذه الصلاحية في النظام.')
+                        ->disabled(fn (string $operation): bool => $operation === 'view'),
                 ]),
         ]);
     }
@@ -115,7 +142,7 @@ class PermissionResource extends Resource
             ->columns([
                 TextColumn::make('name')
                     ->label('المفتاح البرمجي (Permission Key)')
-                    ->searchable()
+                    ->searchable(isIndividual: true)
                     ->sortable()
                     ->copyable()
                     ->copyMessage('تم نسخ المفتاح البرمجي')
@@ -135,12 +162,18 @@ class PermissionResource extends Resource
                         str_starts_with($record->name, 'View') => 'primary',
                         default => 'gray',
                     })
-                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('name', $direction)),
+                    ->sortable(query: fn (Builder $query, string $direction): Builder => $query->orderBy('name', $direction))
+                    ->searchable(isIndividual: true, query: function (Builder $query, string $search) {
+                        $query->where('name', 'like', "%{$search}%");
+                    }),
 
                 TextColumn::make('system_group')
                     ->label('النظام / المجموعة')
                     ->badge()
-                    ->color(fn (Permission $record): string => $record->system_group_color),
+                    ->color(fn (Permission $record): string => $record->system_group_color)
+                    ->searchable(isIndividual: true, query: function (Builder $query, string $search) {
+                        $query->where('name', 'like', "%{$search}%");
+                    }),
 
                 TextColumn::make('type_label')
                     ->label('النوع')
@@ -154,7 +187,7 @@ class PermissionResource extends Resource
                     ->separator(', ')
                     ->limitList(3)
                     ->expandableLimitedList()
-                    ->searchable(),
+                    ->searchable(isIndividual: true),
 
                 TextColumn::make('roles_count')
                     ->label('عدد الأدوار')
@@ -167,6 +200,7 @@ class PermissionResource extends Resource
                     ->label('الحارس')
                     ->badge()
                     ->color('gray')
+                    ->searchable(isIndividual: true)
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('created_at')
@@ -218,9 +252,21 @@ class PermissionResource extends Resource
                     ->query(fn (Builder $query): Builder => $query->doesntHave('roles')),
             ])
             ->recordActions([
-                ViewAction::make()
-                    ->label('تفاصيل')
-                    ->modalHeading('تفاصيل الصلاحية'),
+                ActionGroup::make([
+                    ViewAction::make()
+                        ->label('عرض')
+                        ->modalHeading('تفاصيل الصلاحية'),
+                    EditAction::make()
+                        ->label('تعديل')
+                        ->modalHeading('تعديل الصلاحية والأدوار'),
+                    DeleteAction::make()
+                        ->label('حذف')
+                        ->modalHeading('هل أنت متأكد من حذف هذه الصلاحية؟')
+                        ->modalDescription('تحذير: حذف الصلاحيات الأساسية قد يؤثر على وصول المستخدمين للشاشات المرتبطة بها.')
+                        ->successNotificationTitle('تم حذف الصلاحية بنجاح'),
+                ])
+                ->tooltip('قائمة الإجراءات')
+                ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->toolbarActions([]);
     }

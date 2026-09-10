@@ -7,6 +7,7 @@ use App\Filament\Resources\RevenueCenterResource\Pages\CreateRevenueCenter;
 use App\Filament\Resources\RevenueCenterResource\Pages\EditRevenueCenter;
 use App\Filament\Resources\RevenueCenterResource\Pages\ListRevenueCenters;
 use App\Models\RevenueCenter;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -15,6 +16,7 @@ use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -100,16 +102,18 @@ class RevenueCenterResource extends Resource
 
                 TextColumn::make('name_ar')
                     ->label('اسم المركز')
-                    ->searchable()
+                    ->searchable(isIndividual: true)
                     ->sortable(),
 
                 TextColumn::make('code')
                     ->label('الرمز')
                     ->badge()
-                    ->color('info'),
+                    ->color('info')
+                    ->searchable(isIndividual: true),
 
                 TextColumn::make('port.name_ar')
                     ->label('الميناء')
+                    ->searchable(isIndividual: true)
                     ->default('—'),
 
                 IconColumn::make('is_operational')
@@ -125,29 +129,34 @@ class RevenueCenterResource extends Resource
                 TrashedFilter::make()->label('سلة المحذوفات'),
             ])
             ->actions([
-                EditAction::make()->label('تعديل'),
+                ActionGroup::make([
+                    ViewAction::make()->label('عرض'),
+                    EditAction::make()->label('تعديل'),
 
-                DeleteAction::make()
-                    ->label('حذف مؤقت')
-                    ->modalHeading('نقل مركز الإيراد إلى سلة المحذوفات')
-                    ->before(function (RevenueCenter $record, DeleteAction $action) {
-                        if ($record->revenueRecords()->exists()) {
-                            Notification::make()
-                                ->title('لا يمكن حذف مركز الإيراد')
-                                ->body('توجد سجلات إيرادات مالية مسجلة لهذا المركز. يجب حذف السجلات المالية التابعة أولاً.')
-                                ->danger()
-                                ->send();
-                            $action->cancel();
-                        }
-                    }),
+                    DeleteAction::make()
+                        ->label('حذف مؤقت')
+                        ->modalHeading('نقل مركز الإيراد إلى سلة المحذوفات')
+                        ->before(function (RevenueCenter $record, DeleteAction $action) {
+                            if ($record->revenueRecords()->exists()) {
+                                Notification::make()
+                                    ->title('لا يمكن حذف مركز الإيراد')
+                                    ->body('توجد سجلات إيرادات مالية مسجلة لهذا المركز. يجب حذف السجلات المالية التابعة أولاً.')
+                                    ->danger()
+                                    ->send();
+                                $action->cancel();
+                            }
+                        }),
 
-                RestoreAction::make()
-                    ->label('استرداد')
-                    ->modalHeading('استرداد مركز الإيراد'),
+                    RestoreAction::make()
+                        ->label('استرداد')
+                        ->modalHeading('استرداد مركز الإيراد'),
 
-                ForceDeleteAction::make()
-                    ->label('حذف نهائي')
-                    ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                    ForceDeleteAction::make()
+                        ->label('حذف نهائي')
+                        ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                ])
+                ->tooltip('قائمة الإجراءات')
+                ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

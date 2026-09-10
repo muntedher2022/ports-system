@@ -12,6 +12,7 @@ use App\Models\Port;
 use App\Models\ContainerStatusDetail;
 use App\Services\ActivityLogger;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -279,7 +280,7 @@ class ContainerStatusRecordResource extends Resource
                 TextColumn::make('port.name_ar')
                     ->label('الميناء')
                     ->sortable()
-                    ->searchable()
+                    ->searchable(isIndividual: true)
                     ->badge()
                     ->color('info'),
 
@@ -362,116 +363,121 @@ class ContainerStatusRecordResource extends Resource
                 TrashedFilter::make(),
             ])
             ->recordActions([
-                ViewAction::make()->color('info'),
-                EditAction::make()->color('warning'),
-                Action::make('download_excel')
-                    ->label('تحميل Excel')
-                    ->icon('heroicon-o-arrow-down-tray')
-                    ->color('success')
-                    ->visible(fn (ContainerStatusRecord $record) => !empty($record->excel_file_path))
-                    ->url(fn (ContainerStatusRecord $record) => asset('storage/' . $record->excel_file_path), shouldOpenInNewTab: true),
-                Action::make('clone_record')
-                    ->label('نسخ إلى شهر آخر')
-                    ->icon('heroicon-o-document-duplicate')
-                    ->color('success')
-                    ->modalHeading(fn (ContainerStatusRecord $record) => "نسخ بيانات موقف الحاويات ({$record->port?->name_ar} - " . ($record->container_type === 'abandoned' ? 'متخلفة' : 'خطرة') . ")")
-                    ->modalDescription('اختر السنة المالية والشهر المستهدف لنسخ وتكرار كافة بيانات القيود والجهات والأعداد إليه مباشرة.')
-                    ->modalSubmitActionLabel('بدء النسخ والإنشاء')
-                    ->modalIcon('heroicon-o-document-duplicate')
-                    ->form([
-                        Select::make('target_fiscal_year_id')
-                            ->label('السنة المالية المستهدفة')
-                            ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
-                            ->default(fn (ContainerStatusRecord $record) => $record->fiscal_year_id)
-                            ->required(),
+                ActionGroup::make([
+                    ViewAction::make()->color('info'),
+                    EditAction::make()->color('warning'),
+                    Action::make('download_excel')
+                        ->label('تحميل Excel')
+                        ->icon('heroicon-o-arrow-down-tray')
+                        ->color('success')
+                        ->visible(fn (ContainerStatusRecord $record) => !empty($record->excel_file_path))
+                        ->url(fn (ContainerStatusRecord $record) => asset('storage/' . $record->excel_file_path), shouldOpenInNewTab: true),
+                    Action::make('clone_record')
+                        ->label('نسخ إلى شهر آخر')
+                        ->icon('heroicon-o-document-duplicate')
+                        ->color('success')
+                        ->modalHeading(fn (ContainerStatusRecord $record) => "نسخ بيانات موقف الحاويات ({$record->port?->name_ar} - " . ($record->container_type === 'abandoned' ? 'متخلفة' : 'خطرة') . ")")
+                        ->modalDescription('اختر السنة المالية والشهر المستهدف لنسخ وتكرار كافة بيانات القيود والجهات والأعداد إليه مباشرة.')
+                        ->modalSubmitActionLabel('بدء النسخ والإنشاء')
+                        ->modalIcon('heroicon-o-document-duplicate')
+                        ->form([
+                            Select::make('target_fiscal_year_id')
+                                ->label('السنة المالية المستهدفة')
+                                ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                                ->default(fn (ContainerStatusRecord $record) => $record->fiscal_year_id)
+                                ->required(),
 
-                        Select::make('target_month_id')
-                            ->label('الشهر المستهدف')
-                            ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
-                            ->default(function (ContainerStatusRecord $record) {
-                                $nextMonthNum = ($record->month?->month_number % 12) + 1;
-                                return Month::where('month_number', $nextMonthNum)->first()?->id ?? $record->month_id;
-                            })
-                            ->required(),
+                            Select::make('target_month_id')
+                                ->label('الشهر المستهدف')
+                                ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                                ->default(function (ContainerStatusRecord $record) {
+                                    $nextMonthNum = ($record->month?->month_number % 12) + 1;
+                                    return Month::where('month_number', $nextMonthNum)->first()?->id ?? $record->month_id;
+                                })
+                                ->required(),
 
-                        DatePicker::make('target_report_date')
-                            ->label('تاريخ التقرير الجديد')
-                            ->default(now()->toDateString())
-                            ->required(),
-                    ])
-                    ->action(function (ContainerStatusRecord $record, array $data) {
-                        $targetYearId = (int) $data['target_fiscal_year_id'];
-                        $targetMonthId = (int) $data['target_month_id'];
-                        $targetReportDate = $data['target_report_date'];
+                            DatePicker::make('target_report_date')
+                                ->label('تاريخ التقرير الجديد')
+                                ->default(now()->toDateString())
+                                ->required(),
+                        ])
+                        ->action(function (ContainerStatusRecord $record, array $data) {
+                            $targetYearId = (int) $data['target_fiscal_year_id'];
+                            $targetMonthId = (int) $data['target_month_id'];
+                            $targetReportDate = $data['target_report_date'];
 
-                        // التحقق من وجود السجل مسبقاً
-                        $existing = ContainerStatusRecord::withTrashed()
-                            ->where('port_id', $record->port_id)
-                            ->where('container_type', $record->container_type)
-                            ->where('fiscal_year_id', $targetYearId)
-                            ->where('month_id', $targetMonthId)
-                            ->first();
+                            // التحقق من وجود السجل مسبقاً
+                            $existing = ContainerStatusRecord::withTrashed()
+                                ->where('port_id', $record->port_id)
+                                ->where('container_type', $record->container_type)
+                                ->where('fiscal_year_id', $targetYearId)
+                                ->where('month_id', $targetMonthId)
+                                ->first();
 
-                        if ($existing) {
-                            Notification::make()
-                                ->title('تنبيه: السجل موجود مسبقاً')
-                                ->body("يوجد قيد مسجل مسبقاً لميناء ({$record->port?->name_ar}) في الشهر والسنة المحددين!")
-                                ->danger()
-                                ->send();
-                            return;
-                        }
-
-                        DB::transaction(function () use ($record, $targetYearId, $targetMonthId, $targetReportDate) {
-                            $newRecord = ContainerStatusRecord::create([
-                                'port_id'         => $record->port_id,
-                                'container_type'  => $record->container_type,
-                                'fiscal_year_id'  => $targetYearId,
-                                'month_id'        => $targetMonthId,
-                                'report_date'     => $targetReportDate,
-                                'notes'           => $record->notes,
-                                'created_by'      => Auth::id() ?? 1,
-                            ]);
-
-                            foreach ($record->details as $detail) {
-                                ContainerStatusDetail::create([
-                                    'container_status_record_id' => $newRecord->id,
-                                    'container_entity_id'        => $detail->container_entity_id,
-                                    'year_label'                 => $detail->year_label,
-                                    'count'                      => $detail->count,
-                                    'sort_order'                 => $detail->sort_order,
-                                ]);
+                            if ($existing) {
+                                Notification::make()
+                                    ->title('تنبيه: السجل موجود مسبقاً')
+                                    ->body("يوجد قيد مسجل مسبقاً لميناء ({$record->port?->name_ar}) في الشهر والسنة المحددين!")
+                                    ->danger()
+                                    ->send();
+                                return;
                             }
 
-                            ActivityLogger::log(
-                                'created',
-                                "نسخ سجل موقف الحاويات لميناء ({$record->port?->name_ar}) من شهر ({$record->month?->name_ar}) إلى شهر جديد",
-                                ContainerStatusRecord::class,
-                                $newRecord->id,
-                                ['source_record_id' => $record->id, 'target_year_id' => $targetYearId, 'target_month_id' => $targetMonthId]
-                            );
-                        });
+                            DB::transaction(function () use ($record, $targetYearId, $targetMonthId, $targetReportDate) {
+                                $newRecord = ContainerStatusRecord::create([
+                                    'port_id'         => $record->port_id,
+                                    'container_type'  => $record->container_type,
+                                    'fiscal_year_id'  => $targetYearId,
+                                    'month_id'        => $targetMonthId,
+                                    'report_date'     => $targetReportDate,
+                                    'notes'           => $record->notes,
+                                    'created_by'      => Auth::id() ?? 1,
+                                    'total_count'     => 0,
+                                ]);
 
-                        $targetMonthName = Month::find($targetMonthId)?->name_ar;
-                        $targetYearVal = FiscalYear::find($targetYearId)?->year;
+                                foreach ($record->details as $detail) {
+                                    ContainerStatusDetail::create([
+                                        'container_status_record_id' => $newRecord->id,
+                                        'container_entity_id'        => $detail->container_entity_id,
+                                        'year_label'                 => $detail->year_label,
+                                        'count'                      => $detail->count,
+                                        'sort_order'                 => $detail->sort_order,
+                                    ]);
+                                }
 
-                        Notification::make()
-                            ->title('تم نسخ السجل بنجاح')
-                            ->body("تم نسخ كافة بيانات موقف الحاويات لميناء ({$record->port?->name_ar}) إلى شهر {$targetMonthName} {$targetYearVal} بنجاح.")
-                            ->success()
-                            ->send();
-                    }),
-                DeleteAction::make()
-                    ->label('حذف مؤقت')
-                    ->modalHeading('هل تريد حذف هذا السجل مؤقتاً؟')
-                    ->modalDescription('سيتم نقل السجل إلى سلة المحذوفات ويمكن استرداده لاحقاً.')
-                    ->successNotificationTitle('تم نقل السجل إلى سلة المحذوفات'),
-                RestoreAction::make()
-                    ->color('success')
-                    ->successNotificationTitle('تم استرداد السجل بنجاح'),
-                ForceDeleteAction::make()
-                    ->label('حذف نهائي')
-                    ->modalHeading('⚠️ حذف نهائي لا رجعة فيه!')
-                    ->successNotificationTitle('تم الحذف النهائي'),
+                                ActivityLogger::log(
+                                    'created',
+                                    "نسخ سجل موقف الحاويات لميناء ({$record->port?->name_ar}) من شهر ({$record->month?->name_ar}) إلى شهر جديد",
+                                    ContainerStatusRecord::class,
+                                    $newRecord->id,
+                                    ['source_record_id' => $record->id, 'target_year_id' => $targetYearId, 'target_month_id' => $targetMonthId]
+                                );
+                            });
+
+                            $targetMonthName = Month::find($targetMonthId)?->name_ar;
+                            $targetYearVal = FiscalYear::find($targetYearId)?->year;
+
+                            Notification::make()
+                                ->title('تم نسخ السجل بنجاح')
+                                ->body("تم نسخ كافة بيانات موقف الحاويات لميناء ({$record->port?->name_ar}) إلى شهر {$targetMonthName} {$targetYearVal} بنجاح.")
+                                ->success()
+                                ->send();
+                        }),
+                    DeleteAction::make()
+                        ->label('حذف مؤقت')
+                        ->modalHeading('هل تريد حذف هذا السجل مؤقتاً؟')
+                        ->modalDescription('سيتم نقل السجل إلى سلة المحذوفات ويمكن استرداده لاحقاً.')
+                        ->successNotificationTitle('تم نقل السجل إلى سلة المحذوفات'),
+                    RestoreAction::make()
+                        ->color('success')
+                        ->successNotificationTitle('تم استرداد السجل بنجاح'),
+                    ForceDeleteAction::make()
+                        ->label('حذف نهائي')
+                        ->modalHeading('⚠️ حذف نهائي لا رجعة فيه!')
+                        ->successNotificationTitle('تم الحذف النهائي'),
+                ])
+                ->tooltip('قائمة الإجراءات')
+                ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make()->label('حذف مؤقت للمحدد'),

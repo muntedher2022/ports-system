@@ -111,6 +111,7 @@ class AuditResource extends Resource
                     ->label('التاريخ والوقت')
                     ->dateTime('Y-m-d H:i:s')
                     ->description(fn(Audit $record) => $record->created_at?->diffForHumans())
+                    ->searchable(isIndividual: true)
                     ->sortable()
                     ->weight('bold'),
 
@@ -125,7 +126,7 @@ class AuditResource extends Resource
                         'reviewer' => 'مدقق / مراجع',
                         default => $record->user->user_type,
                     } : null)
-                    ->searchable()
+                    ->searchable(isIndividual: true)
                     ->sortable(),
 
                 TextColumn::make('event_label')
@@ -133,17 +134,23 @@ class AuditResource extends Resource
                     ->badge()
                     ->color(fn(Audit $record) => $record->event_color)
                     ->icon(fn(Audit $record) => $record->event_icon)
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->searchable(isIndividual: true, query: function (Builder $query, string $search) {
+                        $query->where('event', 'like', "%{$search}%");
+                    }),
 
                 TextColumn::make('auditable_type_label')
                     ->label('القسم / الكيان')
                     ->badge()
-                    ->color('gray'),
+                    ->color('gray')
+                    ->searchable(isIndividual: true, query: function (Builder $query, string $search) {
+                        $query->where('auditable_type', 'like', "%{$search}%");
+                    }),
 
                 TextColumn::make('target_record_description')
                     ->label('السجل المستهدف / البيان')
                     ->wrap()
-                    ->searchable(query: function (Builder $query, string $search) {
+                    ->searchable(isIndividual: true, query: function (Builder $query, string $search) {
                         $query->where('tags', 'like', "%{$search}%");
                     }),
 
@@ -151,6 +158,7 @@ class AuditResource extends Resource
                     ->label('عنوان IP')
                     ->badge()
                     ->color('info')
+                    ->searchable(isIndividual: true)
                     ->toggleable(isToggledHiddenByDefault: false),
             ])
             ->defaultSort('created_at', 'desc')

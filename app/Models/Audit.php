@@ -91,7 +91,7 @@ class Audit extends BaseAudit
             'FiscalYear'            => 'السنوات المالية',
             'Month'                 => 'الأشهر',
             'User'                  => 'المستخدمون والحسابات',
-            'Report'                => 'التقارير والمقارنات',
+            'Report', 'Audit'       => 'التقارير والمقارنات والتصدير',
             default                 => $type ?: 'العمليات العامة',
         };
     }
@@ -101,11 +101,20 @@ class Audit extends BaseAudit
      */
     public function getTargetRecordDescriptionAttribute(): string
     {
-        if (!$this->auditable) {
+        $type = $this->auditable_type;
+        if (empty($type) || !class_exists($type)) {
             return $this->tags ?: ('سجل رقم #' . ($this->auditable_id ?? '—'));
         }
 
-        $record = $this->auditable;
+        try {
+            $record = $this->auditable;
+        } catch (\Throwable $e) {
+            $record = null;
+        }
+
+        if (!$record) {
+            return $this->tags ?: ('سجل رقم #' . ($this->auditable_id ?? '—'));
+        }
 
         if ($record instanceof MonthlyPortRecord) {
             return "{$record->port?->name_ar} - {$record->month?->name_ar} {$record->fiscalYear?->year}";

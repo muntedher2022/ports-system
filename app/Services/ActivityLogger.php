@@ -25,7 +25,7 @@ class ActivityLogger
             'user_type'      => $user ? get_class($user) : null,
             'user_id'        => $user?->id,
             'event'          => $event,
-            'auditable_type' => $auditableType ?? 'Report',
+            'auditable_type' => $auditableType ?? \App\Models\Report::class,
             'auditable_id'   => $auditableId ?? 0,
             'old_values'     => !empty($oldValues) ? json_encode($oldValues, JSON_UNESCAPED_UNICODE) : null,
             'new_values'     => !empty($newValues) ? json_encode($newValues, JSON_UNESCAPED_UNICODE) : null,
