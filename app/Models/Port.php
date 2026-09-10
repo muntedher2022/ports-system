@@ -38,6 +38,16 @@ class Port extends Model implements Auditable
         return $this->hasMany(RevenueCenter::class);
     }
 
+    public function containerStatusRecords(): HasMany
+    {
+        return $this->hasMany(ContainerStatusRecord::class);
+    }
+
+    public function cargoStatusRecords(): HasMany
+    {
+        return $this->hasMany(CargoStatusRecord::class);
+    }
+
     public function users(): HasMany
     {
         return $this->hasMany(User::class);
