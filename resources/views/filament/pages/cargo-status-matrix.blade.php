@@ -282,7 +282,7 @@
                         <tr>
                             <th>ت — عائدية المواد والبضائع</th>
                             @foreach($years as $y)
-                                <th>خلال عام {{ $y }}</th>
+                                <th>{{ is_numeric($y) ? "خلال عام {$y}" : $y }}</th>
                             @endforeach
                             <th style="background:#0f172a;color:#fff;">المجموع</th>
                         </tr>

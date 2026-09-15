@@ -67,7 +67,10 @@ class ContainerStatusMatrix extends Page
     /** Build the matrix data */
     public function getMatrixDataProperty(): array
     {
-        $years = range(2004, (int) date('Y'));
+        $numericYears = range(2004, (int) date('Y'));
+        $years = array_map('strval', $numericYears);
+        $years[] = 'تواريخ متعددة';
+        $years[] = 'غير محدد التاريخ';
 
         // جلب السجلات المطابقة لفلاتر المستخدم
         $recordsQuery = ContainerStatusRecord::where('container_type', $this->selectedContainerType)
@@ -88,7 +91,7 @@ class ContainerStatusMatrix extends Page
 
             foreach ($sortedDetails as $detail) {
                 $eid    = $detail->container_entity_id;
-                $year   = (int) $detail->year_label;
+                $year   = (string) $detail->year_label;
                 $entity = $detail->entity;
 
                 if (!$entity || $detail->count <= 0) {
@@ -105,9 +108,9 @@ class ContainerStatusMatrix extends Page
                 }
 
                 if (in_array($year, $years)) {
-                    $matrix[$eid]['years'][$year] += $detail->count;
+                    $matrix[$eid]['years'][$year] = ($matrix[$eid]['years'][$year] ?? 0) + $detail->count;
                     $matrix[$eid]['row_total']    += $detail->count;
-                    $totalByYear[$year]           += $detail->count;
+                    $totalByYear[$year]           = ($totalByYear[$year] ?? 0) + $detail->count;
                     $grandTotal                   += $detail->count;
 
                     if ($entity->entity_type === 'government') {
@@ -135,9 +138,9 @@ class ContainerStatusMatrix extends Page
         });
 
         // Remove years with no data across all entities (for display)
-        $activeYears = array_filter($years, fn($y) => $totalByYear[$y] > 0);
+        $activeYears = array_filter($years, fn($y) => ($totalByYear[$y] ?? 0) > 0);
         if (empty($activeYears)) {
-            $activeYears = [(int) date('Y') - 1, (int) date('Y')];
+            $activeYears = [(string) ((int) date('Y') - 1), (string) date('Y')];
         }
         $activeYears = array_values($activeYears);
 

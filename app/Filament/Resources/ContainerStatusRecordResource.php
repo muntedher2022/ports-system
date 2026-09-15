@@ -59,13 +59,15 @@ class ContainerStatusRecordResource extends Resource
         return true;
     }
 
-    /** السنوات من 2004 حتى السنة الحالية */
+    /** السنوات من 2004 حتى السنة الحالية وخيارات التواريخ الخاصة */
     public static function availableYears(): array
     {
         $years = [];
         for ($y = 2004; $y <= (int) date('Y'); $y++) {
-            $years[$y] = (string) $y;
+            $years[(string) $y] = (string) $y;
         }
+        $years['تواريخ متعددة'] = 'تواريخ متعددة';
+        $years['غير محدد التاريخ'] = 'غير محدد التاريخ';
         return $years;
     }
 

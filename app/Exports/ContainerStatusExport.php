@@ -54,8 +54,11 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
             ? (Port::find($this->portId)?->name_ar ?? 'جميع الموانئ')
             : 'جميع الموانئ (مجمّع)';
 
-        // Years to show: 2004 → current year
-        $allYears = range(2004, (int) date('Y'));
+        // Years to show: 2004 → current year + special options
+        $numericYears = range(2004, (int) date('Y'));
+        $allYears = array_map('strval', $numericYears);
+        $allYears[] = 'تواريخ متعددة';
+        $allYears[] = 'غير محدد التاريخ';
 
         // Entities
         $entities = ContainerEntity::active()
@@ -80,7 +83,7 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
             $sortedDetails = $rec->details->sortBy(fn($d) => [$d->sort_order ?: 999, $d->id]);
             foreach ($sortedDetails as $det) {
                 $eid    = $det->container_entity_id;
-                $year   = (int) $det->year_label;
+                $year   = (string) $det->year_label;
                 $entity = $det->entity;
 
                 if (!$entity || $det->count <= 0) {
@@ -94,7 +97,7 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
                 }
 
                 if (in_array($year, $allYears)) {
-                    $dataMatrix[$eid][$year] += $det->count;
+                    $dataMatrix[$eid][$year] = ($dataMatrix[$eid][$year] ?? 0) + $det->count;
                 }
             }
         }
@@ -121,7 +124,7 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
             return false;
         });
         if (empty($activeYears)) {
-            $activeYears = [(int) date('Y') - 1, (int) date('Y')];
+            $activeYears = [(string) ((int) date('Y') - 1), (string) date('Y')];
         }
         $activeYears = array_values($activeYears);
 
@@ -137,9 +140,9 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
         $rows[] = $titleCols;
 
         // Row 2: Headers
-        $headers = ['ت — عملية الحاويات'];
+        $headers = ['ت — عائدية الحاويات'];
         foreach ($activeYears as $y) {
-            $headers[] = "خلال عام {$y}";
+            $headers[] = is_numeric($y) ? "خلال عام {$y}" : (string) $y;
         }
         $headers[] = 'المجموع';
         $rows[] = $headers;

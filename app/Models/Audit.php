@@ -134,7 +134,8 @@ class Audit extends BaseAudit
         }
 
         if ($record instanceof ContainerStatusDetail) {
-            return "تفاصيل: {$record->entity?->name_ar} - سنة {$record->year_label} ({$record->count} حاوية)";
+            $yearStr = is_numeric($record->year_label) ? "سنة {$record->year_label}" : $record->year_label;
+            return "تفاصيل: {$record->entity?->name_ar} - {$yearStr} ({$record->count} حاوية)";
         }
 
         if ($record instanceof CargoStatusRecord) {
@@ -147,7 +148,8 @@ class Audit extends BaseAudit
         }
 
         if ($record instanceof CargoStatusDetail) {
-            return "تفاصيل مواد: {$record->entity?->name_ar} - سنة {$record->year_label} ({$record->count} مادة/طرد)";
+            $yearStr = is_numeric($record->year_label) ? "سنة {$record->year_label}" : $record->year_label;
+            return "تفاصيل مواد: {$record->entity?->name_ar} - {$yearStr} ({$record->count} مادة/طرد)";
         }
 
         if ($record instanceof Port) {
