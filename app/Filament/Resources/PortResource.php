@@ -82,8 +82,9 @@ class PortResource extends Resource
 
                     TextInput::make('sort_order')
                         ->label('ترتيب العرض')
+                        ->helperText('يتم احتساب الترتيب تلقائياً (آخر تسلسل + 1) ويمكنك تعديله يدوياً')
                         ->numeric()
-                        ->default(0),
+                        ->default(fn () => (Port::max('sort_order') ?? 0) + 1),
                 ]),
 
             Section::make('نطاق العمل والسجلات التشغيلية')

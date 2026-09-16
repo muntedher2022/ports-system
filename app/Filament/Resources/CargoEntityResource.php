@@ -66,12 +66,31 @@ class CargoEntityResource extends Resource
                         'government' => 'قطاع حكومي',
                         'private'    => 'قطاع خاص',
                     ])
-                    ->default('government'),
+                    ->default('government')
+                    ->live()
+                    ->afterStateUpdated(function ($state, $set) {
+                        if ($state === 'private') {
+                            $max = CargoEntity::where('entity_type', 'private')->max('sort_order');
+                            $set('sort_order', $max ? $max + 1 : 100);
+                        } else {
+                            $max = CargoEntity::where('entity_type', 'government')->max('sort_order');
+                            $set('sort_order', $max ? $max + 1 : 1);
+                        }
+                    }),
 
                 TextInput::make('sort_order')
                     ->label('ترتيب العرض')
+                    ->helperText('يتم احتساب الترتيب تلقائياً (آخر تسلسل + 1) ويمكنك تعديله يدوياً')
                     ->numeric()
-                    ->default(0),
+                    ->default(function ($get) {
+                        $type = $get('entity_type') ?? 'government';
+                        if ($type === 'private') {
+                            $max = CargoEntity::where('entity_type', 'private')->max('sort_order');
+                            return $max ? $max + 1 : 100;
+                        }
+                        $max = CargoEntity::where('entity_type', 'government')->max('sort_order');
+                        return $max ? $max + 1 : 1;
+                    }),
 
                 Toggle::make('is_active')
                     ->label('نشطة')
