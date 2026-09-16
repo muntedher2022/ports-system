@@ -54,8 +54,8 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
             ? (Port::find($this->portId)?->name_ar ?? 'جميع الموانئ')
             : 'جميع الموانئ (مجمّع)';
 
-        // Years to show: 2004 → current year + special options
-        $numericYears = range(2004, (int) date('Y'));
+        // Years to show: 2015 → current year + special options
+        $numericYears = range(2015, (int) date('Y'));
         $allYears = array_map('strval', $numericYears);
         $allYears[] = 'تواريخ متعددة';
         $allYears[] = 'غير محدد التاريخ';
@@ -82,13 +82,16 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
         foreach ($records as $rec) {
             $sortedDetails = $rec->details->sortBy(fn($d) => [$d->sort_order ?: 999, $d->id]);
             foreach ($sortedDetails as $det) {
-                $eid    = $det->container_entity_id;
-                $year   = (string) $det->year_label;
-                $entity = $det->entity;
+                $eid     = $det->container_entity_id;
+                $rawYear = trim((string) $det->year_label);
+                $entity  = $det->entity;
 
                 if (!$entity || $det->count <= 0) {
                     continue;
                 }
+
+                // Map any year <= 2015 to '2015'
+                $year = (empty($rawYear) || (is_numeric($rawYear) && (int) $rawYear <= 2015)) ? '2015' : $rawYear;
 
                 if (!isset($dataMatrix[$eid])) {
                     $dataMatrix[$eid]  = array_fill_keys($allYears, 0);
@@ -238,9 +241,8 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
     {
         $lastRow    = $sheet->getHighestRow();
         $lastCol    = $sheet->getHighestColumn();
-        $headerRow  = 2;
 
-        // Row 1 - title
+        // Row 1 - Title
         $sheet->mergeCells("A1:{$lastCol}1");
         $sheet->getStyle("A1:{$lastCol}1")->applyFromArray([
             'font'      => ['bold' => true, 'size' => 13, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
@@ -250,7 +252,7 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
         ]);
         $sheet->getRowDimension(1)->setRowHeight(36);
 
-        // Row 2 - headers
+        // Row 2 - Headers
         $sheet->getStyle("A2:{$lastCol}2")->applyFromArray([
             'font'      => ['bold' => true, 'size' => 10, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FDE047']],
@@ -259,54 +261,112 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
         ]);
         $sheet->getRowDimension(2)->setRowHeight(30);
 
-        // Data rows — find where totals row is (last non-empty main row before the empty spacer)
-        $dataEndRow = $lastRow - 4; // summary table at end
+        // Process all data and summary rows
+        for ($r = 3; $r <= $lastRow; $r++) {
+            $cellA = trim((string) $sheet->getCell("A{$r}")->getValue());
+            $cellB = trim((string) $sheet->getCell("B{$r}")->getValue());
 
-        for ($r = 3; $r <= $dataEndRow; $r++) {
-            $cellA = $sheet->getCell("A{$r}")->getValue();
             if ($cellA === 'المجموع') {
-                // Grand total row
+                // Grand total row (صف المجموع العام)
                 $sheet->getStyle("A{$r}:{$lastCol}{$r}")->applyFromArray([
-                    'font'      => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'ffffff']],
-                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0F172A']],
+                    'font'      => ['bold' => true, 'size' => 11, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FDE047']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => '334155']]],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
                 ]);
-                $sheet->getRowDimension($r)->setRowHeight(26);
-            } elseif (str_starts_with((string) $cellA, 'القطاع الخاص')) {
-                // Private sector rows — green
+
+                // Highlight non-zero numbers in dark red in the total row
+                for ($col = 'B'; $col <= $lastCol; $col++) {
+                    $val = $sheet->getCell("{$col}{$r}")->getValue();
+                    if (is_numeric($val) && (int) $val > 0) {
+                        $sheet->getStyle("{$col}{$r}")->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('991B1B'))->setBold(true);
+                    }
+                }
+
+                $sheet->getRowDimension($r)->setRowHeight(28);
+            } elseif ($cellA === '' && in_array($cellB, ['القطاع الحكومي', 'القطاع الخاص', 'الكلي'])) {
+                // Mini summary block below
+                $sheet->getStyle("B{$r}:C{$r}")->applyFromArray([
+                    'font'      => ['bold' => true, 'size' => 10, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF9C3']],
+                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
+                ]);
+                // Highlight count in dark red
+                $sheet->getStyle("C{$r}")->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('991B1B'))->setBold(true);
+                $sheet->getRowDimension($r)->setRowHeight(24);
+            } elseif ($cellA === '' && $cellB === '') {
+                // Empty spacer row
+                $sheet->getRowDimension($r)->setRowHeight(12);
+            } elseif (str_starts_with($cellA, 'القطاع الخاص')) {
+                // Private sector row
                 $sheet->getStyle("A{$r}:{$lastCol}{$r}")->applyFromArray([
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'DCFCE7']],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '94A3B8']]],
                 ]);
                 $sheet->getStyle("A{$r}")->applyFromArray([
-                    'font' => ['bold' => true, 'color' => ['rgb' => '065f46']],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'BBF7D0']],
+                    'font'      => ['bold' => true, 'size' => 10, 'color' => ['rgb' => '065f46']],
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'BBF7D0']],
+                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT, 'vertical' => Alignment::VERTICAL_CENTER],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '94A3B8']]],
                 ]);
+
+                // Style data cells: highlight > 0 in dark red, 0 in muted gray
+                for ($col = 'B'; $col <= $lastCol; $col++) {
+                    $val = $sheet->getCell("{$col}{$r}")->getValue();
+                    if (is_numeric($val) && (int) $val > 0) {
+                        $sheet->getStyle("{$col}{$r}")->applyFromArray([
+                            'font' => ['bold' => true, 'size' => 10, 'color' => ['rgb' => '991B1B']],
+                        ]);
+                    } else {
+                        $sheet->getStyle("{$col}{$r}")->applyFromArray([
+                            'font' => ['bold' => false, 'size' => 10, 'color' => ['rgb' => '94A3B8']],
+                        ]);
+                    }
+                }
+
+                // Total Column for this row
+                $sheet->getStyle("{$lastCol}{$r}")->applyFromArray([
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF08A']],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
+                ]);
+                $sheet->getRowDimension($r)->setRowHeight(24);
             } else {
-                // Government rows — blue
+                // Government rows
                 $sheet->getStyle("A{$r}:{$lastCol}{$r}")->applyFromArray([
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'EFF6FF']],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
+                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '94A3B8']]],
                 ]);
                 $sheet->getStyle("A{$r}")->applyFromArray([
-                    'font' => ['bold' => true, 'color' => ['rgb' => '1e40af']],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'BFDBFE']],
+                    'font'      => ['bold' => true, 'size' => 10, 'color' => ['rgb' => '1e40af']],
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'BFDBFE']],
+                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT, 'vertical' => Alignment::VERTICAL_CENTER],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '94A3B8']]],
                 ]);
-                $sheet->getRowDimension($r)->setRowHeight(20);
-            }
-        }
 
-        // Summary mini-table
-        for ($r = $dataEndRow + 2; $r <= $lastRow; $r++) {
-            $sheet->getStyle("B{$r}:C{$r}")->applyFromArray([
-                'font'      => ['bold' => true, 'size' => 10],
-                'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF9C3']],
-                'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER],
-                'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN]],
-            ]);
+                // Style data cells: highlight > 0 in dark red, 0 in muted gray
+                for ($col = 'B'; $col <= $lastCol; $col++) {
+                    $val = $sheet->getCell("{$col}{$r}")->getValue();
+                    if (is_numeric($val) && (int) $val > 0) {
+                        $sheet->getStyle("{$col}{$r}")->applyFromArray([
+                            'font' => ['bold' => true, 'size' => 10, 'color' => ['rgb' => '991B1B']],
+                        ]);
+                    } else {
+                        $sheet->getStyle("{$col}{$r}")->applyFromArray([
+                            'font' => ['bold' => false, 'size' => 10, 'color' => ['rgb' => '94A3B8']],
+                        ]);
+                    }
+                }
+
+                // Total Column for this row
+                $sheet->getStyle("{$lastCol}{$r}")->applyFromArray([
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF08A']],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
+                ]);
+                $sheet->getRowDimension($r)->setRowHeight(24);
+            }
         }
 
         return [];
@@ -316,7 +376,7 @@ class ContainerStatusExport implements FromArray, WithTitle, WithStyles, WithCol
     {
         return [
             AfterSheet::class => function (AfterSheet $event) {
-                $event->sheet->setRightToLeft(true);
+                $event->sheet->getDelegate()->setRightToLeft(true);
             },
         ];
     }

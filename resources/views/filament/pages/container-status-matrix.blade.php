@@ -301,9 +301,11 @@
                                     </td>
                                     @foreach($years as $y)
                                         @php $val = $row['years'][$y] ?? 0; $govTotalByYear[$y] += $val; $govGrandTotal += $val; @endphp
-                                        <td>{{ $val > 0 ? number_format($val) : '' }}</td>
+                                        <td style="{{ $val > 0 ? 'color:#991b1b;font-weight:800;' : 'color:#cbd5e1;' }}">
+                                            {{ $val > 0 ? number_format($val) : '0' }}
+                                        </td>
                                     @endforeach
-                                    <td style="font-weight:800;color:#1e40af;">{{ $row['row_total'] > 0 ? number_format($row['row_total']) : '' }}</td>
+                                    <td style="font-weight:800;color:#991b1b;background:#fef08a;">{{ $row['row_total'] > 0 ? number_format($row['row_total']) : '0' }}</td>
                                 </tr>
                             @endif
                         @endforeach
@@ -318,21 +320,26 @@
                                     </td>
                                     @foreach($years as $y)
                                         @php $val = $row['years'][$y] ?? 0; $privTotalByYear[$y] += $val; $privGrandTotal += $val; @endphp
-                                        <td>{{ $val > 0 ? number_format($val) : '' }}</td>
+                                        <td style="{{ $val > 0 ? 'color:#991b1b;font-weight:800;' : 'color:#cbd5e1;' }}">
+                                            {{ $val > 0 ? number_format($val) : '0' }}
+                                        </td>
                                     @endforeach
-                                    <td style="font-weight:800;color:#065f46;">{{ $row['row_total'] > 0 ? number_format($row['row_total']) : '' }}</td>
+                                    <td style="font-weight:800;color:#991b1b;background:#fef08a;">{{ $row['row_total'] > 0 ? number_format($row['row_total']) : '0' }}</td>
                                 </tr>
                             @endif
                         @endforeach
                     </tbody>
                     <tfoot>
                         {{-- المجموع الكلي --}}
-                        <tr class="cs-row-grand-total">
-                            <td>المجموع</td>
+                        <tr class="cs-row-grand-total" style="background:#fde047;color:#1c1917;">
+                            <td style="background:#facc15;color:#1c1917;font-weight:900;">المجموع</td>
                             @foreach($years as $y)
-                                <td>{{ ($totalByYear[$y] ?? 0) > 0 ? number_format($totalByYear[$y]) : '' }}</td>
+                                @php $tot = $totalByYear[$y] ?? 0; @endphp
+                                <td style="font-weight:900;{{ $tot > 0 ? 'color:#991b1b;' : 'color:#94a3b8;' }}">
+                                    {{ number_format($tot) }}
+                                </td>
                             @endforeach
-                            <td>{{ number_format($d['grandTotal']) }}</td>
+                            <td style="font-weight:900;color:#991b1b;font-size:1rem;">{{ number_format($d['grandTotal']) }}</td>
                         </tr>
                     </tfoot>
                 </table>

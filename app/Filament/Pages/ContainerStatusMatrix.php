@@ -19,7 +19,7 @@ class ContainerStatusMatrix extends Page
     protected static ?string $navigationLabel = 'مصفوفة الحاويات الشاملة';
     protected static ?string $title = 'موقف الحاويات المتخلفة والخطرة';
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Containers;
-    protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
@@ -67,7 +67,7 @@ class ContainerStatusMatrix extends Page
     /** Build the matrix data */
     public function getMatrixDataProperty(): array
     {
-        $numericYears = range(2004, (int) date('Y'));
+        $numericYears = range(2015, (int) date('Y'));
         $years = array_map('strval', $numericYears);
         $years[] = 'تواريخ متعددة';
         $years[] = 'غير محدد التاريخ';
@@ -90,13 +90,16 @@ class ContainerStatusMatrix extends Page
             $sortedDetails = $record->details->sortBy(fn($d) => [$d->sort_order ?: 999, $d->id]);
 
             foreach ($sortedDetails as $detail) {
-                $eid    = $detail->container_entity_id;
-                $year   = (string) $detail->year_label;
-                $entity = $detail->entity;
+                $eid     = $detail->container_entity_id;
+                $rawYear = trim((string) $detail->year_label);
+                $entity  = $detail->entity;
 
                 if (!$entity || $detail->count <= 0) {
                     continue;
                 }
+
+                // Map any year <= 2015 to '2015'
+                $year = (empty($rawYear) || (is_numeric($rawYear) && (int) $rawYear <= 2015)) ? '2015' : $rawYear;
 
                 if (!isset($matrix[$eid])) {
                     $matrix[$eid] = [

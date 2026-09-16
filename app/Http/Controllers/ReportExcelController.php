@@ -124,4 +124,39 @@ class ReportExcelController extends Controller
             $fileName
         );
     }
+
+    /**
+     * تصدير كشف الحاويات الفردية التفصيلي مقسم على أوراق عمل بحسب الجهات
+     */
+    public function exportContainerItemsDetailed(Request $request): BinaryFileResponse
+    {
+        $type         = $request->input('type', 'abandoned');
+        $fiscalYearId = $request->input('year') ? (int) $request->input('year') : ($request->input('fiscal_year_id') ? (int) $request->input('fiscal_year_id') : null);
+        $monthId      = $request->input('month') ? (int) $request->input('month') : ($request->input('month_id') ? (int) $request->input('month_id') : null);
+        $portId       = $request->input('port') ? (int) $request->input('port') : ($request->input('port_id') ? (int) $request->input('port_id') : null);
+
+        $typeLabel = $type === 'dangerous' ? 'الخطرة' : 'المتخلفة';
+        $monthObj  = $monthId ? Month::find($monthId) : Month::where('month_number', now()->month)->first();
+        $yearObj   = $fiscalYearId ? FiscalYear::find($fiscalYearId) : FiscalYear::where('is_current', true)->first();
+        $portObj   = $portId ? Port::find($portId) : null;
+
+        $monthName = $monthObj ? "شهر_{$monthObj->name_ar}" : 'شهر';
+        $yearName  = $yearObj ? $yearObj->year : date('Y');
+        $portName  = $portObj ? "_{$portObj->name_ar}" : '';
+
+        ActivityLogger::log(
+            'exported_excel',
+            "تصدير كشف الحاويات {$typeLabel} الفردية التفصيلية بحسب الجهات ({$yearName} - {$monthName})",
+            \App\Models\ContainerItem::class,
+            null,
+            ['type' => $type, 'fiscal_year_id' => $fiscalYearId, 'month_id' => $monthId, 'port_id' => $portId]
+        );
+
+        $fileName = "كشف_الحاويات_{$typeLabel}{$portName}_{$monthName}_{$yearName}.xlsx";
+
+        return Excel::download(
+            new \App\Exports\ContainerItemsDetailedExport($type, $fiscalYearId, $monthId, $portId),
+            $fileName
+        );
+    }
 }

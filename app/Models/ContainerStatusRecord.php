@@ -31,6 +31,64 @@ class ContainerStatusRecord extends Model implements Auditable
         'report_date' => 'date',
     ];
 
+    protected static function booted(): void
+    {
+        static::deleting(function (ContainerStatusRecord $record) {
+            if ($record->isForceDeleting()) {
+                // 1. Permanently delete associated details
+                $record->details()->forceDelete();
+
+                // 2. Permanently delete container items belonging only to this record
+                ContainerItem::withTrashed()
+                    ->where(function ($q) use ($record) {
+                        $q->where('container_status_record_id', $record->id)
+                          ->orWhere(function ($q2) use ($record) {
+                              $q2->where('port_id', $record->port_id)
+                                 ->where('fiscal_year_id', $record->fiscal_year_id)
+                                 ->where('month_id', $record->month_id)
+                                 ->where('container_type', $record->container_type);
+                          });
+                    })
+                    ->forceDelete();
+            } else {
+                // Soft delete associated details and items
+                $record->details()->delete();
+
+                ContainerItem::where(function ($q) use ($record) {
+                    $q->where('container_status_record_id', $record->id)
+                      ->orWhere(function ($q2) use ($record) {
+                          $q2->where('port_id', $record->port_id)
+                             ->where('fiscal_year_id', $record->fiscal_year_id)
+                             ->where('month_id', $record->month_id)
+                             ->where('container_type', $record->container_type);
+                      });
+                })->delete();
+            }
+
+            // Reset any containers discharged during this record's month back to active 'in_port'
+            ContainerItem::where('discharge_fiscal_year_id', $record->fiscal_year_id)
+                ->where('discharge_month_id', $record->month_id)
+                ->where('port_id', $record->port_id)
+                ->where('container_type', $record->container_type)
+                ->update([
+                    'status'                   => 'in_port',
+                    'discharge_fiscal_year_id' => null,
+                    'discharge_month_id'       => null,
+                    'discharge_date'           => null,
+                ]);
+        });
+
+        static::restoring(function (ContainerStatusRecord $record) {
+            // Restore associated container items
+            ContainerItem::withTrashed()
+                ->where('container_status_record_id', $record->id)
+                ->restore();
+
+            // Re-sync and reconstruct details from restored items
+            ContainerItem::syncRecordDetails($record->id);
+        });
+    }
+
     public function port(): BelongsTo
     {
         return $this->belongsTo(Port::class);
@@ -59,6 +117,11 @@ class ContainerStatusRecord extends Model implements Auditable
     public function details(): HasMany
     {
         return $this->hasMany(ContainerStatusDetail::class);
+    }
+
+    public function items(): HasMany
+    {
+        return $this->hasMany(ContainerItem::class);
     }
 
     public function getContainerTypeLabelAttribute(): string

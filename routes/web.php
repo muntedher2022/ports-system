@@ -26,6 +26,7 @@ Route::middleware(['auth'])->prefix('admin/reports')->name('admin.reports.')->gr
 // ─── مسارات الحاويات المتخلفة والخطرة ───
 Route::middleware(['auth'])->prefix('admin/containers')->name('admin.containers.')->group(function () {
     Route::get('export-excel', [\App\Http\Controllers\ReportExcelController::class, 'exportContainerStatus'])->name('export-excel');
+    Route::get('export-detailed-excel', [\App\Http\Controllers\ReportExcelController::class, 'exportContainerItemsDetailed'])->name('export-detailed-excel');
 });
 
 // ─── مسارات المواد والبضائع المتخلفة والخطرة ───

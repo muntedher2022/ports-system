@@ -257,49 +257,73 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
             $cellA = (string) $sheet->getCell("A{$r}")->getValue();
 
             if ($cellA === 'المجموع') {
-                // Grand total row
+                // Grand total row (صف المجموع العام)
                 $sheet->getStyle("A{$r}:{$lastCol}{$r}")->applyFromArray([
-                    'font'      => ['bold' => true, 'size' => 11, 'color' => ['rgb' => 'FFFFFF']],
-                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '0F172A']],
+                    'font'      => ['bold' => true, 'size' => 11, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FDE047']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => '334155']]],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
                 ]);
-                $sheet->getRowDimension($r)->setRowHeight(26);
+
+                // Highlight non-zero numbers in dark red in the total row
+                for ($col = 'B'; $col <= $lastCol; $col++) {
+                    $val = $sheet->getCell("{$col}{$r}")->getValue();
+                    if (is_numeric($val) && (int) $val > 0) {
+                        $sheet->getStyle("{$col}{$r}")->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('991B1B'))->setBold(true);
+                    }
+                }
+
+                $sheet->getRowDimension($r)->setRowHeight(28);
             } elseif (in_array($cellA, ['', 'القطاع الحكومي', 'القطاع الخاص', 'الكلي'])) {
                 // Mini summary block below
                 if ($sheet->getCell("B{$r}")->getValue() !== null) {
                     $sheet->getStyle("B{$r}:C{$r}")->applyFromArray([
-                        'font'      => ['bold' => true, 'size' => 10],
-                        'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'EFF6FF']],
+                        'font'      => ['bold' => true, 'size' => 10, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
+                        'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF9C3']],
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                        'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'BFDBFE']]],
+                        'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
                     ]);
+                    $sheet->getStyle("C{$r}")->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('991B1B'))->setBold(true);
+                    $sheet->getRowDimension($r)->setRowHeight(22);
                 }
             } else {
                 // Regular data row
                 $isGov = !str_starts_with($cellA, 'القطاع الخاص');
                 $color = $isGov ? 'BFDBFE' : 'BBF7D0';
+                $textColor = $isGov ? '1e40af' : '065f46';
 
                 $sheet->getStyle("A{$r}")->applyFromArray([
-                    'font'      => ['bold' => true, 'size' => 10],
+                    'font'      => ['bold' => true, 'size' => 10, 'color' => ['rgb' => $textColor]],
                     'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $color]],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT, 'vertical' => Alignment::VERTICAL_CENTER],
-                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '94A3B8']]],
                 ]);
 
-                $sheet->getStyle("B{$r}:{$lastCol}{$r}")->applyFromArray([
-                    'font'      => ['size' => 10],
-                    'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'CBD5E1']]],
-                ]);
+                // Style data cells: highlight > 0 in dark red, 0 in muted gray
+                for ($col = 'B'; $col <= $lastCol; $col++) {
+                    $val = $sheet->getCell("{$col}{$r}")->getValue();
+                    if (is_numeric($val) && (int) $val > 0) {
+                        $sheet->getStyle("{$col}{$r}")->applyFromArray([
+                            'font' => ['bold' => true, 'size' => 10, 'color' => ['rgb' => '991B1B']],
+                        ]);
+                    } else {
+                        $sheet->getStyle("{$col}{$r}")->applyFromArray([
+                            'font' => ['bold' => false, 'size' => 10, 'color' => ['rgb' => '94A3B8']],
+                        ]);
+                    }
+                    $sheet->getStyle("{$col}{$r}")->applyFromArray([
+                        'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+                        'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '94A3B8']]],
+                    ]);
+                }
 
                 // Highlight total column for each row
                 $sheet->getStyle("{$lastCol}{$r}")->applyFromArray([
-                    'font' => ['bold' => true],
-                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F1F5F9']],
+                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF08A']],
+                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
                 ]);
 
-                $sheet->getRowDimension($r)->setRowHeight(22);
+                $sheet->getRowDimension($r)->setRowHeight(24);
             }
         }
 

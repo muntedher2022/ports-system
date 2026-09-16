@@ -59,11 +59,11 @@ class ContainerStatusRecordResource extends Resource
         return true;
     }
 
-    /** السنوات من 2004 حتى السنة الحالية وخيارات التواريخ الخاصة */
+    /** السنوات من 2015 (وتشمل ما دونها) حتى السنة الحالية وخيارات التواريخ الخاصة */
     public static function availableYears(): array
     {
         $years = [];
-        for ($y = 2004; $y <= (int) date('Y'); $y++) {
+        for ($y = 2015; $y <= (int) date('Y'); $y++) {
             $years[(string) $y] = (string) $y;
         }
         $years['تواريخ متعددة'] = 'تواريخ متعددة';
@@ -298,16 +298,42 @@ class ContainerStatusRecordResource extends Resource
                         'abandoned' => 'warning',
                         'dangerous' => 'danger',
                         default     => 'gray',
+                    })
+                    ->sortable()
+                    ->searchable(isIndividual: true, query: function (Builder $query, string $search): Builder {
+                        $search = trim($search);
+                        if (empty($search)) return $query;
+                        if ($search === 'dangerous' || str_contains($search, 'خطر')) {
+                            return $query->where('container_type', 'dangerous');
+                        }
+                        if ($search === 'abandoned' || str_contains($search, 'متخلف') || str_contains($search, 'تخلف')) {
+                            return $query->where('container_type', 'abandoned');
+                        }
+                        return $query->where('container_type', $search);
                     }),
 
                 TextColumn::make('fiscalYear.year')
                     ->label('السنة المالية')
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(isIndividual: true, query: function (Builder $query, string $search): Builder {
+                        $search = trim($search);
+                        if (empty($search)) return $query;
+                        return $query->whereHas('fiscalYear', fn ($q) => $q->where('year', $search)->orWhere('id', $search));
+                    }),
 
                 TextColumn::make('month.month_number')
                     ->label('الشهر')
                     ->formatStateUsing(fn ($record) => $record->month ? "{$record->month->month_number} - {$record->month->name_ar}" : '—')
-                    ->sortable(),
+                    ->sortable()
+                    ->searchable(isIndividual: true, query: function (Builder $query, string $search): Builder {
+                        $search = trim($search);
+                        if (empty($search)) return $query;
+                        return $query->whereHas('month', function ($q) use ($search) {
+                            $q->where('month_number', $search)
+                              ->orWhere('id', $search)
+                              ->orWhere('name_ar', 'like', "%{$search}%");
+                        });
+                    }),
 
                 TextColumn::make('report_date')
                     ->label('تاريخ التقرير')
@@ -465,6 +491,24 @@ class ContainerStatusRecordResource extends Resource
                                 ->success()
                                 ->send();
                         }),
+                    Action::make('sync_aggregates')
+                        ->label('إعادة احتساب الأعداد من قائمة الحاويات')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->modalHeading('إعادة احتساب وتحديث المجاميع التلقائية')
+                        ->modalDescription('سيقوم النظام بقراءة كافة الحاويات الفردية المسجلة لهذا السجل واحتساب أعدادها تلقائياً بحسب كل جهة وسنة وصول وتحديث الإجمالي والمصفوفة.')
+                        ->modalSubmitActionLabel('بدء الاحتساب')
+                        ->action(function (ContainerStatusRecord $record) {
+                            \App\Models\ContainerItem::syncRecordDetails($record->id);
+                            $newTotal = $record->fresh()->total_count;
+
+                            Notification::make()
+                                ->title('تمت إعادة الاحتساب بنجاح')
+                                ->body("تم تحديث مجاميع الحاويات لهذا السجل بنجاح، الإجمالي الحالي: {$newTotal} حاوية.")
+                                ->success()
+                                ->send();
+                        }),
                     DeleteAction::make()
                         ->label('حذف مؤقت')
                         ->modalHeading('هل تريد حذف هذا السجل مؤقتاً؟')
@@ -494,12 +538,23 @@ class ContainerStatusRecordResource extends Resource
             ->withoutGlobalScopes([SoftDeletingScope::class]);
     }
 
+    public static function getRelations(): array
+    {
+        return [
+            \App\Filament\Resources\ContainerStatusRecordResource\RelationManagers\ContainerItemsRelationManager::class,
+        ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListContainerStatusRecords::route('/'),
-            'create' => Pages\CreateContainerStatusRecord::route('/create'),
-            'edit'   => Pages\EditContainerStatusRecord::route('/{record}/edit'),
+            'index' => Pages\ListContainerStatusRecords::route('/'),
+            'edit'  => Pages\EditContainerStatusRecord::route('/{record}/edit'),
         ];
     }
 }
