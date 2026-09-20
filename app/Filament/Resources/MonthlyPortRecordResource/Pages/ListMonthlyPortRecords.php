@@ -71,6 +71,7 @@ class ListMonthlyPortRecords extends ListRecords
                             'text/csv',
                         ])
                         ->required()
+                        ->maxSize(102400)
                         ->disk('local')
                         ->directory('imports/port-records')
                         ->preserveFilenames(false),

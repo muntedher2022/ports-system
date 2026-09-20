@@ -16,6 +16,8 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Grid;
+use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -35,48 +37,56 @@ class ListCargoStatusRecords extends ListRecords
                 ->modalDescription('يتيح هذا الإجراء نسخ جميع قيود وجهات المواد وأعدادها من شهر وسنة سابقة إلى شهر جديد عند عدم تغير البيانات.')
                 ->modalSubmitActionLabel('تنفيذ النسخ')
                 ->modalIcon('heroicon-o-document-duplicate')
-                ->form([
-                    Select::make('port_id')
-                        ->label('الميناء')
-                        ->options(Port::where('is_active', true)->where('has_cargo_status', true)->orderBy('sort_order')->pluck('name_ar', 'id'))
-                        ->required()
-                        ->searchable(),
+                ->modalWidth(Width::ThreeExtraLarge)
+                ->schema([
+                    Grid::make(2)->schema([
+                        Select::make('port_id')
+                            ->label('الميناء')
+                            ->options(Port::where('is_active', true)->where('has_cargo_status', true)->orderBy('sort_order')->pluck('name_ar', 'id'))
+                            ->required()
+                            ->searchable(),
 
-                    Select::make('cargo_type')
-                        ->label('نوع المواد')
-                        ->options([
-                            'abandoned' => '📦 مواد وبضائع متخلفة',
-                            'dangerous' => '⚠️ مواد وبضائع خطرة',
-                        ])
-                        ->default('abandoned')
-                        ->required(),
+                        Select::make('cargo_type')
+                            ->label('نوع المواد')
+                            ->options([
+                                'abandoned' => '📦 مواد وبضائع متخلفة',
+                                'dangerous' => '⚠️ مواد وبضائع خطرة',
+                            ])
+                            ->default('abandoned')
+                            ->required(),
 
-                    Select::make('source_fiscal_year_id')
-                        ->label('السنة المالية (المصدر)')
-                        ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
-                        ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
-                        ->required(),
+                        Select::make('source_fiscal_year_id')
+                            ->label('السنة المالية (المصدر)')
+                            ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                            ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
+                            ->required(),
 
-                    Select::make('source_month_id')
-                        ->label('الشهر (المصدر)')
-                        ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
-                        ->required(),
+                        Select::make('source_month_id')
+                            ->label('الشهر (المصدر)')
+                            ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                            ->required(),
 
-                    Select::make('target_fiscal_year_id')
-                        ->label('السنة المالية (المستهدفة للنسخ إليها)')
-                        ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
-                        ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
-                        ->required(),
+                        Select::make('target_fiscal_year_id')
+                            ->label('السنة المالية (المستهدفة للنسخ إليها)')
+                            ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                            ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
+                            ->required(),
 
-                    Select::make('target_month_id')
-                        ->label('الشهر (المستهدف للنسخ إليه)')
-                        ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
-                        ->required(),
+                        Select::make('target_month_id')
+                            ->label('الشهر (المستهدف للنسخ إليه)')
+                            ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                            ->required(),
 
-                    DatePicker::make('target_report_date')
-                        ->label('تاريخ التقرير الجديد')
-                        ->default(now()->toDateString())
-                        ->required(),
+                        DatePicker::make('target_report_date')
+                            ->label('تاريخ التقرير الجديد')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->closeOnDateSelection()
+                            ->default(now())
+                            ->required()
+                            ->columnSpanFull(),
+                    ]),
                 ])
                 ->action(function (array $data) {
                     $portId = (int) $data['port_id'];

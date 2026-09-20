@@ -136,7 +136,13 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
         // Row 2: Headers
         $headers = ['ت — عائدية المواد والبضائع'];
         foreach ($activeYears as $y) {
-            $headers[] = is_numeric($y) ? "خلال عام {$y}" : (string) $y;
+            if ((string) $y === '2015') {
+                $headers[] = "من\n2004-2015";
+            } elseif (is_numeric($y)) {
+                $headers[] = "خلال عام\n{$y}";
+            } else {
+                $headers[] = (string) $y;
+            }
         }
         $headers[] = 'المجموع';
         $rows[] = $headers;
@@ -247,10 +253,14 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
         $sheet->getStyle("A2:{$lastCol}2")->applyFromArray([
             'font'      => ['bold' => true, 'size' => 11, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
             'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FACC15']],
-            'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
+            'alignment' => [
+                'horizontal' => Alignment::HORIZONTAL_CENTER,
+                'vertical'   => Alignment::VERTICAL_CENTER,
+                'wrapText'   => true,
+            ],
             'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'D4A500']]],
         ]);
-        $sheet->getRowDimension(2)->setRowHeight(28);
+        $sheet->getRowDimension(2)->setRowHeight(38);
 
         // Data rows style
         for ($r = 3; $r <= $lastRow; $r++) {

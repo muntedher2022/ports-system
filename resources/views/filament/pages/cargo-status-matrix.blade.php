@@ -106,10 +106,11 @@
         }
         .cs-table th {
             background: #facc15; color: #1c1917; font-weight: 800;
-            padding: 10px 8px; text-align: center; border: 1px solid #d4a500;
-            white-space: nowrap; font-size: 0.8rem;
+            padding: 8px 6px; text-align: center; border: 1px solid #d4a500;
+            white-space: normal; line-height: 1.35; font-size: 0.8rem;
+            vertical-align: middle;
         }
-        .cs-table th:first-child { text-align: right; min-width: 160px; background: #fde68a; }
+        .cs-table th:first-child { text-align: right; min-width: 160px; background: #fde68a; white-space: nowrap; }
         .cs-table td {
             padding: 8px 8px; border: 1px solid #e2e8f0; text-align: center;
             color: #1e293b; font-variant-numeric: tabular-nums;
@@ -282,9 +283,17 @@
                         <tr>
                             <th>ت — عائدية المواد والبضائع</th>
                             @foreach($years as $y)
-                                <th>{{ is_numeric($y) ? "خلال عام {$y}" : $y }}</th>
+                                <th>
+                                    @if((string) $y === '2015')
+                                        من<br>2004-2015
+                                    @elseif(is_numeric($y))
+                                        خلال عام<br>{{ $y }}
+                                    @else
+                                        {{ $y }}
+                                    @endif
+                                </th>
                             @endforeach
-                            <th style="background:#0f172a;color:#fff;">المجموع</th>
+                            <th style="background:#0f172a;color:#fff;vertical-align:middle;">المجموع</th>
                         </tr>
                     </thead>
                     <tbody>

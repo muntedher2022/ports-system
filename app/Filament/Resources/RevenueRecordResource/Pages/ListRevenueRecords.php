@@ -72,6 +72,7 @@ class ListRevenueRecords extends ListRecords
                             'text/csv',
                         ])
                         ->required()
+                        ->maxSize(102400)
                         ->disk('local')
                         ->directory('imports/revenue-records')
                         ->preserveFilenames(false),

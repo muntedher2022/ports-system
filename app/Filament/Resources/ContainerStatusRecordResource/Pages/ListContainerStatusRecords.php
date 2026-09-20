@@ -11,12 +11,16 @@ use App\Models\Port;
 use App\Services\ActivityLogger;
 use App\Services\ContainerExcelImportService;
 use Filament\Actions\Action;
+use Filament\Actions\ActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use Filament\Schemas\Components\Grid;
+use Filament\Support\Enums\IconPosition;
+use Filament\Support\Enums\Width;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -28,7 +32,8 @@ class ListContainerStatusRecords extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            // ─── زر نسخ بيانات ميناء إلى شهر آخر ───
+            ActionGroup::make([
+                // ─── زر نسخ بيانات ميناء إلى شهر آخر ───
             Action::make('copy_port_month')
                 ->label('نسخ ميناء إلى شهر آخر')
                 ->icon('heroicon-o-document-duplicate')
@@ -37,52 +42,56 @@ class ListContainerStatusRecords extends ListRecords
                 ->modalDescription('يتيح هذا الإجراء نسخ جميع قيود وجهات الحاويات وأعدادها من شهر وسنة سابقة إلى شهر جديد عند عدم تغير الأعداد.')
                 ->modalSubmitActionLabel('تنفيذ النسخ')
                 ->modalIcon('heroicon-o-document-duplicate')
-                ->form([
-                    Select::make('port_id')
-                        ->label('الميناء')
-                        ->options(Port::where('is_active', true)->where('has_container_status', true)->orderBy('sort_order')->pluck('name_ar', 'id'))
-                        ->required()
-                        ->searchable(),
+                ->modalWidth(Width::ThreeExtraLarge)
+                ->schema([
+                    Grid::make(2)->schema([
+                        Select::make('port_id')
+                            ->label('الميناء')
+                            ->options(Port::where('is_active', true)->where('has_container_status', true)->orderBy('sort_order')->pluck('name_ar', 'id'))
+                            ->required()
+                            ->searchable(),
 
-                    Select::make('container_type')
-                        ->label('نوع الحاوية')
-                        ->options([
-                            'abandoned' => '📦 حاويات متخلفة',
-                            'dangerous' => '⚠️ حاويات خطرة',
-                        ])
-                        ->default('abandoned')
-                        ->required(),
+                        Select::make('container_type')
+                            ->label('نوع الحاوية')
+                            ->options([
+                                'abandoned' => '📦 حاويات متخلفة',
+                                'dangerous' => '⚠️ حاويات خطرة',
+                            ])
+                            ->default('abandoned')
+                            ->required(),
 
-                    Select::make('source_fiscal_year_id')
-                        ->label('السنة المالية (المصدر)')
-                        ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
-                        ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
-                        ->required(),
+                        Select::make('source_fiscal_year_id')
+                            ->label('السنة المالية (المصدر)')
+                            ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                            ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
+                            ->required(),
 
-                    Select::make('source_month_id')
-                        ->label('الشهر (المصدر)')
-                        ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
-                        ->required(),
+                        Select::make('source_month_id')
+                            ->label('الشهر (المصدر)')
+                            ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                            ->required(),
 
-                    Select::make('target_fiscal_year_id')
-                        ->label('السنة المالية (المستهدفة للنسخ إليها)')
-                        ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
-                        ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
-                        ->required(),
+                        Select::make('target_fiscal_year_id')
+                            ->label('السنة المالية (المستهدفة للنسخ إليها)')
+                            ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                            ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
+                            ->required(),
 
-                    Select::make('target_month_id')
-                        ->label('الشهر (المستهدف للنسخ إليه)')
-                        ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
-                        ->required(),
+                        Select::make('target_month_id')
+                            ->label('الشهر (المستهدف للنسخ إليه)')
+                            ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                            ->required(),
 
-                    DatePicker::make('target_report_date')
-                        ->label('تاريخ التقرير الجديد')
-                        ->native(false)
-                        ->displayFormat('d/m/Y')
-                        ->format('Y-m-d')
-                        ->closeOnDateSelection()
-                        ->default(now())
-                        ->required(),
+                        DatePicker::make('target_report_date')
+                            ->label('تاريخ التقرير الجديد')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->closeOnDateSelection()
+                            ->default(now())
+                            ->required()
+                            ->columnSpanFull(),
+                    ]),
                 ])
                 ->action(function (array $data) {
                     $portId = (int) $data['port_id'];
@@ -177,59 +186,69 @@ class ListContainerStatusRecords extends ListRecords
                 ->modalDescription('قم برفع ملف الإكسل الشهري للحاويات (المتخلفة أو الخطرة). سيقوم النظام بقراءة كافة أوراق العمل، ومطابقة الجهات والموانئ، وتحديث أرقام الحاويات، وإجراء مقاطعة آلية مع الشهر السابق لتحديد الحاويات التي تم تخريجها وإخلاؤها وتحديث المصفوفة والإحصائيات تلقائياً.')
                 ->modalSubmitActionLabel('بدء الاستيراد والمقاطعة الذكية')
                 ->modalIcon('heroicon-o-arrow-up-tray')
-                ->form([
-                    FileUpload::make('excel_file')
-                        ->label('ملف الإكسل (Excel File)')
-                        ->acceptedFileTypes([
-                            'application/vnd.ms-excel',
-                            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-                            'application/octet-stream',
-                            '.xls',
-                            '.xlsx',
-                        ])
-                        ->disk('public')
-                        ->directory('container_imports')
-                        ->preserveFilenames()
-                        ->required()
-                        ->helperText('الملف يمكن أن يحتوي على عدة أوراق عمل لعدة جهات ووزارات'),
+                ->modalWidth(Width::ThreeExtraLarge)
+                ->schema([
+                    Grid::make(2)->schema([
+                        FileUpload::make('excel_file')
+                            ->label('ملف الإكسل (Excel File)')
+                            ->acceptedFileTypes([
+                                'application/vnd.ms-excel',
+                                'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                                'application/octet-stream',
+                                '.xls',
+                                '.xlsx',
+                            ])
+                            ->disk('public')
+                            ->directory('container_imports')
+                            ->preserveFilenames()
+                            ->maxSize(102400) // Up to 100MB
+                            ->required()
+                            ->columnSpanFull()
+                            ->helperText('الملف يمكن أن يحتوي على عدة أوراق عمل لعدة جهات ووزارات (الحد الأقصى: 100 ميغابايت)'),
 
-                    Select::make('container_type')
-                        ->label('نوع الحاويات في الملف')
-                        ->options([
-                            'abandoned' => '📦 موقف الحاويات المتخلفة',
-                            'dangerous' => '⚠️ موقف الحاويات الخطرة',
-                        ])
-                        ->default('abandoned')
-                        ->required(),
+                        Select::make('container_type')
+                            ->label('نوع الحاويات في الملف')
+                            ->options([
+                                'abandoned' => '📦 موقف الحاويات المتخلفة',
+                                'dangerous' => '⚠️ موقف الحاويات الخطرة',
+                            ])
+                            ->default('abandoned')
+                            ->required(),
 
-                    Select::make('fiscal_year_id')
-                        ->label('السنة المالية المستهدفة')
-                        ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
-                        ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
-                        ->required(),
+                        Select::make('fiscal_year_id')
+                            ->label('السنة المالية المستهدفة')
+                            ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                            ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
+                            ->required(),
 
-                    Select::make('month_id')
-                        ->label('الشهر المستهدف')
-                        ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
-                        ->default(fn () => Month::where('month_number', (int) date('n'))->first()?->id)
-                        ->required(),
+                        Select::make('month_id')
+                            ->label('الشهر المستهدف')
+                            ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                            ->default(fn () => Month::where('month_number', (int) date('n'))->first()?->id)
+                            ->required(),
 
-                    DatePicker::make('report_date')
-                        ->label('تاريخ الموقف / التقرير')
-                        ->native(false)
-                        ->displayFormat('d/m/Y')
-                        ->format('Y-m-d')
-                        ->closeOnDateSelection()
-                        ->default(now())
-                        ->required(),
+                        DatePicker::make('report_date')
+                            ->label('تاريخ الموقف / التقرير')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->closeOnDateSelection()
+                            ->default(now())
+                            ->required(),
 
-                    Select::make('default_port_id')
-                        ->label('الميناء الافتراضي (اختياري)')
-                        ->options(Port::where('is_active', true)->where('has_container_status', true)->orderBy('sort_order')->pluck('name_ar', 'id'))
-                        ->helperText('يُستخدم في حال كانت بعض أسطر الملف لا تحتوي على اسم الميناء صراحة')
-                        ->searchable(),
+                        Select::make('default_port_id')
+                            ->label('الميناء الافتراضي (اختياري)')
+                            ->options(Port::where('is_active', true)->where('has_container_status', true)->orderBy('sort_order')->pluck('name_ar', 'id'))
+                            ->helperText('يُستخدم في حال كانت بعض أسطر الملف لا تحتوي على اسم الميناء صراحة')
+                            ->searchable()
+                            ->columnSpanFull(),
+                    ]),
                 ])
                 ->action(function (array $data) {
+                    @ini_set('max_execution_time', '600');
+                    @set_time_limit(600);
+                    @ini_set('memory_limit', '1024M');
+
                     $uploadedPath = Storage::disk('public')->path($data['excel_file']);
 
                     try {
@@ -260,6 +279,46 @@ class ListContainerStatusRecords extends ListRecords
                             ->success()
                             ->persistent()
                             ->send();
+
+                        // ─── إشعار خاص بالحاويات غير المدون بها تاريخ وصول ───
+                        if (!empty($stats['missing_date_anomalies'])) {
+                            $missingCount = count($stats['missing_date_anomalies']);
+                            $missingLines = [];
+                            foreach (array_slice($stats['missing_date_anomalies'], 0, 15) as $manom) {
+                                $missingLines[] = "• حاوية [{$manom['container_number']}] - {$manom['entity_name']} ({$manom['port_name']})";
+                            }
+                            if ($missingCount > 15) {
+                                $missingLines[] = "• ... وهناك المزيد (" . ($missingCount - 15) . " حاوية أخرى)";
+                            }
+                            $missingText = implode("\n", $missingLines);
+
+                            Notification::make()
+                                ->title("⚠️ تنبيه رقابي: تم رصد {$missingCount} حاوية غير مدون بها تاريخ أو سنة وصول!")
+                                ->body("تم إدراج هذه الحاويات افتراضياً ضمن فئة (2015 فما دون) مع توثيق الملاحظة الرقابية:\n\n{$missingText}")
+                                ->warning()
+                                ->persistent()
+                                ->send();
+                        }
+
+                        // ─── إشعار خاص بالحاويات المخالفة للمواصفة القياسية ISO 6346 ───
+                        if (!empty($stats['invalid_iso_anomalies'])) {
+                            $isoCount = count($stats['invalid_iso_anomalies']);
+                            $isoLines = [];
+                            foreach (array_slice($stats['invalid_iso_anomalies'], 0, 15) as $ianom) {
+                                $isoLines[] = "• [{$ianom['container_number']}]: {$ianom['reason']} - {$ianom['entity_name']} ({$ianom['port_name']})";
+                            }
+                            if ($isoCount > 15) {
+                                $isoLines[] = "• ... وهناك المزيد (" . ($isoCount - 15) . " حاوية أخرى)";
+                            }
+                            $isoText = implode("\n", $isoLines);
+
+                            Notification::make()
+                                ->title("⚠️ تنبيه رقابي: تم رصد {$isoCount} حاوية بأرقام غير مطابقة للمواصفة القياسية (ISO 6346)!")
+                                ->body("المواصفة الدولية تشترط (4 أحرف + 6 أرقام تسلسلية + 1 رقم تحقق Check Digit):\n\n{$isoText}")
+                                ->danger()
+                                ->persistent()
+                                ->send();
+                        }
 
                         // ─── إشعار خاص في حال وجود مخالفة إضافة حاويات بسنوات سابقة ───
                         if (!empty($stats['prior_year_anomalies'])) {
@@ -300,6 +359,45 @@ class ListContainerStatusRecords extends ListRecords
                                 ->persistent()
                                 ->send();
                         }
+
+                        // ─── إشعار خاص في حال وجود تغيير/نقل في الميناء عن السجلات السابقة ───
+                        if (!empty($stats['port_change_anomalies'])) {
+                            $portAnomCount = count($stats['port_change_anomalies']);
+                            $portAnomLines = [];
+                            foreach (array_slice($stats['port_change_anomalies'], 0, 15) as $panom) {
+                                $portAnomLines[] = "• حاوية [{$panom['container_number']}]: السابق ({$panom['prev_port_name']}) ⟵ الحالي ({$panom['curr_port_name']}) - {$panom['entity_name']}";
+                            }
+                            if ($portAnomCount > 15) {
+                                $portAnomLines[] = "• ... وهناك المزيد (" . ($portAnomCount - 15) . " حاوية أخرى)";
+                            }
+                            $portAnomText = implode("\n", $portAnomLines);
+
+                            Notification::make()
+                                ->title("⚠️ تنبيه رقابي: تم رصد {$portAnomCount} حاوية تم تغيير مينائها عن السجلات السابقة!")
+                                ->body("تم رصد حاويات مسجلة في ميناء يختلف عما كان مسجلاً لها في السجلات السابقة:\n\n{$portAnomText}")
+                                ->warning()
+                                ->persistent()
+                                ->send();
+                        }
+
+                        // ─── إشعار تحميل ملف التقرير الرقابي الشامل ───
+                        if (!empty($stats['audit_report_url'])) {
+                            $totalAnom = count($stats['all_anomalies']);
+                            Notification::make()
+                                ->title("📋 تم إصدار تقرير الملاحظات الرقابية الشامل (Excel)")
+                                ->body("تم إنشاء وتنسيق ملف إكسل رسمي يحتوي على كافة البيانات المرفوعة مع حقل تفاصيل الملاحظات الرقابية ({$totalAnom} ملاحظة).")
+                                ->actions([
+                                    Action::make('download_audit')
+                                        ->label('📥 تحميل تقرير الملاحظات الرقابية (Excel)')
+                                        ->url($stats['audit_report_url'])
+                                        ->openUrlInNewTab()
+                                        ->button()
+                                        ->color('danger'),
+                                ])
+                                ->info()
+                                ->persistent()
+                                ->send();
+                        }
                     } catch (\Throwable $e) {
                         Notification::make()
                             ->title('حدث خطأ أثناء معالجة ملف الإكسل')
@@ -319,33 +417,36 @@ class ListContainerStatusRecords extends ListRecords
                 ->modalDescription('سيتم تصدير ملف إكسل يحتوي على أوراق عمل متعددة (لكل وزارة وجهة ورقة عمل مستقلة) بنفس التنسيق الرسمي وبكافة تفاصيل الحاويات الموجودة في الميناء حالياً مع استثناء الحاويات المخرجة.')
                 ->modalSubmitActionLabel('تحميل ملف Excel')
                 ->modalIcon('heroicon-o-arrow-down-tray')
-                ->form([
-                    Select::make('container_type')
-                        ->label('نوع الموقف المراد تصديره')
-                        ->options([
-                            'abandoned' => '📦 موقف الحاويات المتخلفة',
-                            'dangerous' => '⚠️ موقف الحاويات الخطرة',
-                        ])
-                        ->default('abandoned')
-                        ->required(),
+                ->modalWidth(Width::ThreeExtraLarge)
+                ->schema([
+                    Grid::make(2)->schema([
+                        Select::make('container_type')
+                            ->label('نوع الموقف المراد تصديره')
+                            ->options([
+                                'abandoned' => '📦 موقف الحاويات المتخلفة',
+                                'dangerous' => '⚠️ موقف الحاويات الخطرة',
+                            ])
+                            ->default('abandoned')
+                            ->required(),
 
-                    Select::make('fiscal_year_id')
-                        ->label('السنة المالية')
-                        ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
-                        ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
-                        ->required(),
+                        Select::make('fiscal_year_id')
+                            ->label('السنة المالية')
+                            ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                            ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
+                            ->required(),
 
-                    Select::make('month_id')
-                        ->label('الشهر')
-                        ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
-                        ->default(fn () => Month::where('month_number', (int) date('n'))->first()?->id)
-                        ->required(),
+                        Select::make('month_id')
+                            ->label('الشهر')
+                            ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                            ->default(fn () => Month::where('month_number', (int) date('n'))->first()?->id)
+                            ->required(),
 
-                    Select::make('port_id')
-                        ->label('الميناء')
-                        ->options(Port::where('is_active', true)->where('has_container_status', true)->orderBy('sort_order')->pluck('name_ar', 'id'))
-                        ->placeholder('كافة الموانئ (مجمّع)')
-                        ->searchable(),
+                        Select::make('port_id')
+                            ->label('الميناء')
+                            ->options(Port::where('is_active', true)->where('has_container_status', true)->orderBy('sort_order')->pluck('name_ar', 'id'))
+                            ->placeholder('كافة الموانئ (مجمّع)')
+                            ->searchable(),
+                    ]),
                 ])
                 ->action(function (array $data) {
                     $queryParams = http_build_query([
@@ -357,6 +458,27 @@ class ListContainerStatusRecords extends ListRecords
 
                     return redirect()->away(route('admin.containers.export-detailed-excel') . '?' . $queryParams);
                 }),
+
+            // ─── زر تحميل آخر كشف للملاحظات والمخالفات الرقابية ───
+            Action::make('download_latest_audit')
+                ->label('تحميل كشف الملاحظات الرقابية (Excel)')
+                ->icon('heroicon-o-document-magnifying-glass')
+                ->color('danger')
+                ->visible(fn () => !empty(glob(storage_path('app/public/audit_reports/*.xlsx'))))
+                ->url(function () {
+                    $files = glob(storage_path('app/public/audit_reports/*.xlsx'));
+                    if (empty($files)) return '#';
+                    usort($files, fn($a, $b) => filemtime($b) - filemtime($a));
+                    $latest = basename($files[0]);
+                    return asset('storage/audit_reports/' . $latest);
+                }, shouldOpenInNewTab: true),
+            ])
+            ->label('خيارات وإجراءات الحاويات')
+            ->icon('heroicon-o-chevron-down')
+            ->iconPosition(IconPosition::After)
+            ->dropdownWidth(Width::Medium)
+            ->button()
+            ->color('primary'),
         ];
     }
 }

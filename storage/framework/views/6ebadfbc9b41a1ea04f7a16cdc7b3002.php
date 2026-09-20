@@ -117,10 +117,11 @@
         }
         .cs-table th {
             background: #facc15; color: #1c1917; font-weight: 800;
-            padding: 10px 8px; text-align: center; border: 1px solid #d4a500;
-            white-space: nowrap; font-size: 0.8rem;
+            padding: 8px 6px; text-align: center; border: 1px solid #d4a500;
+            white-space: normal; line-height: 1.35; font-size: 0.8rem;
+            vertical-align: middle;
         }
-        .cs-table th:first-child { text-align: right; min-width: 160px; background: #fde68a; }
+        .cs-table th:first-child { text-align: right; min-width: 160px; background: #fde68a; white-space: nowrap; }
         .cs-table td {
             padding: 8px 8px; border: 1px solid #e2e8f0; text-align: center;
             color: #1e293b; font-variant-numeric: tabular-nums;
@@ -294,9 +295,19 @@
                         <tr>
                             <th>ت — عائدية المواد والبضائع</th>
                             <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::openLoop(); ?><?php endif; ?><?php $__currentLoopData = $years; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $y): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::startLoopIteration(); ?><?php endif; ?>
-                                <th><?php echo e(is_numeric($y) ? "خلال عام {$y}" : $y); ?></th>
+                                <th>
+                                    <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if BLOCK]><![endif]--><?php endif; ?><?php if((string) $y === '2015'): ?>
+                                        من<br>2004-2015
+                                    <?php elseif(is_numeric($y)): ?>
+                                        خلال عام<br><?php echo e($y); ?>
+
+                                    <?php else: ?>
+                                        <?php echo e($y); ?>
+
+                                    <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
+                                </th>
                             <?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::endLoop(); ?><?php endif; ?><?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::closeLoop(); ?><?php endif; ?>
-                            <th style="background:#0f172a;color:#fff;">المجموع</th>
+                            <th style="background:#0f172a;color:#fff;vertical-align:middle;">المجموع</th>
                         </tr>
                     </thead>
                     <tbody>
