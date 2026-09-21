@@ -31,6 +31,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -202,12 +203,14 @@ class RevenueRecordResource extends Resource
                         isIndividual: true,
                         isGlobal: true
                     )
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->toggleable(),
 
                 TextColumn::make('fiscalYear.year')
                     ->label('السنة')
                     ->sortable()
-                    ->searchable(isIndividual: true),
+                    ->searchable(isIndividual: true)
+                    ->toggleable(),
 
                 TextColumn::make('month_id')
                     ->label('الشهر')
@@ -215,7 +218,8 @@ class RevenueRecordResource extends Resource
                     ->searchable(isIndividual: true)
                     ->alignCenter()
                     ->badge()
-                    ->color('info'),
+                    ->color('info')
+                    ->toggleable(),
 
                 TextColumn::make('gross_revenue')
                     ->label('الإيراد الكلي (د.ع)')
@@ -223,7 +227,8 @@ class RevenueRecordResource extends Resource
                     ->sortable()
                     ->searchable(isIndividual: true)
                     ->alignEnd()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('revenue_center_id')
@@ -250,6 +255,10 @@ class RevenueRecordResource extends Resource
                 TrashedFilter::make()
                     ->label('سلة المحذوفات / سجلات الإيراد المحذوفة مؤقتاً'),
             ])
+            ->filtersFormColumns(2)
+            ->filtersFormWidth(Width::TwoExtraLarge)
+            ->columnToggleFormColumns(2)
+            ->columnToggleFormWidth(Width::TwoExtraLarge)
             ->actions([
                 ActionGroup::make([
                     ViewAction::make()->label('عرض'),

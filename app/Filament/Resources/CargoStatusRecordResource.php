@@ -31,6 +31,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -284,7 +285,8 @@ class CargoStatusRecordResource extends Resource
                     ->sortable()
                     ->searchable(isIndividual: true)
                     ->badge()
-                    ->color('info'),
+                    ->color('info')
+                    ->toggleable(),
 
                 TextColumn::make('cargo_type')
                     ->label('نوع المواد')
@@ -298,33 +300,39 @@ class CargoStatusRecordResource extends Resource
                         'abandoned' => 'warning',
                         'dangerous' => 'danger',
                         default     => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('fiscalYear.year')
                     ->label('السنة المالية')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('month.month_number')
                     ->label('الشهر')
                     ->formatStateUsing(fn ($record) => $record->month ? "{$record->month->month_number} - {$record->month->name_ar}" : '—')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('report_date')
                     ->label('تاريخ التقرير')
                     ->date('d/m/Y')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('details_count')
                     ->label('عدد القيود')
                     ->counts('details')
                     ->badge()
-                    ->color('gray'),
+                    ->color('gray')
+                    ->toggleable(),
 
                 TextColumn::make('total_count')
                     ->label('إجمالي المواد/الطرود')
                     ->getStateUsing(fn($record) => number_format($record->total_count))
                     ->badge()
-                    ->color('success'),
+                    ->color('success')
+                    ->toggleable(),
 
                 TextColumn::make('excel_file_name')
                     ->label('ملف Excel المرفق')
@@ -333,7 +341,8 @@ class CargoStatusRecordResource extends Resource
                     ->badge()
                     ->color(fn ($record) => $record->excel_file_path ? 'success' : 'gray')
                     ->url(fn ($record) => $record->excel_file_path ? asset('storage/' . $record->excel_file_path) : null, shouldOpenInNewTab: true)
-                    ->tooltip(fn ($record) => $record->excel_file_path ? 'انقر لتحميل ملف الإكسل المرفق' : 'لا يوجد ملف مرفق'),
+                    ->tooltip(fn ($record) => $record->excel_file_path ? 'انقر لتحميل ملف الإكسل المرفق' : 'لا يوجد ملف مرفق')
+                    ->toggleable(),
 
                 TextColumn::make('deleted_at')
                     ->label('محذوف في')
@@ -364,6 +373,10 @@ class CargoStatusRecordResource extends Resource
 
                 TrashedFilter::make(),
             ])
+            ->filtersFormColumns(2)
+            ->filtersFormWidth(Width::TwoExtraLarge)
+            ->columnToggleFormColumns(2)
+            ->columnToggleFormWidth(Width::TwoExtraLarge)
             ->recordActions([
                 ActionGroup::make([
                     ViewAction::make()->color('info'),

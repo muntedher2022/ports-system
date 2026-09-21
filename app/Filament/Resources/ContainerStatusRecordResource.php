@@ -31,6 +31,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -284,7 +285,8 @@ class ContainerStatusRecordResource extends Resource
                     ->sortable()
                     ->searchable(isIndividual: true)
                     ->badge()
-                    ->color('info'),
+                    ->color('info')
+                    ->toggleable(),
 
                 TextColumn::make('container_type')
                     ->label('نوع الحاوية')
@@ -310,7 +312,8 @@ class ContainerStatusRecordResource extends Resource
                             return $query->where('container_type', 'abandoned');
                         }
                         return $query->where('container_type', $search);
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('fiscalYear.year')
                     ->label('السنة المالية')
@@ -319,7 +322,8 @@ class ContainerStatusRecordResource extends Resource
                         $search = trim($search);
                         if (empty($search)) return $query;
                         return $query->whereHas('fiscalYear', fn ($q) => $q->where('year', $search)->orWhere('id', $search));
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('month.month_number')
                     ->label('الشهر')
@@ -333,24 +337,28 @@ class ContainerStatusRecordResource extends Resource
                               ->orWhere('id', $search)
                               ->orWhere('name_ar', 'like', "%{$search}%");
                         });
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('report_date')
                     ->label('تاريخ التقرير')
                     ->date('d/m/Y')
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('details_count')
                     ->label('عدد القيود')
                     ->counts('details')
                     ->badge()
-                    ->color('gray'),
+                    ->color('gray')
+                    ->toggleable(),
 
                 TextColumn::make('total_count')
                     ->label('إجمالي الحاويات')
                     ->getStateUsing(fn($record) => number_format($record->total_count))
                     ->badge()
-                    ->color('success'),
+                    ->color('success')
+                    ->toggleable(),
 
                 TextColumn::make('excel_file_name')
                     ->label('ملف Excel المرفق')
@@ -359,7 +367,8 @@ class ContainerStatusRecordResource extends Resource
                     ->badge()
                     ->color(fn ($record) => $record->excel_file_path ? 'success' : 'gray')
                     ->url(fn ($record) => $record->excel_file_path ? asset('storage/' . $record->excel_file_path) : null, shouldOpenInNewTab: true)
-                    ->tooltip(fn ($record) => $record->excel_file_path ? 'انقر لتحميل ملف الإكسل المرفق' : 'لا يوجد ملف مرفق'),
+                    ->tooltip(fn ($record) => $record->excel_file_path ? 'انقر لتحميل ملف الإكسل المرفق' : 'لا يوجد ملف مرفق')
+                    ->toggleable(),
 
                 TextColumn::make('deleted_at')
                     ->label('محذوف في')
@@ -390,6 +399,10 @@ class ContainerStatusRecordResource extends Resource
 
                 TrashedFilter::make(),
             ])
+            ->filtersFormColumns(2)
+            ->filtersFormWidth(Width::TwoExtraLarge)
+            ->columnToggleFormColumns(2)
+            ->columnToggleFormWidth(Width::TwoExtraLarge)
             ->recordActions([
                 ActionGroup::make([
                     ViewAction::make()->color('info'),

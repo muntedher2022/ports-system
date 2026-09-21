@@ -35,6 +35,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -522,12 +523,14 @@ class MonthlyPortRecordResource extends Resource
                         isIndividual: true,
                         isGlobal: true
                     )
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->toggleable(),
 
                 TextColumn::make('fiscalYear.year')
                     ->label('السنة')
                     ->sortable()
-                    ->searchable(isIndividual: true),
+                    ->searchable(isIndividual: true)
+                    ->toggleable(),
 
                 TextColumn::make('month_id')
                     ->label('الشهر')
@@ -535,7 +538,8 @@ class MonthlyPortRecordResource extends Resource
                     ->searchable(isIndividual: true)
                     ->alignCenter()
                     ->badge()
-                    ->color('info'),
+                    ->color('info')
+                    ->toggleable(),
 
                 TextColumn::make('total_ships')
                     ->label('إجمالي البواخر')
@@ -543,7 +547,8 @@ class MonthlyPortRecordResource extends Resource
                     ->numeric()
                     ->badge()
                     ->color('primary')
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->toggleable(),
 
                 TextColumn::make('total_teu')
                     ->label('إجمالي TEU')
@@ -551,20 +556,23 @@ class MonthlyPortRecordResource extends Resource
                     ->numeric()
                     ->badge()
                     ->color('info')
-                    ->alignCenter(),
+                    ->alignCenter()
+                    ->toggleable(),
 
                 TextColumn::make('total_tonnage')
                     ->label('الطاقة بالطن')
                     ->state(fn(MonthlyPortRecord $record) => number_format($record->total_tonnage, 0))
                     ->alignEnd()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->toggleable(),
 
                 TextColumn::make('total_revenue')
                     ->label('الإيراد (د.ع)')
                     ->numeric(decimalPlaces: 0)
                     ->sortable()
                     ->searchable(isIndividual: true)
-                    ->alignEnd(),
+                    ->alignEnd()
+                    ->toggleable(),
 
                 TextColumn::make('status')
                     ->label('الحالة')
@@ -582,7 +590,8 @@ class MonthlyPortRecordResource extends Resource
                         'submitted' => 'warning',
                         'locked' => 'danger',
                         default => 'gray',
-                    }),
+                    })
+                    ->toggleable(),
             ])
             ->filters([
                 SelectFilter::make('port_id')
@@ -609,6 +618,10 @@ class MonthlyPortRecordResource extends Resource
                 TrashedFilter::make()
                     ->label('سلة المحذوفات / السجلات المحذوفة مؤقتاً'),
             ])
+            ->filtersFormColumns(2)
+            ->filtersFormWidth(Width::TwoExtraLarge)
+            ->columnToggleFormColumns(2)
+            ->columnToggleFormWidth(Width::TwoExtraLarge)
             ->actions([
                 ActionGroup::make([
                     ViewAction::make()->label('عرض'),

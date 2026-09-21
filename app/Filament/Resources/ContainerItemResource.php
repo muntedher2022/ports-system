@@ -29,6 +29,7 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\IconColumn;
@@ -249,18 +250,21 @@ class ContainerItemResource extends Resource
                     ->searchable(isIndividual: true)
                     ->copyable()
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->toggleable(),
 
                 TextColumn::make('port.name_ar')
                     ->label('الميناء')
                     ->searchable(isIndividual: true)
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('entity.name_ar')
                     ->label('الجهة / العائدية')
                     ->searchable(isIndividual: true)
                     ->sortable()
-                    ->wrap(),
+                    ->wrap()
+                    ->toggleable(),
 
                 TextColumn::make('container_type')
                     ->label('النوع')
@@ -277,12 +281,14 @@ class ContainerItemResource extends Resource
                             return $query->where('container_type', 'abandoned');
                         }
                         return $query->where('container_type', 'like', "%{$search}%");
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('size')
                     ->label('الحجم')
                     ->searchable(isIndividual: true)
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('ship_name')
                     ->label('اسم الباخرة')
@@ -293,18 +299,21 @@ class ContainerItemResource extends Resource
                     ->label('نوع البضاعة')
                     ->searchable(isIndividual: true)
                     ->wrap()
-                    ->limit(40),
+                    ->limit(40)
+                    ->toggleable(),
 
                 TextColumn::make('arrival_date')
                     ->label('تاريخ الوصول الفعلي')
                     ->date('Y-m-d')
                     ->sortable()
-                    ->searchable(isIndividual: true),
+                    ->searchable(isIndividual: true)
+                    ->toggleable(),
 
                 TextColumn::make('arrival_year')
                     ->label('سنة الوصول')
                     ->searchable(isIndividual: true)
-                    ->sortable(),
+                    ->sortable()
+                    ->toggleable(),
 
                 TextColumn::make('berth')
                     ->label('الرصيف')
@@ -334,7 +343,8 @@ class ContainerItemResource extends Resource
                         }
 
                         return $query->where('status', 'like', "%{$search}%");
-                    }),
+                    })
+                    ->toggleable(),
 
                 TextColumn::make('notes')
                     ->label('ملاحظات')
@@ -415,6 +425,10 @@ class ContainerItemResource extends Resource
 
                 TrashedFilter::make(),
             ])
+            ->filtersFormColumns(2)
+            ->filtersFormWidth(Width::TwoExtraLarge)
+            ->columnToggleFormColumns(2)
+            ->columnToggleFormWidth(Width::TwoExtraLarge)
             ->recordActions([
                 ActionGroup::make([
                     ViewAction::make()->label('عرض'),

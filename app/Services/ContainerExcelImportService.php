@@ -136,13 +136,32 @@ class ContainerExcelImportService
         $clean = strtoupper(trim(preg_replace('/[^A-Za-z0-9]/', '', $containerNo)));
         $len = strlen($clean);
 
-        // ─── الحالة 1: نقص الحرف الرابع (3 أحرف + 7 أرقام = 10 رموز) مثل WHL5355998 أو TRI9820209 ───
+        // ─── الحالة 1: 10 رموز (4 أحرف + 6 أرقام تسلسلية) -> نقص رقم التحقق الأخير فقط ───
+        if ($len === 10 && preg_match('/^([A-Z]{4})([0-9]{6})$/', $clean, $matches)) {
+            $prefix4 = $matches[1];
+            $serial6 = $matches[2];
+            $calcCd = static::calculateCheckDigit($prefix4 . $serial6);
+            $inferred = $prefix4 . $serial6 . $calcCd;
+            $owner = static::$knownOwners[substr($prefix4, 0, 3)] ?? null;
+            $ownerStr = $owner ? " ({$owner})" : "";
+
+            return [
+                'is_valid'        => false,
+                'code'            => 'MISSING_CHECK_DIGIT',
+                'reason'          => "نقص رقم التحقق الأخير: المقترح {$inferred}{$ownerStr}",
+                'inferred_number' => $inferred,
+                'owner_name'      => $owner,
+                'expected'        => $calcCd,
+                'actual'          => $containerNo,
+            ];
+        }
+
+        // ─── الحالة 2: 10 رموز (3 أحرف + 7 أرقام) -> نقص الحرف الرابع ───
         if ($len === 10 && preg_match('/^([A-Z]{3})([0-9]{6})([0-9])$/', $clean, $matches)) {
             $prefix3 = $matches[1];
             $serial6 = $matches[2];
-            $targetDigit = (int)$matches[3];
+            $targetDigit = (int) $matches[3];
 
-            // فحص فئات المعدة القياسية (U: حاوية قياسية، J: معدة ملحقة، Z: مقطورة/شاسي) ثم باقي الحروف
             $candidateChars = ['U', 'J', 'Z'];
             $inferredChar = null;
             foreach ($candidateChars as $char) {
@@ -163,11 +182,11 @@ class ContainerExcelImportService
             if ($inferredChar) {
                 $inferredNum = $prefix3 . $inferredChar . $serial6 . $targetDigit;
                 $ownerName = static::$knownOwners[$prefix3] ?? null;
-                $ownerLabel = $ownerName ? " ({$ownerName})" : "";
+                $ownerStr = $ownerName ? " ({$ownerName})" : "";
                 return [
                     'is_valid'        => false,
                     'code'            => 'MISSING_4TH_CHAR',
-                    'reason'          => "نقص الحرف الرابع: المقترح {$inferredNum}{$ownerLabel}",
+                    'reason'          => "نقص الحرف الرابع: المقترح {$inferredNum}{$ownerStr}",
                     'inferred_number' => $inferredNum,
                     'owner_name'      => $ownerName,
                     'expected'        => $targetDigit,
@@ -176,19 +195,19 @@ class ContainerExcelImportService
             }
         }
 
-        // ─── الحالة 2: نقص الحرف الرابع ورقم التحقق (3 أحرف + 6 أرقام = 9 رموز) مثل WHL535599 ───
+        // ─── الحالة 3: 9 رموز (3 أحرف + 6 أرقام) -> نقص الحرف الرابع ورقم التحقق ───
         if ($len === 9 && preg_match('/^([A-Z]{3})([0-9]{6})$/', $clean, $matches)) {
             $prefix3 = $matches[1];
             $serial6 = $matches[2];
             $cd = static::calculateCheckDigit($prefix3 . 'U' . $serial6);
             $inferredNum = $prefix3 . 'U' . $serial6 . $cd;
             $ownerName = static::$knownOwners[$prefix3] ?? null;
-            $ownerLabel = $ownerName ? " ({$ownerName})" : "";
+            $ownerStr = $ownerName ? " ({$ownerName})" : "";
 
             return [
                 'is_valid'        => false,
                 'code'            => 'MISSING_4TH_CHAR',
-                'reason'          => "نقص الحرف الرابع ورقم التحقق: المقترح {$inferredNum}{$ownerLabel}",
+                'reason'          => "نقص الحرف الرابع ورقم التحقق: المقترح {$inferredNum}{$ownerStr}",
                 'inferred_number' => $inferredNum,
                 'owner_name'      => $ownerName,
                 'expected'        => $cd,
@@ -196,7 +215,7 @@ class ContainerExcelImportService
             ];
         }
 
-        // ─── الحالة 3: الطول العام غير مطابق لـ 11 رمزاً ───
+        // ─── الحالة 4: الطول غير مطابق ───
         if ($len !== 11) {
             return [
                 'is_valid'        => false,
@@ -209,7 +228,7 @@ class ContainerExcelImportService
             ];
         }
 
-        // ─── الحالة 4: التنسيق العام غير مطابق لـ 4 أحرف + 7 أرقام ───
+        // ─── الحالة 5: التنسيق غير مطابق ───
         if (!preg_match('/^[A-Z]{4}[0-9]{7}$/', $clean)) {
             return [
                 'is_valid'        => false,
@@ -222,56 +241,74 @@ class ContainerExcelImportService
             ];
         }
 
-        // ─── الحالة 5: تدقيق رقم التحقق (11 رمزاً) واستنباط الأخطاء الطباعية بالاعتماد على وكالات الشحن ───
-        $prefix4 = substr($clean, 0, 4);
+        // ─── الحالة 6: فحص رقم التحقق والأحرف للحاوية المكونة من 11 رمزاً ───
+        $p3 = substr($clean, 0, 3);
+        $cat4 = substr($clean, 3, 1);
         $serial6 = substr($clean, 4, 6);
         $actualCheckDigit = (int) $clean[10];
-        $calcCheckDigit = static::calculateCheckDigit($prefix4 . $serial6);
 
+        $standardCat = in_array($cat4, ['U', 'J', 'Z']) ? $cat4 : 'U';
+        $normalizedPrefix4 = $p3 . $standardCat;
+        $calcCheckDigit = static::calculateCheckDigit($normalizedPrefix4 . $serial6);
+
+        // إذا كان الحرف الرابع غير معياري (مثلاً M في INAM)
+        if (!in_array($cat4, ['U', 'J', 'Z'])) {
+            $inferredNum = $p3 . 'U' . $serial6 . $calcCheckDigit;
+            $ownerName = static::$knownOwners[$p3] ?? null;
+            $ownerStr = $ownerName ? " ({$ownerName})" : "";
+
+            return [
+                'is_valid'        => false,
+                'code'            => 'INVALID_CATEGORY_CHAR',
+                'reason'          => "الحرف الرابع غير معياري (المدون: {$cat4}) - المقترح: {$inferredNum}{$ownerStr}",
+                'inferred_number' => $inferredNum,
+                'owner_name'      => $ownerName,
+                'expected'        => $calcCheckDigit,
+                'actual'          => $actualCheckDigit,
+            ];
+        }
+
+        // تدقيق رقم التحقق
         if ($calcCheckDigit !== $actualCheckDigit) {
-            // محاولة ذكية لاستنباط خطأ طباعي في أحد الحروف الأربعة بالاعتماد على دليل الوكالات الشاحنة ورقم التحقق
-            $bestInferred = null;
-            $bestOwner = null;
+            $ownerName = static::$knownOwners[$p3] ?? null;
 
-            for ($pos = 0; $pos < 4; $pos++) {
-                $tryPositions = ($pos === 0) ? 2 : (($pos === 1) ? 3 : (($pos === 2) ? 1 : 0));
-                $origChar = $prefix4[$tryPositions];
-
-                foreach (range('A', 'Z') as $subChar) {
-                    if ($subChar === $origChar) continue;
-                    $testPrefix = $prefix4;
-                    $testPrefix[$tryPositions] = $subChar;
-
-                    if (static::calculateCheckDigit($testPrefix . $serial6) === $actualCheckDigit) {
-                        $p3 = substr($testPrefix, 0, 3);
-                        if (isset(static::$knownOwners[$p3])) {
-                            $bestInferred = $testPrefix . $serial6 . $actualCheckDigit;
-                            $bestOwner = static::$knownOwners[$p3];
-                            break 2;
+            // إذا كانت البادئة غير مسجلة في دليل المالكين، نبحث عن أقرب بادئة مسجلة تطابق رقم التحقق
+            if (!$ownerName) {
+                for ($pos = 0; $pos < 3; $pos++) {
+                    $origCh = $p3[$pos];
+                    foreach (range('A', 'Z') as $subCh) {
+                        if ($subCh === $origCh) continue;
+                        $testP3 = $p3;
+                        $testP3[$pos] = $subCh;
+                        if (isset(static::$knownOwners[$testP3])) {
+                            if (static::calculateCheckDigit($testP3 . 'U' . $serial6) === $actualCheckDigit) {
+                                $bestInferred = $testP3 . 'U' . $serial6 . $actualCheckDigit;
+                                $bestOwner = static::$knownOwners[$testP3];
+                                return [
+                                    'is_valid'        => false,
+                                    'code'            => 'CHECKSUM_MISMATCH',
+                                    'reason'          => "رقم التحقق الأخير (المتوقع: {$calcCheckDigit}، المدون: {$actualCheckDigit}) - المقترح: {$bestInferred} ({$bestOwner})",
+                                    'inferred_number' => $bestInferred,
+                                    'owner_name'      => $bestOwner,
+                                    'expected'        => $calcCheckDigit,
+                                    'actual'          => $actualCheckDigit,
+                                ];
+                            }
                         }
                     }
                 }
             }
 
-            if ($bestInferred) {
-                $reasonText = "رقم التحقق الأخير (المتوقع: {$calcCheckDigit}، المدون: {$actualCheckDigit}) - المقترح: {$bestInferred} ({$bestOwner})";
-                return [
-                    'is_valid'        => false,
-                    'code'            => 'CHECKSUM_MISMATCH',
-                    'reason'          => $reasonText,
-                    'inferred_number' => $bestInferred,
-                    'owner_name'      => $bestOwner,
-                    'expected'        => $calcCheckDigit,
-                    'actual'          => $actualCheckDigit,
-                ];
-            }
+            // إذا كان المالك مسجلاً أو لم نجد بديلاً، فالرقم الصحيح هو نفس البادئة مع رقم التحقق المحسوب
+            $correctNumber = $p3 . $standardCat . $serial6 . $calcCheckDigit;
+            $ownerStr = $ownerName ? " ({$ownerName})" : "";
 
             return [
                 'is_valid'        => false,
                 'code'            => 'CHECKSUM_MISMATCH',
-                'reason'          => "رقم التحقق الأخير (المتوقع: {$calcCheckDigit}، المدون: {$actualCheckDigit})",
-                'inferred_number' => $prefix4 . $serial6 . $calcCheckDigit,
-                'owner_name'      => static::$knownOwners[substr($prefix4, 0, 3)] ?? null,
+                'reason'          => "رقم التحقق الأخير (المتوقع: {$calcCheckDigit}، المدون: {$actualCheckDigit}) - المقترح: {$correctNumber}{$ownerStr}",
+                'inferred_number' => $correctNumber,
+                'owner_name'      => $ownerName,
                 'expected'        => $calcCheckDigit,
                 'actual'          => $actualCheckDigit,
             ];
@@ -282,7 +319,7 @@ class ContainerExcelImportService
             'code'            => 'VALID',
             'reason'          => null,
             'inferred_number' => $clean,
-            'owner_name'      => static::$knownOwners[substr($prefix4, 0, 3)] ?? null,
+            'owner_name'      => static::$knownOwners[$p3] ?? null,
             'expected'        => $calcCheckDigit,
             'actual'          => $actualCheckDigit,
         ];
@@ -932,7 +969,7 @@ class ContainerExcelImportService
 
                     $stats['all_processed_rows'][] = [
                         'container_number' => $cNo,
-                        'suggested_number' => (!empty($isoCheck['inferred_number']) && $isoCheck['inferred_number'] !== $cNo) ? $isoCheck['inferred_number'] : '',
+                        'suggested_number' => (!$isoCheck['is_valid'] && !empty($isoCheck['inferred_number'])) ? $isoCheck['inferred_number'] : '',
                         'iso_status'       => $isoCheck['is_valid'] ? 'مطابق' : ('غير مطابق (' . $isoCheck['code'] . ')'),
                         'port_name'        => $portName,
                         'prev_port_name'   => $prevPortNameForThis,
