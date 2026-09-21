@@ -14,7 +14,7 @@ use Illuminate\Support\Facades\Auth;
 class LatestPortRecordsWidget extends BaseWidget
 {
     protected static ?string $heading = '📋 أحدث السجلات التشغيلية للموانئ';
-    protected static ?int $sort = 6;
+    protected static ?int $sort = 12;
     protected int|string|array $columnSpan = 'full';
 
     public function table(Table $table): Table

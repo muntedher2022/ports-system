@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\Auth;
 class ContainerStatsOverviewWidget extends Widget
 {
     protected static ?string $heading = '📦 إحصائيات ومؤشرات الحاويات المتخلفة والخطرة';
-    protected static ?int $sort = 10;
+    protected static ?int $sort = 5;
     protected int | string | array $columnSpan = 'full';
     protected string $view = 'filament.widgets.container-stats-overview-widget';
 

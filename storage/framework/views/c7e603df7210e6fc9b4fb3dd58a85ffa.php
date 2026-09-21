@@ -76,4 +76,4 @@ unset($__defined_vars, $__key, $__value); ?>
         </p>
     <?php endif; ?><?php if(\Livewire\Mechanisms\ExtendBlade\ExtendBlade::isRenderingLivewireComponent()): ?><!--[if ENDBLOCK]><![endif]--><?php endif; ?>
 </header>
-<?php /**PATH D:\Projects\ports-system\vendor\filament\filament\resources\views/components/header/simple.blade.php ENDPATH**/ ?>
+<?php /**PATH D:\Projects\ports-system\vendor\filament\filament\resources\views\components\header\simple.blade.php ENDPATH**/ ?>

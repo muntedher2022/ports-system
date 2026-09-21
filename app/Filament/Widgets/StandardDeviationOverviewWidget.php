@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Auth;
 class StandardDeviationOverviewWidget extends Widget
 {
     protected static ?string $heading = '📈 تحليل التباين والانحراف المعياري للإنتاجية';
-    protected static ?int $sort = 5;
+    protected static ?int $sort = 11;
     protected int | string | array $columnSpan = 'full';
     protected string $view = 'filament.widgets.standard-deviation-overview-widget';
 

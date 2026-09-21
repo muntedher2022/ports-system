@@ -12,8 +12,8 @@ class ContainerStatusChart extends ApexChartWidget
 {
     protected static ?string $chartId = 'containerStatusChart';
     protected static ?string $heading = '📦 موقف الحاويات المتخلفة والخطرة حسب الموانئ';
-    protected static ?int $sort = 11;
-    protected int | string | array $columnSpan = 'full';
+    protected static ?int $sort = 7;
+    protected int | string | array $columnSpan = 1;
 
     public static function canView(): bool
     {

@@ -22,4 +22,4 @@
 <?php $component = $__componentOriginalf45da69382bf4ac45a50b496dc82aa9a; ?>
 <?php unset($__componentOriginalf45da69382bf4ac45a50b496dc82aa9a); ?>
 <?php endif; ?>
-<?php /**PATH D:\Projects\ports-system\vendor\filament\filament\resources\views/pages/simple.blade.php ENDPATH**/ ?>
+<?php /**PATH D:\Projects\ports-system\vendor\filament\filament\resources\views\pages\simple.blade.php ENDPATH**/ ?>

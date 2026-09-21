@@ -89,7 +89,7 @@ $__keyOuter = $__key ?? null;
 $__key = null;
 $__componentSlots = [];
 
-$__key ??= \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::generateKey('lw-3888964659-0', $__key);
+$__key ??= \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::generateKey('lw-2430092983-0', $__key);
 
 $__html = app('livewire')->mount($__name, $__params, $__key, $__componentSlots);
 
@@ -118,7 +118,7 @@ $__keyOuter = $__key ?? null;
 $__key = null;
 $__componentSlots = [];
 
-$__key ??= \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::generateKey('lw-3888964659-1', $__key);
+$__key ??= \Livewire\Features\SupportCompiledWireKeys\SupportCompiledWireKeys::generateKey('lw-2430092983-1', $__key);
 
 $__html = app('livewire')->mount($__name, $__params, $__key, $__componentSlots);
 
@@ -167,4 +167,4 @@ unset($__split);
 <?php $component = $__componentOriginale960ae7ad1b1ce9e3596e483505fadc9; ?>
 <?php unset($__componentOriginale960ae7ad1b1ce9e3596e483505fadc9); ?>
 <?php endif; ?>
-<?php /**PATH D:\Projects\ports-system\vendor\filament\filament\resources\views/components/layout/simple.blade.php ENDPATH**/ ?>
+<?php /**PATH D:\Projects\ports-system\vendor\filament\filament\resources\views\components\layout\simple.blade.php ENDPATH**/ ?>

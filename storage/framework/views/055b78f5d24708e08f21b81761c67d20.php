@@ -102,4 +102,4 @@ unset($__defined_vars, $__key, $__value); ?>
     <?php echo e(\Filament\Support\Facades\FilamentView::renderHook(\Filament\View\PanelsRenderHook::SIMPLE_PAGE_END, scopes: $this->getRenderHookScopes())); ?>
 
 </div>
-<?php /**PATH D:\Projects\ports-system\vendor\filament\filament\resources\views/components/page/simple.blade.php ENDPATH**/ ?>
+<?php /**PATH D:\Projects\ports-system\vendor\filament\filament\resources\views\components\page\simple.blade.php ENDPATH**/ ?>
