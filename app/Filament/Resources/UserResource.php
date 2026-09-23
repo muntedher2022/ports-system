@@ -68,6 +68,14 @@ class UserResource extends Resource
                         ->unique(ignoreRecord: true)
                         ->maxLength(255),
 
+                    TextInput::make('phone')
+                        ->label('رقم الهاتف (واتساب)')
+                        ->tel()
+                        ->nullable()
+                        ->placeholder('07701234567')
+                        ->helperText('يُستخدم لاستلام رمز الدخول والتحقق الثنائي عبر الواتساب')
+                        ->maxLength(20),
+
                     TextInput::make('password')
                         ->label('كلمة المرور')
                         ->password()
@@ -124,6 +132,11 @@ class UserResource extends Resource
                 TextColumn::make('email')
                     ->label('البريد الإلكتروني')
                     ->searchable(isIndividual: true),
+
+                TextColumn::make('phone')
+                    ->label('رقم الهاتف')
+                    ->searchable(isIndividual: true)
+                    ->default('—'),
 
                 TextColumn::make('user_type')
                     ->label('النوع والوظيفة')

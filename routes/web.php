@@ -44,3 +44,13 @@ Route::middleware(['auth'])->prefix('admin/templates')->name('admin.templates.')
         return response()->download(public_path('templates/revenue_records_template.xlsx'), 'قالب_بيانات_الإيراد.xlsx');
     })->name('revenue-records');
 });
+
+
+// مسارات تفعيل التراخيص والتحقق والـ OTP
+Route::match(['get', 'post'], '/api/license/status', [\App\Licensing\LicenseController::class, 'status']);
+Route::match(['get', 'post'], '/api/license/activate', [\App\Licensing\LicenseController::class, 'activate']);
+Route::match(['get', 'post'], '/api/license/request-otp-phone', [\App\Licensing\LicenseController::class, 'requestPhoneOtp']);
+Route::match(['get', 'post'], '/api/license/verify-otp-phone', [\App\Licensing\LicenseController::class, 'verifyPhoneOtp']);
+Route::match(['get', 'post'], '/api/license/reset', [\App\Licensing\LicenseController::class, 'reset']);
+Route::match(['get', 'post'], '/api/license/deactivate', [\App\Licensing\LicenseController::class, 'reset']);
+Route::match(['get', 'post'], '/license/reset', [\App\Licensing\LicenseController::class, 'reset']);

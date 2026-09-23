@@ -31,7 +31,7 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login()
+            ->login(\App\Filament\Pages\Auth\Login::class)
             // الألوان: أزرق داكن للشعور المؤسسي
             ->colors([
                 'primary'  => Color::Blue,
@@ -121,6 +121,7 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                \App\Http\Middleware\VerifyAdminOtp::class,
             ]);
     }
 }

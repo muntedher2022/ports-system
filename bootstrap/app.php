@@ -11,6 +11,8 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->append(\App\Licensing\VerifyLicenseMiddleware::class);
+        $middleware->validateCsrfTokens(except: ['api/license/*']);
         //
     })
     ->withExceptions(function (Exceptions $exceptions) {
