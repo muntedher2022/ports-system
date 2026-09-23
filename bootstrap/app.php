@@ -11,6 +11,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->redirectTo(
+            guests: '/admin/login',
+            users: '/admin'
+        );
         $middleware->append(\App\Licensing\VerifyLicenseMiddleware::class);
         $middleware->validateCsrfTokens(except: ['api/license/*']);
         //

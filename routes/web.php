@@ -9,6 +9,7 @@ use Maatwebsite\Excel\Facades\Excel;
 Route::get('/', function () {
     return redirect('/admin');
 });
+Route::get('/login', fn () => redirect()->to('/admin/login'))->name('login');
 
 Route::middleware(['auth'])->prefix('admin/reports')->name('admin.reports.')->group(function () {
     Route::get('total-revenue-matrix/pdf', [ReportPdfController::class, 'exportTotalRevenueMatrix'])->name('total-revenue-matrix.pdf');
