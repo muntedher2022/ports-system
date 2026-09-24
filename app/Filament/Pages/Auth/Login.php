@@ -60,4 +60,28 @@ class Login extends BaseLogin
             'password' => $data['password'],
         ];
     }
+
+    /**
+     * مسح أي جلسة تحقق سابقة عند تسجيل الدخول وتوليد وإرسال رمز التحقق فوراً للقنوات المعتمدة
+     */
+    public function authenticate(): ?\Filament\Auth\Http\Responses\Contracts\LoginResponse
+    {
+        session()->forget([
+            'admin_otp',
+            'admin_otp_expires',
+            'admin_otp_verified',
+            'totp_verified',
+            'admin_otp_channel',
+            'admin_otp_dispatched_at',
+            'url.intended',
+        ]);
+
+        $response = parent::authenticate();
+
+        if (auth()->check()) {
+            \App\Services\AdminOtpService::generateAndSend(auth()->user(), request()->ip(), force: true);
+        }
+
+        return $response;
+    }
 }

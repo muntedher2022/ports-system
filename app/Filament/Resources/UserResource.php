@@ -21,6 +21,7 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -115,6 +116,15 @@ class UserResource extends Resource
                         ->searchable()
                         ->helperText('مطلوب لمدخلي بيانات الموانئ فقط')
                         ->visible(fn($get) => $get('user_type') === 'port_data_entry'),
+                ]),
+
+            Section::make('أمان الحساب والمصادقة الثنائية')
+                ->description('التحكم في إلزام المصادقة الثنائية عبر تطبيق الهاتف')
+                ->schema([
+                    Toggle::make('is_totp_required')
+                        ->label('إلزام المصادقة بتطبيق الهاتف (TOTP)')
+                        ->helperText('عند التفعيل، سيُطالب هذا المستخدم بربط تطبيق Google أو Microsoft Authenticator وإدخال الرمز عند كل تسجيل دخول.')
+                        ->default(false),
                 ]),
         ]);
     }

@@ -22,7 +22,7 @@ class UserOtpMail extends Mailable
         $this->ipAddress = $ipAddress ?: (request()->ip() ?: '127.0.0.1');
         $this->time = now()->format('Y-m-d H:i:s');
         $this->userName = $userName ?: 'المسؤول';
-        $this->projectName = $projectName ?: config('app.name', 'نظام إدارة الموانئ البحرية والطاقة');
+        $this->projectName = $projectName ?: config('app.name', 'نظام تقييم وتطوير الموظفين');
     }
 
     public function build()
