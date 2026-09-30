@@ -7,7 +7,7 @@ use App\Models\Month;
 use App\Models\Port;
 use App\Models\RevenueCenter;
 use App\Models\RevenueRecord;
-use TCPDF;
+use App\Services\Pdf\ChromiumPdfDocument;
 
 class PdfReportService
 {
@@ -21,29 +21,16 @@ class PdfReportService
     }
 
     /**
-     * إنشاء كائن TCPDF مهيأ للغة العربية والتقارير الرسمية
+     * إنشاء كائن PDF مهيأ للغة العربية والتقارير الرسمية عبر Chromium/Spatie
      */
-    protected function createPdf(string $title, string $orientation = 'L'): TCPDF
+    protected function createPdf(string $title, string $orientation = 'L'): ChromiumPdfDocument
     {
-        $pdf = new TCPDF($orientation, 'mm', 'A4', true, 'UTF-8', false);
-
+        $pdf = new ChromiumPdfDocument($title, $orientation);
         $pdf->SetCreator('نظام إدارة الطاقة الإنتاجية والإيراد - GCPI');
         $pdf->SetAuthor('الشركة العامة لموانئ العراق');
         $pdf->SetTitle($title);
         $pdf->SetSubject($title);
-
         $pdf->setRTL(true);
-        $pdf->SetFont('aealarabiya', '', 11);
-
-        // إعدادات الهوامش
-        $pdf->SetMargins(10, 8, 10);
-        $pdf->SetHeaderMargin(4);
-        $pdf->SetFooterMargin(6);
-        $pdf->SetAutoPageBreak(true, 8);
-        $pdf->setImageScale(PDF_IMAGE_SCALE_RATIO);
-
-        $pdf->setPrintHeader(false);
-        $pdf->setPrintFooter(true);
 
         return $pdf;
     }
@@ -222,11 +209,16 @@ HTML;
                 $monthNet += $net;
                 $centerTotals[$center->id] += $gross;
 
-                // تلوين الرقم حسب الاتجاه (أخضر صاعد / أحمر نازل)
+                // تلوين الرقم حسب الاتجاه (أخضر صاعد / أحمر نازل) مع سهم المؤشر
                 $prevGross = $prevCenterVals[$center->id] ?? null;
                 if ($gross > 0 && $prevGross !== null && $prevGross > 0) {
-                    $numColor = $gross > $prevGross ? '#15803d' : '#dc2626';
-                    $grossStr = '<span style="color:' . $numColor . '; font-weight:bold;">' . number_format($gross, 0) . '</span>';
+                    if ($gross > $prevGross) {
+                        $grossStr = '<span style="color:#15803d; font-weight:bold;">' . number_format($gross, 0) . ' <span style="font-size:6.5pt;">&#9650;</span></span>';
+                    } elseif ($gross < $prevGross) {
+                        $grossStr = '<span style="color:#dc2626; font-weight:bold;">' . number_format($gross, 0) . ' <span style="font-size:6.5pt;">&#9660;</span></span>';
+                    } else {
+                        $grossStr = number_format($gross, 0);
+                    }
                 } elseif ($gross > 0) {
                     $grossStr = number_format($gross, 0);
                 } else {
@@ -246,19 +238,29 @@ HTML;
             $grandGrossTotal += $monthGross;
             $grandNetTotal += $monthNet;
 
-            // تلوين الإيراد الكلي الشهري
+            // تلوين الإيراد الكلي الشهري مع سهم الاتجاه
             if ($monthGross > 0 && $prevMonthGross !== null && $prevMonthGross > 0) {
-                $grossColor = $monthGross > $prevMonthGross ? '#15803d' : '#dc2626';
-                $mGrossStr = '<span style="color:' . $grossColor . '; font-weight:bold;">' . number_format($monthGross, 0) . '</span>';
+                if ($monthGross > $prevMonthGross) {
+                    $mGrossStr = '<span style="color:#15803d; font-weight:bold;">' . number_format($monthGross, 0) . ' <span style="font-size:7pt;">&#9650;</span></span>';
+                } elseif ($monthGross < $prevMonthGross) {
+                    $mGrossStr = '<span style="color:#dc2626; font-weight:bold;">' . number_format($monthGross, 0) . ' <span style="font-size:7pt;">&#9660;</span></span>';
+                } else {
+                    $mGrossStr = '<span style="font-weight:bold;">' . number_format($monthGross, 0) . '</span>';
+                }
             } else {
                 $mGrossStr = $monthGross > 0 ? number_format($monthGross, 0) : '-';
             }
             if ($monthGross > 0) { $prevMonthGross = $monthGross; }
 
-            // تلوين الإيراد الصافي الشهري
+            // تلوين الإيراد الصافي الشهري مع سهم الاتجاه
             if ($monthNet > 0 && $prevMonthNet !== null && $prevMonthNet > 0) {
-                $netColor = $monthNet > $prevMonthNet ? '#15803d' : '#dc2626';
-                $mNetStr = '<span style="color:' . $netColor . '; font-weight:bold;">' . number_format($monthNet, 0) . '</span>';
+                if ($monthNet > $prevMonthNet) {
+                    $mNetStr = '<span style="color:#15803d; font-weight:bold;">' . number_format($monthNet, 0) . ' <span style="font-size:7pt;">&#9650;</span></span>';
+                } elseif ($monthNet < $prevMonthNet) {
+                    $mNetStr = '<span style="color:#dc2626; font-weight:bold;">' . number_format($monthNet, 0) . ' <span style="font-size:7pt;">&#9660;</span></span>';
+                } else {
+                    $mNetStr = '<span style="font-weight:bold;">' . number_format($monthNet, 0) . '</span>';
+                }
             } else {
                 $mNetStr = $monthNet > 0 ? number_format($monthNet, 0) : '-';
             }
@@ -386,7 +388,7 @@ HTML;
         return $pdf->Output('تقرير_إجمالي_الطاقة_الإنتاجية_الشامل.pdf', 'S');
     }
 
-    protected function addAllPortsCumulativePage(TCPDF $pdf, FiscalYear $fiscalYear, Month $month): void
+    protected function addAllPortsCumulativePage(ChromiumPdfDocument $pdf, FiscalYear $fiscalYear, Month $month): void
     {
         $pdf->AddPage();
         $summary = $this->portService->getCumulativeSummary($fiscalYear->id, $month->month_number, null);
@@ -478,7 +480,7 @@ HTML;
         $pdf->writeHTML($headerHtml . $companyBanner . $kpiCards . $tableHtml, true, false, true, false, '');
     }
 
-    protected function addSinglePortCumulativePage(TCPDF $pdf, FiscalYear $fiscalYear, Month $month, Port $port): void
+    protected function addSinglePortCumulativePage(ChromiumPdfDocument $pdf, FiscalYear $fiscalYear, Month $month, Port $port): void
     {
         $summary = $this->portService->getCumulativeSummary($fiscalYear->id, $month->month_number, $port->id);
 
@@ -580,14 +582,15 @@ HTML;
             $bg = ($idx % 2 === 0) ? '#ffffff' : '#f8fafc';
             $diffColor = $row['diff'] >= 0 ? '#065f46' : '#991b1b';
             $diffSign = $row['diff'] > 0 ? '+' : '';
+            $arrow = $row['diff'] > 0 ? ' <span style="font-size:7pt;">&#9650;</span>' : ($row['diff'] < 0 ? ' <span style="font-size:7pt;">&#9660;</span>' : '');
 
             $tableHtml .= "<tr style=\"background-color: {$bg};\">";
             $tableHtml .= "<td style=\"width: {$wCol1}; text-align: right; font-weight: bold;\">{$row['label']}</td>";
             $tableHtml .= "<td style=\"width: {$wCol2};\">" . number_format(round($row['prev_val']), 0) . "</td>";
             $tableHtml .= "<td style=\"width: {$wCol3}; font-weight: bold; color: #1e3a8a;\">" . number_format(round($row['curr_val']), 0) . "</td>";
             $tableHtml .= "<td style=\"width: {$wCol4};\">{$row['unit']}</td>";
-            $tableHtml .= "<td style=\"width: {$wCol5}; font-weight: bold; color: {$diffColor};\">{$diffSign}" . number_format(round($row['diff']), 0) . "</td>";
-            $tableHtml .= "<td style=\"width: {$wCol6}; font-weight: bold; color: {$diffColor};\">{$diffSign}{$row['percent']}%</td>";
+            $tableHtml .= "<td style=\"width: {$wCol5}; font-weight: bold; color: {$diffColor};\">{$diffSign}" . number_format(round($row['diff']), 0) . "{$arrow}</td>";
+            $tableHtml .= "<td style=\"width: {$wCol6}; font-weight: bold; color: {$diffColor};\">{$diffSign}{$row['percent']}%{$arrow}</td>";
             $tableHtml .= "</tr>";
         }
         $tableHtml .= '</tbody></table>';
@@ -640,6 +643,7 @@ HTML;
                 foreach ($pComp['comparison'] as $idx => $r) {
                     $diffColor = $r['diff'] >= 0 ? '#065f46' : '#991b1b';
                     $diffSign = $r['diff'] > 0 ? '+' : '';
+                    $arrow = $r['diff'] > 0 ? ' <span style="font-size:6.5pt;">&#9650;</span>' : ($r['diff'] < 0 ? ' <span style="font-size:6.5pt;">&#9660;</span>' : '');
                     $bg = ($idx % 2 === 0) ? '#ffffff' : '#f8fafc';
 
                     $pageContent .= "<tr style=\"background-color: {$bg};\">";
@@ -647,8 +651,8 @@ HTML;
                     $pageContent .= "<td style=\"width: {$wP2};\">" . number_format(round($r['prev_val']), 0) . "</td>";
                     $pageContent .= "<td style=\"width: {$wP3}; font-weight: bold; color: #1e3a8a;\">" . number_format(round($r['curr_val']), 0) . "</td>";
                     $pageContent .= "<td style=\"width: {$wP4};\">{$r['unit']}</td>";
-                    $pageContent .= "<td style=\"width: {$wP5}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format(round($r['diff']), 0) . "</td>";
-                    $pageContent .= "<td style=\"width: {$wP6}; color: {$diffColor}; font-weight: bold;\">{$diffSign}{$r['percent']}%</td>";
+                    $pageContent .= "<td style=\"width: {$wP5}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format(round($r['diff']), 0) . "{$arrow}</td>";
+                    $pageContent .= "<td style=\"width: {$wP6}; color: {$diffColor}; font-weight: bold;\">{$diffSign}{$r['percent']}%{$arrow}</td>";
                     $pageContent .= "</tr>";
                 }
                 $pageContent .= '</tbody></table>';
@@ -706,11 +710,12 @@ HTML;
             $bg = ($idx % 2 === 0) ? '#ffffff' : '#f8fafc';
             $diffColor = $row['diff'] >= 0 ? '#065f46' : '#991b1b';
             $diffSign = $row['diff'] > 0 ? '+' : '';
+            $arrow = $row['diff'] > 0 ? ' <span style="font-size:7pt;">&#9650;</span>' : ($row['diff'] < 0 ? ' <span style="font-size:7pt;">&#9660;</span>' : '');
 
             $prevStr = $row['prev_val'] > 0 ? number_format($row['prev_val'], 0) : '—';
             $currStr = $row['curr_val'] > 0 ? number_format($row['curr_val'], 0) : '—';
-            $diffStr = $row['diff'] != 0 ? ($diffSign . number_format($row['diff'], 0)) : '—';
-            $pctStr  = ($row['prev_val'] > 0 && $row['curr_val'] > 0) ? ($diffSign . $row['percent'] . '%') : '—';
+            $diffStr = $row['diff'] != 0 ? ($diffSign . number_format($row['diff'], 0) . $arrow) : '—';
+            $pctStr  = ($row['prev_val'] > 0 && $row['curr_val'] > 0) ? ($diffSign . $row['percent'] . '%' . $arrow) : '—';
 
             $tableHtml .= "<tr style=\"background-color: {$bg};\">";
             $tableHtml .= "<td style=\"width: {$wCol1}; text-align: right; font-weight: bold;\">{$row['month_name']}</td>";
@@ -724,12 +729,13 @@ HTML;
         // المجموع السنوي
         $totDiffColor = $companyTable['total_diff'] >= 0 ? '#6ee7b7' : '#fca5a5';
         $totDiffSign = $companyTable['total_diff'] > 0 ? '+' : '';
+        $totArrow = $companyTable['total_diff'] > 0 ? ' &#9650;' : ($companyTable['total_diff'] < 0 ? ' &#9660;' : '');
         $tableHtml .= '<tr style="background-color: #064e3b; color: #ffffff; font-weight: bold; font-size: 11.5pt;">';
         $tableHtml .= "<td style=\"width: {$wCol1}; text-align: right;\">المجموع السنوي</td>";
         $tableHtml .= "<td style=\"width: {$wCol2};\">" . number_format($companyTable['total_prev'], 0) . "</td>";
         $tableHtml .= "<td style=\"width: {$wCol3};\">" . number_format($companyTable['total_curr'], 0) . "</td>";
-        $tableHtml .= "<td style=\"width: {$wCol4}; color: {$totDiffColor};\">{$totDiffSign}" . number_format($companyTable['total_diff'], 0) . "</td>";
-        $tableHtml .= "<td style=\"width: {$wCol5}; color: {$totDiffColor};\">{$totDiffSign}{$companyTable['total_pct']}%</td>";
+        $tableHtml .= "<td style=\"width: {$wCol4}; color: {$totDiffColor};\">{$totDiffSign}" . number_format($companyTable['total_diff'], 0) . "{$totArrow}</td>";
+        $tableHtml .= "<td style=\"width: {$wCol5}; color: {$totDiffColor};\">{$totDiffSign}{$companyTable['total_pct']}%{$totArrow}</td>";
         $tableHtml .= '</tr></tbody></table>';
 
         $pdf->writeHTML($headerHtml . $companyBanner . $tableHtml, true, false, true, false, '');
@@ -770,10 +776,11 @@ HTML;
                 foreach ($cTable['rows'] as $r) {
                     $diffColor = $r['diff'] >= 0 ? '#065f46' : '#991b1b';
                     $diffSign = $r['diff'] > 0 ? '+' : '';
+                    $arrow = $r['diff'] > 0 ? ' <span style="font-size:6.5pt;">&#9650;</span>' : ($r['diff'] < 0 ? ' <span style="font-size:6.5pt;">&#9660;</span>' : '');
                     $pStr = $r['prev_val'] > 0 ? number_format($r['prev_val'], 0) : '—';
                     $cStr = $r['curr_val'] > 0 ? number_format($r['curr_val'], 0) : '—';
-                    $dStr = $r['diff'] != 0 ? ($diffSign . number_format($r['diff'], 0)) : '—';
-                    $pctStr  = ($r['prev_val'] > 0 && $r['curr_val'] > 0) ? ($diffSign . $r['percent'] . '%') : '—';
+                    $dStr = $r['diff'] != 0 ? ($diffSign . number_format($r['diff'], 0) . $arrow) : '—';
+                    $pctStr  = ($r['prev_val'] > 0 && $r['curr_val'] > 0) ? ($diffSign . $r['percent'] . '%' . $arrow) : '—';
 
                     $pageContent .= '<tr>';
                     $pageContent .= "<td style=\"width: {$wCR1}; text-align: right; font-weight: bold;\">{$r['month_name']}</td>";
@@ -786,12 +793,13 @@ HTML;
 
                 $totDColor = $cTable['total_diff'] >= 0 ? '#065f46' : '#991b1b';
                 $totDSign = $cTable['total_diff'] > 0 ? '+' : '';
+                $totArrow = $cTable['total_diff'] > 0 ? ' &#9650;' : ($cTable['total_diff'] < 0 ? ' &#9660;' : '');
                 $pageContent .= '<tr style="background-color: #f1f5f9; font-weight: bold; font-size: 10pt;">';
                 $pageContent .= "<td style=\"width: {$wCR1}; text-align: right;\">المجموع</td>";
                 $pageContent .= "<td style=\"width: {$wCR2};\">" . number_format($cTable['total_prev'], 0) . "</td>";
                 $pageContent .= "<td style=\"width: {$wCR3}; color: #047857;\">" . number_format($cTable['total_curr'], 0) . "</td>";
-                $pageContent .= "<td style=\"width: {$wCR4}; color: {$totDColor};\">{$totDSign}" . number_format($cTable['total_diff'], 0) . "</td>";
-                $pageContent .= "<td style=\"width: {$wCR5}; color: {$totDColor};\">{$totDSign}{$cTable['total_pct']}%</td>";
+                $pageContent .= "<td style=\"width: {$wCR4}; color: {$totDColor};\">{$totDSign}" . number_format($cTable['total_diff'], 0) . "{$totArrow}</td>";
+                $pageContent .= "<td style=\"width: {$wCR5}; color: {$totDColor};\">{$totDSign}{$cTable['total_pct']}%{$totArrow}</td>";
                 $pageContent .= '</tr>';
 
                 $pageContent .= '</tbody></table>';
@@ -951,9 +959,10 @@ HTML;
                 $pct = $firstVal > 0 ? (($diff / $firstVal) * 100) : 0;
                 $diffColor = $diff >= 0 ? '#047857' : '#b91c1c';
                 $diffSign = $diff > 0 ? '+' : '';
+                $arrow = $diff > 0 ? ' <span style="font-size:7pt;">&#9650;</span>' : ($diff < 0 ? ' <span style="font-size:7pt;">&#9660;</span>' : '');
 
-                $rowHtml .= "<td style=\"width: {$wDiff}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($diff, 0) . "</td>";
-                $rowHtml .= "<td style=\"width: {$wPct}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($pct, 1) . "%</td>";
+                $rowHtml .= "<td style=\"width: {$wDiff}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($diff, 0) . "{$arrow}</td>";
+                $rowHtml .= "<td style=\"width: {$wPct}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($pct, 1) . "%{$arrow}</td>";
                 $rowHtml .= "</tr>";
 
                 $tableHtml .= $rowHtml;
@@ -987,9 +996,10 @@ HTML;
                 $pct = $firstVal > 0 ? (($diff / $firstVal) * 100) : 0;
                 $diffColor = $diff >= 0 ? '#047857' : '#b91c1c';
                 $diffSign = $diff > 0 ? '+' : '';
+                $arrow = $diff > 0 ? ' <span style="font-size:7pt;">&#9650;</span>' : ($diff < 0 ? ' <span style="font-size:7pt;">&#9660;</span>' : '');
 
-                $rowHtml .= "<td style=\"width: {$wDiff}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($diff, 0) . "</td>";
-                $rowHtml .= "<td style=\"width: {$wPct}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($pct, 1) . "%</td>";
+                $rowHtml .= "<td style=\"width: {$wDiff}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($diff, 0) . "{$arrow}</td>";
+                $rowHtml .= "<td style=\"width: {$wPct}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($pct, 1) . "%{$arrow}</td>";
                 $rowHtml .= "</tr>";
 
                 $tableHtml .= $rowHtml;
@@ -1010,6 +1020,7 @@ HTML;
             }
             $gSign = $diffG > 0 ? '+' : '';
             $gColor = $diffG >= 0 ? '#86efac' : '#fca5a5'; // أخضر للموجب وأحمر للسالب
+            $gArrow = $diffG > 0 ? ' &#9650;' : ($diffG < 0 ? ' &#9660;' : '');
 
             // صف إجمالي الإيراد الكلي
             $tableHtml .= '<tr style="background-color: #0f172a; color: #ffffff; font-weight: bold; font-size: 9pt;">';
@@ -1017,8 +1028,8 @@ HTML;
             foreach ($grandGross as $gVal) {
                 $tableHtml .= "<td style=\"width: {$wYear}; color: #fde047;\">" . number_format($gVal, 0) . "</td>";
             }
-            $tableHtml .= "<td style=\"width: {$wDiff}; color: {$gColor};\">{$gSign}" . number_format($diffG, 0) . "</td>";
-            $tableHtml .= "<td style=\"width: {$wPct}; color: {$gColor};\">{$gSign}" . number_format($pctG, 1) . "%</td>";
+            $tableHtml .= "<td style=\"width: {$wDiff}; color: {$gColor};\">{$gSign}" . number_format($diffG, 0) . "{$gArrow}</td>";
+            $tableHtml .= "<td style=\"width: {$wPct}; color: {$gColor};\">{$gSign}" . number_format($pctG, 1) . "%{$gArrow}</td>";
             $tableHtml .= '</tr>';
 
             // حساب الإيراد الصافي للشركة
@@ -1044,6 +1055,7 @@ HTML;
             }
             $nSign = $diffN > 0 ? '+' : '';
             $nColor = $diffN >= 0 ? '#86efac' : '#fca5a5';
+            $nArrow = $diffN > 0 ? ' &#9650;' : ($diffN < 0 ? ' &#9660;' : '');
 
             // صف الإيراد الصافي لعموم الشركة
             $tableHtml .= '<tr style="background-color: #064e3b; color: #ffffff; font-weight: bold; font-size: 9pt;">';
@@ -1051,8 +1063,8 @@ HTML;
             foreach ($grandNet as $nVal) {
                 $tableHtml .= "<td style=\"width: {$wYear}; color: #a7f3d0;\">" . number_format($nVal, 0) . "</td>";
             }
-            $tableHtml .= "<td style=\"width: {$wDiff}; color: {$nColor};\">{$nSign}" . number_format($diffN, 0) . "</td>";
-            $tableHtml .= "<td style=\"width: {$wPct}; color: {$nColor};\">{$nSign}" . number_format($pctN, 1) . "%</td>";
+            $tableHtml .= "<td style=\"width: {$wDiff}; color: {$nColor};\">{$nSign}" . number_format($diffN, 0) . "{$nArrow}</td>";
+            $tableHtml .= "<td style=\"width: {$wPct}; color: {$nColor};\">{$nSign}" . number_format($pctN, 1) . "%{$nArrow}</td>";
             $tableHtml .= '</tr>';
         }
 
