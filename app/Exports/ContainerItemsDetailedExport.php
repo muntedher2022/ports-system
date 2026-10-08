@@ -25,7 +25,7 @@ class ContainerItemsDetailedExport implements WithMultipleSheets
     ) {
         $this->containerType = $containerType;
         $this->fiscalYearId  = $fiscalYearId ?: (FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id);
-        $this->monthId       = $monthId ?: (Month::where('month_number', now()->month)->first()?->id ?? Month::first()?->id);
+        $this->monthId       = $monthId;
         $this->portId        = $portId;
     }
 

@@ -50,7 +50,10 @@ class ContainerEntitySheetExport implements FromArray, WithTitle, WithStyles, Wi
             ->when($this->monthId, fn($q) => $q->where('month_id', $this->monthId))
             ->when($this->portId, fn($q) => $q->where('port_id', $this->portId))
             ->with(['port', 'entity'])
-            ->orderBy('port_id')
+            ->orderByRaw("COALESCE(arrival_date, CASE WHEN arrival_year REGEXP '^[0-9]{4}$' THEN STR_TO_DATE(CONCAT(arrival_year, '-01-01'), '%Y-%m-%d') ELSE '9999-12-31' END) ASC")
+            ->orderBy('arrival_date', 'asc')
+            ->orderBy('arrival_year', 'asc')
+            ->orderBy('port_id', 'asc')
             ->orderBy('id', 'asc');
 
         $this->items = $query->get()->all();
@@ -86,9 +89,9 @@ class ContainerEntitySheetExport implements FromArray, WithTitle, WithStyles, Wi
 
         // 1. Title Banner
         $typeLabel = $this->containerType === 'dangerous' ? 'الخطرة' : 'المتخلفة';
-        $monthObj = Month::find($this->monthId);
-        $yearObj = FiscalYear::find($this->fiscalYearId);
-        $monthStr = $monthObj ? "شهر {$monthObj->name_ar}" : '';
+        $monthObj = $this->monthId ? Month::find($this->monthId) : null;
+        $yearObj = $this->fiscalYearId ? FiscalYear::find($this->fiscalYearId) : null;
+        $monthStr = $monthObj ? "شهر {$monthObj->name_ar}" : 'كافة الأشهر';
         $yearStr = $yearObj ? "لسنة {$yearObj->year}" : '';
         $portStr = $this->portId ? (Port::find($this->portId)?->name_ar ?? '') : 'كافة الموانئ';
 
@@ -126,7 +129,7 @@ class ContainerEntitySheetExport implements FromArray, WithTitle, WithStyles, Wi
                 $arrivalDateStr,
                 $item->berth ?: '',
                 $item->port?->name_ar ?: '',
-                $item->notes ?: '',
+                $this->cleanNotesForExport($item->notes),
             ];
         }
 
@@ -195,6 +198,36 @@ class ContainerEntitySheetExport implements FromArray, WithTitle, WithStyles, Wi
         $sheet->getRowDimension($lastRow)->setRowHeight(26);
 
         return [];
+    }
+
+    /**
+     * تنظيف الملاحظات عند التصدير للوزارة واستبعاد أي تنبيهات رقابية داخلية
+     */
+    protected function cleanNotesForExport(?string $notes): string
+    {
+        if (empty($notes)) {
+            return '';
+        }
+
+        $cleaned = $notes;
+
+        // 1. حذف التنبيهات الرقابية المحاطة بأقواس: [...تنبيه...]
+        $cleaned = preg_replace('/\[[^\]]*(?:تنبيه|رقابي)[^\]]*\]/u', '', $cleaned);
+
+        // 2. حذف أي أسطر أو عبارات تبدأ بـ "تنبيه رقابي" أو تحتوي على أيقونة التحذير
+        $cleaned = preg_replace('/[⚠️❗]?\s*تنبيه\s*رقابي[^\n\|]*/u', '', $cleaned);
+
+        // 3. تنظيف الفواصل المتبقية والمسافات
+        $parts = explode('|', $cleaned);
+        $cleanParts = [];
+        foreach ($parts as $part) {
+            $trimmed = trim($part, " \t\n\r\0\x0B-");
+            if (!empty($trimmed) && !str_contains($trimmed, 'تنبيه')) {
+                $cleanParts[] = $trimmed;
+            }
+        }
+
+        return implode(' | ', $cleanParts);
     }
 
     public function registerEvents(): array

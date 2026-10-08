@@ -438,8 +438,8 @@ class ListContainerStatusRecords extends ListRecords
                         Select::make('month_id')
                             ->label('الشهر')
                             ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
-                            ->default(fn () => Month::where('month_number', (int) date('n'))->first()?->id)
-                            ->required(),
+                            ->placeholder('كافة الأشهر (الحاويات المتواجدة حالياً بالميناء)')
+                            ->default(fn () => \App\Models\ContainerItem::max('month_id') ?? Month::where('month_number', (int) date('n'))->first()?->id),
 
                         Select::make('port_id')
                             ->label('الميناء')
@@ -452,7 +452,7 @@ class ListContainerStatusRecords extends ListRecords
                     $queryParams = http_build_query([
                         'type'  => $data['container_type'],
                         'year'  => $data['fiscal_year_id'],
-                        'month' => $data['month_id'],
+                        'month' => !empty($data['month_id']) ? $data['month_id'] : null,
                         'port'  => $data['port_id'] ?? null,
                     ]);
 

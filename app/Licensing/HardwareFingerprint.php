@@ -4,13 +4,25 @@ namespace App\Licensing;
 
 class HardwareFingerprint
 {
+    private static ?string $cachedHwid = null;
+
     /**
      * الحصول على البصمة الرقمية الفريدة للجهاز الحالي.
-     *
-     * @return string
      */
     public static function get(): string
     {
+        if (self::$cachedHwid !== null) {
+            return self::$cachedHwid;
+        }
+
+        $cacheFile = storage_path('app/.hwid');
+        if (file_exists($cacheFile)) {
+            $saved = trim((string) @file_get_contents($cacheFile));
+            if (! empty($saved) && str_starts_with($saved, 'HWID-')) {
+                return self::$cachedHwid = $saved;
+            }
+        }
+
         $os = strtoupper(substr(PHP_OS, 0, 3));
         $rawIdentifier = '';
 
@@ -28,11 +40,22 @@ class HardwareFingerprint
 
         // تشفير البصمة لإنتاج صيغة مرتبة وسهلة القراءة والتداول
         $hash = hash('sha256', $rawIdentifier);
-        
-        // تحويل الـ hash إلى صيغة HWID-XXXX-XXXX-XXXX-XXXX
-        $formatted = 'HWID-' . implode('-', str_split(strtoupper(substr($hash, 0, 16)), 4));
 
-        return $formatted;
+        // تحويل الـ hash إلى صيغة HWID-XXXX-XXXX-XXXX-XXXX
+        $formatted = 'HWID-'.implode('-', str_split(strtoupper(substr($hash, 0, 16)), 4));
+
+        @file_put_contents($cacheFile, $formatted);
+
+        return self::$cachedHwid = $formatted;
+    }
+
+    /**
+     * مسح البصمة المخزنة مؤقتاً لإعادة التوليد عند الحاجة.
+     */
+    public static function clearCache(): void
+    {
+        self::$cachedHwid = null;
+        @unlink(storage_path('app/.hwid'));
     }
 
     /**
@@ -51,7 +74,7 @@ class HardwareFingerprint
                     $lines = array_filter(array_map('trim', explode("\n", $output)));
                     $invalidValues = ['To be filled by O.E.M.', 'None', 'Default string', 'Not Specified', '00000000-0000-0000-0000-000000000000'];
                     foreach ($lines as $line) {
-                        if (!empty($line) && !in_array($line, $invalidValues)) {
+                        if (! empty($line) && ! in_array($line, $invalidValues)) {
                             $identifiers[] = $line;
                         }
                     }
@@ -113,7 +136,7 @@ class HardwareFingerprint
      */
     private static function runCommand(string $command): ?string
     {
-        if (!function_exists('shell_exec')) {
+        if (! function_exists('shell_exec')) {
             return null;
         }
 
@@ -130,10 +153,10 @@ class HardwareFingerprint
                 // استبعاد السطر الأول (العنوان) وأخذ القيمة الفعلية
                 array_shift($lines);
                 $value = trim(implode('', $lines));
-                
+
                 // تجاهل القيم الافتراضية غير المفيدة التي تضعها بعض الشركات المصنعة
                 $invalidValues = ['To be filled by O.E.M.', 'None', 'Default string', 'Not Specified', '00000000-0000-0000-0000-000000000000'];
-                if (!in_array($value, $invalidValues) && !empty($value)) {
+                if (! in_array($value, $invalidValues) && ! empty($value)) {
                     return $value;
                 }
             }

@@ -30,7 +30,7 @@ class LicensingService
     /**
      * المفتاح العام (RSA Public Key) الخاص بك.
      * سيتم استخدامه للتحقق من أن ملف الرخصة قد تم توقيعه بواسطة مفتاحك الخاص فقط.
-     * عند تشفير هذا الملف بـ ionCube لن يستطيع أحد رؤية أو استبدال هذا المفتاح.
+     * انسخه من لوحة تحكم licensing-manager.test للمشروع (akod).
      */
     private static string $publicKey = <<<EOD
 -----BEGIN PUBLIC KEY-----
@@ -66,25 +66,39 @@ EOD;
         $licenseFile = self::getLicensePath();
 
         // 1. التأكد من وجود ملف الترخيص
-        if (!file_exists($licenseFile)) {
+        if (! file_exists($licenseFile)) {
             return self::$cachedResult = [
                 'valid' => false,
                 'reason' => 'missing_license',
                 'hwid' => HardwareFingerprint::get(),
-                'message' => 'ملف الترخيص غير موجود. يرجى تفعيل البرنامج.'
+                'message' => 'ملف الترخيص غير موجود. يرجى تفعيل البرنامج.',
             ];
+        }
+
+        // فحص الذاكرة المؤقتة السريعة إذا كان الملف لم يتغير
+        $fileMtime = @filemtime($licenseFile);
+        $cacheKey = 'lic_check_'.$fileMtime;
+
+        if (function_exists('cache')) {
+            try {
+                $cached = cache()->get($cacheKey);
+                if ($cached && is_array($cached) && ($cached['valid'] ?? false)) {
+                    return self::$cachedResult = $cached;
+                }
+            } catch (\Throwable $e) {
+            }
         }
 
         // 2. قراءة وتحليل ملف الترخيص
         $content = file_get_contents($licenseFile);
         $payload = json_decode($content, true);
 
-        if (!$payload || !isset($payload['data']) || !isset($payload['signature'])) {
+        if (! $payload || ! isset($payload['data']) || ! isset($payload['signature'])) {
             return self::$cachedResult = [
                 'valid' => false,
                 'reason' => 'invalid_format',
                 'hwid' => HardwareFingerprint::get(),
-                'message' => 'ملف الترخيص تالف أو غير صالح.'
+                'message' => 'ملف الترخيص تالف أو غير صالح.',
             ];
         }
 
@@ -98,7 +112,7 @@ EOD;
                 'valid' => false,
                 'reason' => 'invalid_signature',
                 'hwid' => HardwareFingerprint::get(),
-                'message' => 'التوقيع الرقمي للرخصة غير صالح (تم التلاعب بالملف).'
+                'message' => 'التوقيع الرقمي للرخصة غير صالح (تم التلاعب بالملف).',
             ];
         }
 
@@ -113,7 +127,7 @@ EOD;
                     'valid' => false,
                     'reason' => 'hwid_mismatch',
                     'hwid' => $currentHwid,
-                    'message' => 'ملف الترخيص هذا مخصص لجهاز كمبيوتر آخر.'
+                    'message' => 'ملف الترخيص هذا مخصص لجهاز كمبيوتر آخر.',
                 ];
             }
         } elseif ($data['type'] === 'hosted') {
@@ -129,13 +143,13 @@ EOD;
                 return self::$cachedResult = [
                     'valid' => false,
                     'reason' => 'domain_mismatch',
-                    'message' => "هذا الترخيص مخصص للنطاق ($licensedDomain) ولا يعمل على النطاق الحالي ($currentDomain)."
+                    'message' => "هذا الترخيص مخصص للنطاق ($licensedDomain) ولا يعمل على النطاق الحالي ($currentDomain).",
                 ];
             }
         }
 
         // 5. التحقق من تاريخ انتهاء الصلاحية
-        if (!empty($data['expires_at'])) {
+        if (! empty($data['expires_at'])) {
             $expiryTimestamp = strtotime($data['expires_at']);
             $currentTimestamp = time();
 
@@ -143,37 +157,49 @@ EOD;
                 return self::$cachedResult = [
                     'valid' => false,
                     'reason' => 'expired',
-                    'message' => 'انتهت صلاحية هذا الترخيص في: ' . $data['expires_at']
+                    'message' => 'انتهت صلاحية هذا الترخيص في: '.$data['expires_at'],
                 ];
             }
         }
 
         // 6. منع التلاعب بالوقت والتاريخ (Time Tampering Prevention)
         $timeCheck = self::checkTimeTampering();
-        if (!$timeCheck['ok']) {
+        if (! $timeCheck['ok']) {
             return self::$cachedResult = [
                 'valid' => false,
                 'reason' => 'time_tampered',
-                'message' => 'تم اكتشاف تلاعب في ساعة النظام. يرجى ضبط الوقت والتاريخ الحاليين.'
+                'message' => 'تم اكتشاف تلاعب في ساعة النظام. يرجى ضبط الوقت والتاريخ الحاليين.',
             ];
         }
 
-        // 7. التحقق الدوري أونلاين من سيرفر التراخيص
-        $onlineCheck = self::checkOnlineLicense($data);
-        if (!$onlineCheck['valid']) {
-            return self::$cachedResult = [
-                'valid' => false,
-                'reason' => $onlineCheck['reason'],
-                'message' => $onlineCheck['message']
-            ];
+        // 7. التحقق الدوري أونلاين من سيرفر التراخيص (فقط إذا كان النطاق استضافة أو خادم تفعيل خارجي محدد)
+        $serverUrl = env('LICENSING_SERVER_URL');
+        if ($data['type'] === 'hosted' || ($serverUrl && ! str_contains($serverUrl, 'licensing-manager.test'))) {
+            $onlineCheck = self::checkOnlineLicense($data);
+            if (! $onlineCheck['valid']) {
+                return self::$cachedResult = [
+                    'valid' => false,
+                    'reason' => $onlineCheck['reason'],
+                    'message' => $onlineCheck['message'],
+                ];
+            }
         }
 
         // حفظ الرخصة والتحقق بنجاح
-        return self::$cachedResult = [
+        $successResult = [
             'valid' => true,
             'reason' => null,
-            'license' => $data
+            'license' => $data,
         ];
+
+        if (function_exists('cache')) {
+            try {
+                cache()->put($cacheKey, $successResult, now()->addHours(6));
+            } catch (\Throwable $e) {
+            }
+        }
+
+        return self::$cachedResult = $successResult;
     }
 
     /**
@@ -189,7 +215,7 @@ EOD;
             $lastRunData = json_decode($content, true);
 
             if ($lastRunData && isset($lastRunData['timestamp'])) {
-                $lastTimestamp = (int)$lastRunData['timestamp'];
+                $lastTimestamp = (int) $lastRunData['timestamp'];
 
                 // إذا كان الوقت الحالي أصغر من آخر وقت تشغيل مسجل، فهناك تلاعب بالساعة
                 if ($currentTime < $lastTimestamp - 600) { // سماح بـ 10 دقائق فروقات بسيطة
@@ -202,7 +228,7 @@ EOD;
         try {
             $secureData = json_encode([
                 'timestamp' => $currentTime,
-                'hash' => md5($currentTime . 'salt_for_security')
+                'hash' => md5($currentTime.'salt_for_security'),
             ]);
             file_put_contents($lastRunFile, $secureData);
         } catch (Exception $e) {
@@ -228,8 +254,8 @@ EOD;
             $onlineData = json_decode($content, true);
 
             if ($onlineData && isset($onlineData['timestamp']) && isset($onlineData['hash'])) {
-                $lastCheckTime = (int)$onlineData['timestamp'];
-                $expectedHash = md5($lastCheckTime . 'salt_for_online_security');
+                $lastCheckTime = (int) $onlineData['timestamp'];
+                $expectedHash = md5($lastCheckTime.'salt_for_online_security');
 
                 // التأكد من عدم التلاعب بالملف وعدم تقديم الساعة للمستقبل
                 if ($onlineData['hash'] === $expectedHash && $currentTime >= $lastCheckTime && ($currentTime - $lastCheckTime < $checkInterval)) {
@@ -244,10 +270,10 @@ EOD;
         $hwid = $data['hwid'] ?? '';
         $domain = (app()->bound('request') && request()) ? request()->getHost() : 'localhost';
 
-        $apiUrl = rtrim($serverUrl, '/') . '/api/license/verify?' . http_build_query([
+        $apiUrl = rtrim($serverUrl, '/').'/api/license/verify?'.http_build_query([
             'license_key' => $licenseKey,
             'hwid' => $hwid,
-            'domain' => $domain
+            'domain' => $domain,
         ]);
 
         // إجراء طلب HTTP في الخلفية بمهلة زمنية قصيرة (3 ثواني) لتجنب بطء التصفح
@@ -255,12 +281,12 @@ EOD;
             'http' => [
                 'method' => 'GET',
                 'timeout' => 3, // مهلة 3 ثواني كحد أقصى
-                'ignore_errors' => true // قراءة أكواد خطأ HTTP مثل 403 و 404 بدون فشل الطلب
+                'ignore_errors' => true, // قراءة أكواد خطأ HTTP مثل 403 و 404 بدون فشل الطلب
             ],
             'ssl' => [
                 'verify_peer' => false,
                 'verify_peer_name' => false,
-            ]
+            ],
         ];
 
         $context = stream_context_create($options);
@@ -271,9 +297,10 @@ EOD;
             // فترة سماح: نحدث وقت الفحص لكي لا نحاول مجدداً في كل طلب ونسبب بطئاً
             $secureData = json_encode([
                 'timestamp' => $currentTime,
-                'hash' => md5($currentTime . 'salt_for_online_security')
+                'hash' => md5($currentTime.'salt_for_online_security'),
             ]);
             @file_put_contents($lastOnlineFile, $secureData);
+
             return ['valid' => true]; // نسمح للمستخدم بالدخول أونلاين مؤقتاً (Grace Period)
         }
 
@@ -281,7 +308,7 @@ EOD;
         if (isset($http_response_header)) {
             foreach ($http_response_header as $header) {
                 if (preg_match('/^HTTP\/\d+\.\d+\s+(\d+)/i', $header, $matches)) {
-                    $httpCode = (int)$matches[1];
+                    $httpCode = (int) $matches[1];
                     break;
                 }
             }
@@ -302,7 +329,7 @@ EOD;
             return [
                 'valid' => false,
                 'reason' => $reason,
-                'message' => $msg
+                'message' => $msg,
             ];
         }
 
@@ -311,7 +338,7 @@ EOD;
             // تحديث تاريخ الفحص الأخير بنجاح مع التوقيع لمنع التلاعب
             $secureData = json_encode([
                 'timestamp' => $currentTime,
-                'hash' => md5($currentTime . 'salt_for_online_security')
+                'hash' => md5($currentTime.'salt_for_online_security'),
             ]);
             @file_put_contents($lastOnlineFile, $secureData);
         }
@@ -326,7 +353,7 @@ EOD;
     {
         // التحقق المبدئي من صحة التنسيق
         $payload = json_decode($licenseContent, true);
-        if (!$payload || !isset($payload['data']) || !isset($payload['signature'])) {
+        if (! $payload || ! isset($payload['data']) || ! isset($payload['signature'])) {
             return false;
         }
 
@@ -340,16 +367,17 @@ EOD;
         // التحقق من صحته برمجياً بعد الحفظ
         // (سيقوم بالاتصال أونلاين فوراً لعدم وجود ملف .last_online بعد)
         $check = self::check();
-        if (!$check['valid']) {
+        if (! $check['valid']) {
             // إذا كانت الرخصة غير صالحة بعد الحفظ، نقوم بحذف الملف
             @unlink($licenseFile);
+
             return false;
         }
 
         // تهيئة ملف التحقق أونلاين بالوقت الحالي عند نجاح التفعيل مع التوقيع
         $secureData = json_encode([
             'timestamp' => time(),
-            'hash' => md5(time() . 'salt_for_online_security')
+            'hash' => md5(time().'salt_for_online_security'),
         ]);
         @file_put_contents(self::getLastOnlinePath(), $secureData);
 
@@ -368,8 +396,8 @@ EOD;
         if (file_exists($licenseFile)) {
             @unlink($licenseFile);
         }
-        if (file_exists($licenseFile . '.bak')) {
-            @unlink($licenseFile . '.bak');
+        if (file_exists($licenseFile.'.bak')) {
+            @unlink($licenseFile.'.bak');
         }
         if (file_exists($lastRunFile)) {
             @unlink($lastRunFile);
@@ -383,7 +411,8 @@ EOD;
         if (function_exists('cache')) {
             try {
                 cache()->flush();
-            } catch (Exception $e) {}
+            } catch (Exception $e) {
+            }
         }
 
         return true;

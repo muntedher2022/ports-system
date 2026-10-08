@@ -136,11 +136,11 @@ class ReportExcelController extends Controller
         $portId       = $request->input('port') ? (int) $request->input('port') : ($request->input('port_id') ? (int) $request->input('port_id') : null);
 
         $typeLabel = $type === 'dangerous' ? 'الخطرة' : 'المتخلفة';
-        $monthObj  = $monthId ? Month::find($monthId) : Month::where('month_number', now()->month)->first();
+        $monthObj  = $monthId ? Month::find($monthId) : null;
         $yearObj   = $fiscalYearId ? FiscalYear::find($fiscalYearId) : FiscalYear::where('is_current', true)->first();
         $portObj   = $portId ? Port::find($portId) : null;
 
-        $monthName = $monthObj ? "شهر_{$monthObj->name_ar}" : 'شهر';
+        $monthName = $monthObj ? "شهر_{$monthObj->name_ar}" : 'كافة_الأشهر';
         $yearName  = $yearObj ? $yearObj->year : date('Y');
         $portName  = $portObj ? "_{$portObj->name_ar}" : '';
 

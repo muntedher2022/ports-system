@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\ContainerItemResource\Pages;
 
 use App\Filament\Resources\ContainerItemResource;
+use App\Models\ContainerItem;
 use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\Port;
@@ -18,14 +19,14 @@ class ListContainerItems extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            Action::make('export_detailed_excel')
-                ->label('تصدير كشف الحاويات (Excel مقسم بحسب الجهات)')
-                ->icon('heroicon-o-arrow-down-tray')
+            Action::make('export_abandoned_excel')
+                ->label('تصدير كشف المتخلفة (Excel بحسب الجهات)')
+                ->icon('heroicon-o-archive-box')
                 ->color('success')
-                ->modalHeading('تصدير كشف الحاويات الفردية إلى ملف Excel مقسم بحسب الجهات')
-                ->modalDescription('سيتم تصدير ملف إكسل يحتوي على أوراق عمل متعددة (لكل وزارة وجهة ورقة عمل مستقلة) بنفس التنسيق الرسمي وبكافة تفاصيل الحاويات الموجودة في الميناء حالياً مع استثناء الحاويات المخرجة.')
-                ->modalSubmitActionLabel('بدء تحميل ملف Excel')
-                ->modalIcon('heroicon-o-arrow-down-tray')
+                ->modalHeading('تصدير كشف الحاويات المتخلفة إلى ملف Excel مقسم بحسب الجهات')
+                ->modalDescription('سيتم تصدير ملف إكسل يحتوي على أوراق عمل متعددة (لكل وزارة وجهة ورقة عمل مستقلة) بنفس التنسيق الرسمي وبكافة تفاصيل الحاويات المتخلفة الموجودة في الميناء حالياً.')
+                ->modalSubmitActionLabel('تحميل كشف الحاويات المتخلفة')
+                ->modalIcon('heroicon-o-archive-box')
                 ->form([
                     Select::make('container_type')
                         ->label('نوع الموقف المراد تصديره')
@@ -45,8 +46,8 @@ class ListContainerItems extends ListRecords
                     Select::make('month_id')
                         ->label('الشهر')
                         ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
-                        ->default(fn () => Month::where('month_number', (int) date('n'))->first()?->id)
-                        ->required(),
+                        ->placeholder('كافة الأشهر (الحاويات المتواجدة حالياً بالميناء)')
+                        ->default(fn () => ContainerItem::where('container_type', 'abandoned')->max('month_id') ?? Month::where('month_number', (int) date('n'))->first()?->id),
 
                     Select::make('port_id')
                         ->label('الميناء')
@@ -58,7 +59,54 @@ class ListContainerItems extends ListRecords
                     $queryParams = http_build_query([
                         'type'  => $data['container_type'],
                         'year'  => $data['fiscal_year_id'],
-                        'month' => $data['month_id'],
+                        'month' => !empty($data['month_id']) ? $data['month_id'] : null,
+                        'port'  => $data['port_id'] ?? null,
+                    ]);
+
+                    return redirect()->away(route('admin.containers.export-detailed-excel') . '?' . $queryParams);
+                }),
+
+            Action::make('export_dangerous_excel')
+                ->label('تصدير كشف الخطرة (Excel بحسب الجهات)')
+                ->icon('heroicon-o-exclamation-triangle')
+                ->color('danger')
+                ->modalHeading('تصدير كشف الحاويات الخطرة إلى ملف Excel مقسم بحسب الجهات')
+                ->modalDescription('سيتم تصدير ملف إكسل يحتوي على أوراق عمل متعددة (لكل وزارة وجهة ورقة عمل مستقلة) بنفس التنسيق الرسمي وبكافة تفاصيل الحاويات الخطرة الموجودة في الميناء حالياً.')
+                ->modalSubmitActionLabel('تحميل كشف الحاويات الخطرة')
+                ->modalIcon('heroicon-o-exclamation-triangle')
+                ->form([
+                    Select::make('container_type')
+                        ->label('نوع الموقف المراد تصديره')
+                        ->options([
+                            'dangerous' => '⚠️ موقف الحاويات الخطرة',
+                            'abandoned' => '📦 موقف الحاويات المتخلفة',
+                        ])
+                        ->default('dangerous')
+                        ->required(),
+
+                    Select::make('fiscal_year_id')
+                        ->label('السنة المالية')
+                        ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                        ->default(fn () => FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id)
+                        ->required(),
+
+                    Select::make('month_id')
+                        ->label('الشهر')
+                        ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                        ->placeholder('كافة الأشهر (الحاويات المتواجدة حالياً بالميناء)')
+                        ->default(fn () => ContainerItem::where('container_type', 'dangerous')->max('month_id') ?? Month::where('month_number', (int) date('n'))->first()?->id),
+
+                    Select::make('port_id')
+                        ->label('الميناء')
+                        ->options(Port::where('is_active', true)->where('has_container_status', true)->orderBy('sort_order')->pluck('name_ar', 'id'))
+                        ->placeholder('كافة الموانئ (مجمّع)')
+                        ->searchable(),
+                ])
+                ->action(function (array $data) {
+                    $queryParams = http_build_query([
+                        'type'  => $data['container_type'],
+                        'year'  => $data['fiscal_year_id'],
+                        'month' => !empty($data['month_id']) ? $data['month_id'] : null,
                         'port'  => $data['port_id'] ?? null,
                     ]);
 
