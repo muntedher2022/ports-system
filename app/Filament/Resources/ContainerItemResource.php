@@ -514,6 +514,7 @@ class ContainerItemResource extends Resource
         return parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
-            ]);
+            ])
+            ->with(['port', 'entity', 'fiscalYear', 'month']);
     }
 }

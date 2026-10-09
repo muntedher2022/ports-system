@@ -101,6 +101,7 @@ class ContainerItemsRelationManager extends RelationManager
         $owner = $this->getOwnerRecord();
 
         return $table
+            ->modifyQueryUsing(fn ($query) => $query->with(['entity']))
             ->columns([
                 TextColumn::make('container_number')
                     ->label('رقم الحاوية')

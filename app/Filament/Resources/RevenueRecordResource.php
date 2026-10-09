@@ -364,6 +364,11 @@ class RevenueRecordResource extends Resource
             ]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['revenueCenter', 'fiscalYear']);
+    }
+
     public static function getPages(): array
     {
         return [

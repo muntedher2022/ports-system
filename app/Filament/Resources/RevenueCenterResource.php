@@ -29,6 +29,7 @@ use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
 class RevenueCenterResource extends Resource
@@ -191,6 +192,11 @@ class RevenueCenterResource extends Resource
                         ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
                 ]),
             ]);
+    }
+
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['port']);
     }
 
     public static function getPages(): array

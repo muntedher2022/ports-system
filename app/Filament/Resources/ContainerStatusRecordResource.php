@@ -572,7 +572,8 @@ class ContainerStatusRecordResource extends Resource
     public static function getEloquentQuery(): Builder
     {
         return parent::getEloquentQuery()
-            ->withoutGlobalScopes([SoftDeletingScope::class]);
+            ->withoutGlobalScopes([SoftDeletingScope::class])
+            ->with(['port', 'fiscalYear', 'month']);
     }
 
     public static function getRelations(): array

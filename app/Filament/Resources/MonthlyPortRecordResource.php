@@ -729,6 +729,11 @@ class MonthlyPortRecordResource extends Resource
             ]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['port', 'fiscalYear']);
+    }
+
     public static function getRelations(): array
     {
         return [];

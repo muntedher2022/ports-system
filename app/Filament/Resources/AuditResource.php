@@ -235,6 +235,11 @@ class AuditResource extends Resource
             ->bulkActions([]);
     }
 
+    public static function getEloquentQuery(): Builder
+    {
+        return parent::getEloquentQuery()->with(['user']);
+    }
+
     public static function getPages(): array
     {
         return [
