@@ -3,8 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\FiscalYear;
-use App\Models\Month;
-use App\Models\Port;
 use App\Services\ActivityLogger;
 use App\Services\PdfReportService;
 use Illuminate\Http\Request;
@@ -32,7 +30,7 @@ class ReportPdfController extends Controller
         $pdfContent = $this->pdfService->generateTotalRevenueMatrixPdf($fiscalYearId);
 
         return response($pdfContent, 200, [
-            'Content-Type'        => 'application/pdf',
+            'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="تقرير_الإيراد_الكلي_للمراكز_السبعة.pdf"',
         ]);
     }
@@ -53,7 +51,7 @@ class ReportPdfController extends Controller
         $pdfContent = $this->pdfService->generateTotalCumulativeCapacityPdf($fiscalYearId, $monthNumber, $portId, $onlyTotal);
 
         return response($pdfContent, 200, [
-            'Content-Type'        => 'application/pdf',
+            'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="تقرير_إجمالي_الطاقة_الإنتاجية.pdf"',
         ]);
     }
@@ -74,7 +72,7 @@ class ReportPdfController extends Controller
         $pdfContent = $this->pdfService->generateCapacityComparisonPdf($prevYearId, $currYearId, $monthNumber);
 
         return response($pdfContent, 200, [
-            'Content-Type'        => 'application/pdf',
+            'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="تقرير_مقارنة_الطاقة_الإنتاجية.pdf"',
         ]);
     }
@@ -94,7 +92,7 @@ class ReportPdfController extends Controller
         $pdfContent = $this->pdfService->generateRevenueComparisonPdf($prevYearId, $currYearId);
 
         return response($pdfContent, 200, [
-            'Content-Type'        => 'application/pdf',
+            'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="تقرير_مقارنة_الإيراد_لكل_التشكيلات.pdf"',
         ]);
     }
@@ -108,7 +106,7 @@ class ReportPdfController extends Controller
         $periodScope = $request->input('period_scope', 'month');
         $monthNumber = $request->integer('month_number', 7);
         $portId = $request->filled('port_id') ? $request->integer('port_id') : null;
-        
+
         $yearIds = $request->input('year_ids', []);
         if (is_string($yearIds)) {
             $yearIds = explode(',', $yearIds);
@@ -126,7 +124,7 @@ class ReportPdfController extends Controller
         );
 
         return response($pdfContent, 200, [
-            'Content-Type'        => 'application/pdf',
+            'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="تقرير_مقارنة_الأداء_متعددة_السنوات.pdf"',
         ]);
     }
@@ -146,7 +144,7 @@ class ReportPdfController extends Controller
         $pdfContent = $this->pdfService->generateStandardDeviationPdf($fiscalYearId, $portId, $metric);
 
         return response($pdfContent, 200, [
-            'Content-Type'        => 'application/pdf',
+            'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="تقرير_الانحراف_المعياري_والاستقرار.pdf"',
         ]);
     }

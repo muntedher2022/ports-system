@@ -9,8 +9,9 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class Port extends Model implements Auditable
 {
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
+
     protected $fillable = [
         'name_ar', 'code', 'type',
         'has_monthly_records', 'has_container_status', 'has_cargo_status',
@@ -19,13 +20,13 @@ class Port extends Model implements Auditable
     ];
 
     protected $casts = [
-        'has_monthly_records'  => 'boolean',
+        'has_monthly_records' => 'boolean',
         'has_container_status' => 'boolean',
-        'has_cargo_status'     => 'boolean',
-        'has_containers'       => 'boolean',
-        'has_oil'              => 'boolean',
-        'has_cars'             => 'boolean',
-        'is_active'            => 'boolean',
+        'has_cargo_status' => 'boolean',
+        'has_containers' => 'boolean',
+        'has_oil' => 'boolean',
+        'has_cars' => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function monthlyPortRecords(): HasMany

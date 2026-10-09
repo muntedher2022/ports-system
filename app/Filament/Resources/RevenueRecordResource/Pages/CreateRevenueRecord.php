@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\Auth;
 class CreateRevenueRecord extends CreateRecord
 {
     protected static string $resource = RevenueRecordResource::class;
+
     protected ?string $heading = 'إدخال إيرادات المراكز السبعة لشهر كامل';
 
     protected function handleRecordCreation(array $data): Model
@@ -47,8 +48,8 @@ class CreateRevenueRecord extends CreateRecord
 
             $existing = RevenueRecord::withTrashed()->where([
                 'revenue_center_id' => $center->id,
-                'fiscal_year_id'    => $fiscalYearId,
-                'month_id'          => $monthId,
+                'fiscal_year_id' => $fiscalYearId,
+                'month_id' => $monthId,
             ])->first();
 
             if ($existing) {
@@ -57,27 +58,27 @@ class CreateRevenueRecord extends CreateRecord
                 }
                 $existing->update([
                     'gross_revenue' => $gross,
-                    'net_revenue'   => $net,
-                    'status'        => $status,
+                    'net_revenue' => $net,
+                    'status' => $status,
                     'reopen_reason' => $reopenReason,
-                    'created_by'    => $userId,
+                    'created_by' => $userId,
                 ]);
                 $lastRecord = $existing;
             } else {
                 $lastRecord = RevenueRecord::create([
                     'revenue_center_id' => $center->id,
-                    'fiscal_year_id'    => $fiscalYearId,
-                    'month_id'          => $monthId,
-                    'gross_revenue'     => $gross,
-                    'net_revenue'       => $net,
-                    'status'            => $status,
-                    'reopen_reason'     => $reopenReason,
-                    'created_by'        => $userId,
+                    'fiscal_year_id' => $fiscalYearId,
+                    'month_id' => $monthId,
+                    'gross_revenue' => $gross,
+                    'net_revenue' => $net,
+                    'status' => $status,
+                    'reopen_reason' => $reopenReason,
+                    'created_by' => $userId,
                 ]);
             }
         }
 
-        return $lastRecord ?? new RevenueRecord();
+        return $lastRecord ?? new RevenueRecord;
     }
 
     protected function getRedirectUrl(): string
@@ -85,4 +86,3 @@ class CreateRevenueRecord extends CreateRecord
         return $this->getResource()::getUrl('index');
     }
 }
-

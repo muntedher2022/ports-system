@@ -4,7 +4,6 @@ namespace App\Filament\Resources;
 
 use App\Enums\NavigationGroup;
 use App\Filament\Resources\PermissionResource\Pages\ListPermissions;
-use App\Filament\Resources\PermissionResource\Pages\ViewPermission;
 use App\Models\Permission;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -30,17 +29,23 @@ use Spatie\Permission\Models\Role;
 class PermissionResource extends Resource
 {
     protected static ?string $model = Permission::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedKey;
+
     protected static ?string $navigationLabel = 'دليل الصلاحيات';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::SystemAdmin;
+
     protected static ?string $modelLabel = 'صلاحية';
+
     protected static ?string $pluralModelLabel = 'دليل الصلاحيات';
+
     protected static ?int $navigationSort = 3;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -51,7 +56,7 @@ class PermissionResource extends Resource
     public static function canCreate(): bool
     {
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -62,7 +67,7 @@ class PermissionResource extends Resource
     public static function canEdit(Model $record): bool
     {
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -73,7 +78,7 @@ class PermissionResource extends Resource
     public static function canDelete(Model $record): bool
     {
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
@@ -154,7 +159,7 @@ class PermissionResource extends Resource
                 TextColumn::make('action_arabic')
                     ->label('الإجراء')
                     ->badge()
-                    ->color(fn (Permission $record): string => match(true) {
+                    ->color(fn (Permission $record): string => match (true) {
                         str_starts_with($record->name, 'Create') => 'success',
                         str_starts_with($record->name, 'Update') => 'warning',
                         str_starts_with($record->name, 'Delete') || str_starts_with($record->name, 'Force') => 'danger',
@@ -213,33 +218,34 @@ class PermissionResource extends Resource
                     ->label('تصفية حسب الدور')
                     ->options(fn () => Role::pluck('name', 'id')->toArray())
                     ->query(function (Builder $query, array $data): Builder {
-                        if (!empty($data['value'])) {
+                        if (! empty($data['value'])) {
                             return $query->whereHas('roles', fn ($q) => $q->where('id', $data['value']));
                         }
+
                         return $query;
                     }),
 
                 SelectFilter::make('system_filter')
                     ->label('تصفية حسب النظام')
                     ->options([
-                        'monthly'   => 'السجلات التشغيلية للموانئ',
-                        'revenue'   => 'نظام الإيرادات',
+                        'monthly' => 'السجلات التشغيلية للموانئ',
+                        'revenue' => 'نظام الإيرادات',
                         'container' => 'نظام الحاويات المتخلفة والخطرة',
-                        'cargo'     => 'نظام المواد والبضائع المتخلفة والخطرة',
-                        'settings'  => 'البيانات الرئيسية والإعدادات',
-                        'security'  => 'إدارة النظام والأمان',
+                        'cargo' => 'نظام المواد والبضائع المتخلفة والخطرة',
+                        'settings' => 'البيانات الرئيسية والإعدادات',
+                        'security' => 'إدارة النظام والأمان',
                         'analytics' => 'التحليلات والمقارنات الإحصائية',
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return match ($data['value'] ?? null) {
-                            'monthly'   => $query->where(fn ($q) => $q->where('name', 'like', '%MonthlyPortRecord%')->orWhere('name', 'like', '%LatestPortRecords%')->orWhere('name', 'like', '%MonthlyPerformance%')),
-                            'revenue'   => $query->where(fn ($q) => $q->where('name', 'like', '%RevenueRecord%')->orWhere('name', 'like', '%RevenueCenter%')->orWhere('name', 'like', '%RevenueTrends%')->orWhere('name', 'like', '%TotalRevenueMatrix%')->orWhere('name', 'like', '%RevenueComparison%')),
+                            'monthly' => $query->where(fn ($q) => $q->where('name', 'like', '%MonthlyPortRecord%')->orWhere('name', 'like', '%LatestPortRecords%')->orWhere('name', 'like', '%MonthlyPerformance%')),
+                            'revenue' => $query->where(fn ($q) => $q->where('name', 'like', '%RevenueRecord%')->orWhere('name', 'like', '%RevenueCenter%')->orWhere('name', 'like', '%RevenueTrends%')->orWhere('name', 'like', '%TotalRevenueMatrix%')->orWhere('name', 'like', '%RevenueComparison%')),
                             'container' => $query->where('name', 'like', '%Container%'),
-                            'cargo'     => $query->where('name', 'like', '%Cargo%'),
-                            'settings'  => $query->where(fn ($q) => $q->where('name', 'like', '%:Port%')->orWhere('name', 'like', '%:FiscalYear%')->orWhere('name', 'like', '%:Month%')),
-                            'security'  => $query->where(fn ($q) => $q->where('name', 'like', '%:User%')->orWhere('name', 'like', '%:Role%')->orWhere('name', 'like', '%:Audit%')),
+                            'cargo' => $query->where('name', 'like', '%Cargo%'),
+                            'settings' => $query->where(fn ($q) => $q->where('name', 'like', '%:Port%')->orWhere('name', 'like', '%:FiscalYear%')->orWhere('name', 'like', '%:Month%')),
+                            'security' => $query->where(fn ($q) => $q->where('name', 'like', '%:User%')->orWhere('name', 'like', '%:Role%')->orWhere('name', 'like', '%:Audit%')),
                             'analytics' => $query->where(fn ($q) => $q->where('name', 'like', '%Comparison%')->orWhere('name', 'like', '%Analytics%')->orWhere('name', 'like', '%Capacity%')->orWhere('name', 'like', '%PortStats%')->orWhere('name', 'like', '%PortShare%')->orWhere('name', 'like', '%StandardDeviation%')),
-                            default     => $query,
+                            default => $query,
                         };
                     }),
 
@@ -265,8 +271,8 @@ class PermissionResource extends Resource
                         ->modalDescription('تحذير: حذف الصلاحيات الأساسية قد يؤثر على وصول المستخدمين للشاشات المرتبطة بها.')
                         ->successNotificationTitle('تم حذف الصلاحية بنجاح'),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->toolbarActions([]);
     }

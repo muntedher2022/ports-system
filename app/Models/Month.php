@@ -8,8 +8,9 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class Month extends Model implements Auditable
 {
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
+
     protected $fillable = ['name_ar', 'month_number'];
 
     protected $casts = [

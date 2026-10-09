@@ -20,7 +20,7 @@ class CargoStatusDetail extends Model implements Auditable
 
     protected $casts = [
         'year_label' => 'string',
-        'count'      => 'integer',
+        'count' => 'integer',
         'sort_order' => 'integer',
     ];
 

@@ -6,15 +6,16 @@ use App\Exports\Sheets\ContainerEntitySheetExport;
 use App\Models\ContainerEntity;
 use App\Models\ContainerItem;
 use App\Models\FiscalYear;
-use App\Models\Month;
-use App\Models\Port;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 
 class ContainerItemsDetailedExport implements WithMultipleSheets
 {
     protected string $containerType;
+
     protected ?int $fiscalYearId;
+
     protected ?int $monthId;
+
     protected ?int $portId;
 
     public function __construct(
@@ -24,9 +25,9 @@ class ContainerItemsDetailedExport implements WithMultipleSheets
         ?int $portId = null
     ) {
         $this->containerType = $containerType;
-        $this->fiscalYearId  = $fiscalYearId ?: (FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id);
-        $this->monthId       = $monthId;
-        $this->portId        = $portId;
+        $this->fiscalYearId = $fiscalYearId ?: (FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id);
+        $this->monthId = $monthId;
+        $this->portId = $portId;
     }
 
     public function sheets(): array
@@ -37,9 +38,9 @@ class ContainerItemsDetailedExport implements WithMultipleSheets
         $entityIds = ContainerItem::query()
             ->where('status', 'in_port')
             ->where('container_type', $this->containerType)
-            ->when($this->fiscalYearId, fn($q) => $q->where('fiscal_year_id', $this->fiscalYearId))
-            ->when($this->monthId, fn($q) => $q->where('month_id', $this->monthId))
-            ->when($this->portId, fn($q) => $q->where('port_id', $this->portId))
+            ->when($this->fiscalYearId, fn ($q) => $q->where('fiscal_year_id', $this->fiscalYearId))
+            ->when($this->monthId, fn ($q) => $q->where('month_id', $this->monthId))
+            ->when($this->portId, fn ($q) => $q->where('port_id', $this->portId))
             ->distinct()
             ->pluck('container_entity_id')
             ->all();

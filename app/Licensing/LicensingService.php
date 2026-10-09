@@ -32,7 +32,7 @@ class LicensingService
      * سيتم استخدامه للتحقق من أن ملف الرخصة قد تم توقيعه بواسطة مفتاحك الخاص فقط.
      * انسخه من لوحة تحكم licensing-manager.test للمشروع (akod).
      */
-    private static string $publicKey = <<<EOD
+    private static string $publicKey = <<<'EOD'
 -----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAmlD++qeXoEUlZnuLKWcG
 RjZnQY+a4PP9iLFzYZeoBkytdIgJrZLZZL2zpcAREH0h8SUwYUpqS7BC3dPvmoRF

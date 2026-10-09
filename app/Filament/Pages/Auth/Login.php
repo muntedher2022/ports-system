@@ -2,6 +2,9 @@
 
 namespace App\Filament\Pages\Auth;
 
+use App\Models\User;
+use App\Services\AdminOtpService;
+use Filament\Auth\Http\Responses\Contracts\LoginResponse;
 use Filament\Auth\Pages\Login as BaseLogin;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
@@ -32,7 +35,7 @@ class Login extends BaseLogin
 
         if ($isEmail) {
             return [
-                'email'    => $login,
+                'email' => $login,
                 'password' => $data['password'],
             ];
         }
@@ -40,7 +43,7 @@ class Login extends BaseLogin
         // تنظيف ومطابقة رقم الهاتف
         $cleanPhone = preg_replace('/[\s\-\+\(\)]/', '', $login);
 
-        $matchedUser = \App\Models\User::where('phone', $login)
+        $matchedUser = User::where('phone', $login)
             ->orWhere('phone', $cleanPhone)
             ->when(strlen($cleanPhone) >= 7, function ($query) use ($cleanPhone) {
                 $trimmed = ltrim($cleanPhone, '0');
@@ -48,15 +51,15 @@ class Login extends BaseLogin
             })
             ->first();
 
-        if ($matchedUser && !empty($matchedUser->email)) {
+        if ($matchedUser && ! empty($matchedUser->email)) {
             return [
-                'email'    => $matchedUser->email,
+                'email' => $matchedUser->email,
                 'password' => $data['password'],
             ];
         }
 
         return [
-            'phone'    => $login,
+            'phone' => $login,
             'password' => $data['password'],
         ];
     }
@@ -64,7 +67,7 @@ class Login extends BaseLogin
     /**
      * مسح أي جلسة تحقق سابقة عند تسجيل الدخول وتوليد وإرسال رمز التحقق فوراً للقنوات المعتمدة
      */
-    public function authenticate(): ?\Filament\Auth\Http\Responses\Contracts\LoginResponse
+    public function authenticate(): ?LoginResponse
     {
         session()->forget([
             'admin_otp',
@@ -79,7 +82,7 @@ class Login extends BaseLogin
         $response = parent::authenticate();
 
         if (auth()->check()) {
-            \App\Services\AdminOtpService::generateAndSend(auth()->user(), request()->ip(), force: true);
+            AdminOtpService::generateAndSend(auth()->user(), request()->ip(), force: true);
         }
 
         return $response;

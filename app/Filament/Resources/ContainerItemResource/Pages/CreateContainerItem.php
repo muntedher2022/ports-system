@@ -32,13 +32,13 @@ class CreateContainerItem extends CreateRecord
             }
         } else {
             $record = ContainerStatusRecord::create([
-                'port_id'        => $data['port_id'],
+                'port_id' => $data['port_id'],
                 'fiscal_year_id' => $data['fiscal_year_id'],
-                'month_id'       => $data['month_id'],
+                'month_id' => $data['month_id'],
                 'container_type' => $cType,
-                'report_date'    => $data['arrival_date'] ?? now()->toDateString(),
-                'created_by'     => Auth::id() ?? 1,
-                'total_count'    => 0,
+                'report_date' => $data['arrival_date'] ?? now()->toDateString(),
+                'created_by' => Auth::id() ?? 1,
+                'total_count' => 0,
             ]);
         }
 

@@ -5,22 +5,24 @@ namespace App\Exports;
 use App\Models\MonthlyPortRecord;
 use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromCollection;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithEvents;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class MonthlyPortRecordExport implements FromCollection, WithHeadings, WithTitle, WithStyles, WithColumnWidths, WithEvents, WithStrictNullComparison
+class MonthlyPortRecordExport implements FromCollection, WithColumnWidths, WithEvents, WithHeadings, WithStrictNullComparison, WithStyles, WithTitle
 {
     protected ?int $portId;
+
     protected ?int $fiscalYearId;
+
     protected ?Collection $records;
 
     public function __construct(?int $portId = null, ?int $fiscalYearId = null, ?Collection $records = null)
@@ -97,77 +99,77 @@ class MonthlyPortRecordExport implements FromCollection, WithHeadings, WithTitle
     {
         $rows = $records->map(function (MonthlyPortRecord $r) {
             $statusLabel = match ($r->status) {
-                'approved'  => 'معتمد',
+                'approved' => 'معتمد',
                 'submitted' => 'مُقدَّم للاعتماد',
-                'locked'    => 'مقفل',
-                default     => 'مسودة',
+                'locked' => 'مقفل',
+                default => 'مسودة',
             };
 
             $exportedTotal = ((int) ($r->exported_empty_count ?? 0)) + ((int) ($r->exported_full_count ?? 0));
 
             return [
-                'port'                      => $r->port?->name_ar ?? '—',
-                'fiscal_year'               => $r->fiscalYear?->year ?? '—',
-                'month'                     => $r->month?->name_ar ?? "شهر {$r->month_id}",
-                'total_container_ships'     => (int) ($r->total_container_ships ?? 0),
-                'imported_weight_tons'      => (float) ($r->imported_containers_weight_tons ?? 0),
-                'imported_count'            => (int) ($r->imported_containers_count ?? 0),
-                'imported_20ft'             => (int) ($r->imported_20ft ?? 0),
-                'imported_40ft'             => (int) ($r->imported_40ft ?? 0),
-                'imported_45ft'             => (int) ($r->imported_45ft ?? 0),
-                'imported_teu'              => (int) ($r->imported_teu ?? 0),
-                'exported_empty'            => (int) ($r->exported_empty_count ?? 0),
-                'exported_full'             => (int) ($r->exported_full_count ?? 0),
+                'port' => $r->port?->name_ar ?? '—',
+                'fiscal_year' => $r->fiscalYear?->year ?? '—',
+                'month' => $r->month?->name_ar ?? "شهر {$r->month_id}",
+                'total_container_ships' => (int) ($r->total_container_ships ?? 0),
+                'imported_weight_tons' => (float) ($r->imported_containers_weight_tons ?? 0),
+                'imported_count' => (int) ($r->imported_containers_count ?? 0),
+                'imported_20ft' => (int) ($r->imported_20ft ?? 0),
+                'imported_40ft' => (int) ($r->imported_40ft ?? 0),
+                'imported_45ft' => (int) ($r->imported_45ft ?? 0),
+                'imported_teu' => (int) ($r->imported_teu ?? 0),
+                'exported_empty' => (int) ($r->exported_empty_count ?? 0),
+                'exported_full' => (int) ($r->exported_full_count ?? 0),
                 'exported_full_weight_tons' => (float) ($r->exported_full_weight_tons ?? 0),
-                'exported_total_count'      => $exportedTotal,
-                'exported_20ft'             => (int) ($r->exported_20ft ?? 0),
-                'exported_40ft'             => (int) ($r->exported_40ft ?? 0),
-                'exported_45ft'             => (int) ($r->exported_45ft ?? 0),
-                'exported_teu'              => (int) ($r->exported_teu ?? 0),
-                'general_cargo_ships'       => (int) ($r->general_cargo_ships ?? 0),
+                'exported_total_count' => $exportedTotal,
+                'exported_20ft' => (int) ($r->exported_20ft ?? 0),
+                'exported_40ft' => (int) ($r->exported_40ft ?? 0),
+                'exported_45ft' => (int) ($r->exported_45ft ?? 0),
+                'exported_teu' => (int) ($r->exported_teu ?? 0),
+                'general_cargo_ships' => (int) ($r->general_cargo_ships ?? 0),
                 'general_cargo_weight_tons' => (float) ($r->general_cargo_weight_tons ?? 0),
-                'oil_tankers_count'         => (int) ($r->oil_tankers_count ?? 0),
-                'oil_exported_tons'         => (float) ($r->oil_exported_tons ?? 0),
-                'oil_imported_tons'         => (float) ($r->oil_imported_tons ?? 0),
-                'oil_total_tons'            => (float) ($r->oil_total_tons ?? 0),
-                'imported_cars_count'       => (int) ($r->imported_cars_count ?? 0),
+                'oil_tankers_count' => (int) ($r->oil_tankers_count ?? 0),
+                'oil_exported_tons' => (float) ($r->oil_exported_tons ?? 0),
+                'oil_imported_tons' => (float) ($r->oil_imported_tons ?? 0),
+                'oil_total_tons' => (float) ($r->oil_total_tons ?? 0),
+                'imported_cars_count' => (int) ($r->imported_cars_count ?? 0),
                 'imported_cars_weight_tons' => (float) ($r->imported_cars_weight_tons ?? 0),
-                'total_revenue'             => (float) ($r->total_revenue ?? 0),
-                'status'                    => $statusLabel,
+                'total_revenue' => (float) ($r->total_revenue ?? 0),
+                'status' => $statusLabel,
             ];
         });
 
         // إضافة صف المجموع في الأسفل إذا وُجدت سجلات
         if ($rows->isNotEmpty()) {
             $totalRow = [
-                'port'                      => 'المجموع الكلي',
-                'fiscal_year'               => '—',
-                'month'                     => '—',
-                'total_container_ships'     => (int) $rows->sum('total_container_ships'),
-                'imported_weight_tons'      => (float) $rows->sum('imported_weight_tons'),
-                'imported_count'            => (int) $rows->sum('imported_count'),
-                'imported_20ft'             => (int) $rows->sum('imported_20ft'),
-                'imported_40ft'             => (int) $rows->sum('imported_40ft'),
-                'imported_45ft'             => (int) $rows->sum('imported_45ft'),
-                'imported_teu'              => (int) $rows->sum('imported_teu'),
-                'exported_empty'            => (int) $rows->sum('exported_empty'),
-                'exported_full'             => (int) $rows->sum('exported_full'),
+                'port' => 'المجموع الكلي',
+                'fiscal_year' => '—',
+                'month' => '—',
+                'total_container_ships' => (int) $rows->sum('total_container_ships'),
+                'imported_weight_tons' => (float) $rows->sum('imported_weight_tons'),
+                'imported_count' => (int) $rows->sum('imported_count'),
+                'imported_20ft' => (int) $rows->sum('imported_20ft'),
+                'imported_40ft' => (int) $rows->sum('imported_40ft'),
+                'imported_45ft' => (int) $rows->sum('imported_45ft'),
+                'imported_teu' => (int) $rows->sum('imported_teu'),
+                'exported_empty' => (int) $rows->sum('exported_empty'),
+                'exported_full' => (int) $rows->sum('exported_full'),
                 'exported_full_weight_tons' => (float) $rows->sum('exported_full_weight_tons'),
-                'exported_total_count'      => (int) $rows->sum('exported_total_count'),
-                'exported_20ft'             => (int) $rows->sum('exported_20ft'),
-                'exported_40ft'             => (int) $rows->sum('exported_40ft'),
-                'exported_45ft'             => (int) $rows->sum('exported_45ft'),
-                'exported_teu'              => (int) $rows->sum('exported_teu'),
-                'general_cargo_ships'       => (int) $rows->sum('general_cargo_ships'),
+                'exported_total_count' => (int) $rows->sum('exported_total_count'),
+                'exported_20ft' => (int) $rows->sum('exported_20ft'),
+                'exported_40ft' => (int) $rows->sum('exported_40ft'),
+                'exported_45ft' => (int) $rows->sum('exported_45ft'),
+                'exported_teu' => (int) $rows->sum('exported_teu'),
+                'general_cargo_ships' => (int) $rows->sum('general_cargo_ships'),
                 'general_cargo_weight_tons' => (float) $rows->sum('general_cargo_weight_tons'),
-                'oil_tankers_count'         => (int) $rows->sum('oil_tankers_count'),
-                'oil_exported_tons'         => (float) $rows->sum('oil_exported_tons'),
-                'oil_imported_tons'         => (float) $rows->sum('oil_imported_tons'),
-                'oil_total_tons'            => (float) $rows->sum('oil_total_tons'),
-                'imported_cars_count'       => (int) $rows->sum('imported_cars_count'),
+                'oil_tankers_count' => (int) $rows->sum('oil_tankers_count'),
+                'oil_exported_tons' => (float) $rows->sum('oil_exported_tons'),
+                'oil_imported_tons' => (float) $rows->sum('oil_imported_tons'),
+                'oil_total_tons' => (float) $rows->sum('oil_total_tons'),
+                'imported_cars_count' => (int) $rows->sum('imported_cars_count'),
                 'imported_cars_weight_tons' => (float) $rows->sum('imported_cars_weight_tons'),
-                'total_revenue'             => (float) $rows->sum('total_revenue'),
-                'status'                    => 'الإجمالي',
+                'total_revenue' => (float) $rows->sum('total_revenue'),
+                'status' => 'الإجمالي',
             ];
 
             $rows->push($totalRow);
@@ -205,8 +207,8 @@ class MonthlyPortRecordExport implements FromCollection, WithHeadings, WithTitle
             'X' => 20, // نفط كلي
             'Y' => 18, // سيارات
             'Z' => 22, // وزن سيارات
-            'AA'=> 24, // الإيراد
-            'AB'=> 14, // الحالة
+            'AA' => 24, // الإيراد
+            'AB' => 14, // الحالة
         ];
     }
 
@@ -218,24 +220,24 @@ class MonthlyPortRecordExport implements FromCollection, WithHeadings, WithTitle
         // تنسيق صف العناوين الرئيسي (Navy Blue)
         $sheet->getStyle("A1:{$lastColumn}1")->applyFromArray([
             'font' => [
-                'bold'  => true,
+                'bold' => true,
                 'color' => ['rgb' => 'FFFFFF'],
-                'size'  => 11,
-                'name'  => 'Calibri',
+                'size' => 11,
+                'name' => 'Calibri',
             ],
             'fill' => [
-                'fillType'   => Fill::FILL_SOLID,
+                'fillType' => Fill::FILL_SOLID,
                 'startColor' => ['rgb' => '1E3A8A'], // أزرق كحلي ملكي
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
-                'wrapText'   => true,
+                'vertical' => Alignment::VERTICAL_CENTER,
+                'wrapText' => true,
             ],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color'       => ['rgb' => 'FFFFFF'],
+                    'color' => ['rgb' => 'FFFFFF'],
                 ],
             ],
         ]);
@@ -253,12 +255,12 @@ class MonthlyPortRecordExport implements FromCollection, WithHeadings, WithTitle
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
-                    'vertical'   => Alignment::VERTICAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
                 ],
                 'borders' => [
                     'allBorders' => [
                         'borderStyle' => Border::BORDER_THIN,
-                        'color'       => ['rgb' => 'CBD5E1'],
+                        'color' => ['rgb' => 'CBD5E1'],
                     ],
                 ],
             ]);
@@ -282,31 +284,31 @@ class MonthlyPortRecordExport implements FromCollection, WithHeadings, WithTitle
             // ─── تنسيق صف المجموع الكلي (Last Row) ───
             $sheet->getStyle("A{$lastRow}:{$lastColumn}{$lastRow}")->applyFromArray([
                 'font' => [
-                    'bold'  => true,
-                    'size'  => 11,
-                    'name'  => 'Calibri',
+                    'bold' => true,
+                    'size' => 11,
+                    'name' => 'Calibri',
                     'color' => ['rgb' => 'FFFFFF'],
                 ],
                 'fill' => [
-                    'fillType'   => Fill::FILL_SOLID,
+                    'fillType' => Fill::FILL_SOLID,
                     'startColor' => ['rgb' => '0F172A'], // كحلي غامق فخم
                 ],
                 'alignment' => [
                     'horizontal' => Alignment::HORIZONTAL_CENTER,
-                    'vertical'   => Alignment::VERTICAL_CENTER,
+                    'vertical' => Alignment::VERTICAL_CENTER,
                 ],
                 'borders' => [
                     'top' => [
                         'borderStyle' => Border::BORDER_MEDIUM,
-                        'color'       => ['rgb' => 'F59E0B'], // حافة ذهبية علوية
+                        'color' => ['rgb' => 'F59E0B'], // حافة ذهبية علوية
                     ],
                     'bottom' => [
                         'borderStyle' => Border::BORDER_DOUBLE,
-                        'color'       => ['rgb' => 'FFFFFF'],
+                        'color' => ['rgb' => 'FFFFFF'],
                     ],
                     'allBorders' => [
                         'borderStyle' => Border::BORDER_THIN,
-                        'color'       => ['rgb' => '475569'],
+                        'color' => ['rgb' => '475569'],
                     ],
                 ],
             ]);

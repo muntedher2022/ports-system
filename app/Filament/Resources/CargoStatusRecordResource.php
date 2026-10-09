@@ -45,17 +45,25 @@ use Illuminate\Support\Facades\DB;
 class CargoStatusRecordResource extends Resource
 {
     protected static ?string $model = CargoStatusRecord::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
+
     protected static ?string $navigationLabel = 'سجلات المواد والبضائع';
+
     protected static ?string $modelLabel = 'سجل مواد وبضائع';
+
     protected static ?string $pluralModelLabel = 'سجلات المواد والبضائع';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Cargo;
+
     protected static ?int $navigationSort = 2;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return true;
     }
@@ -69,6 +77,7 @@ class CargoStatusRecordResource extends Resource
         }
         $years['تواريخ متعددة'] = 'تواريخ متعددة';
         $years['غير محدد التاريخ'] = 'غير محدد التاريخ';
+
         return $years;
     }
 
@@ -173,16 +182,18 @@ class CargoStatusRecordResource extends Resource
                             ->collapsible()
                             ->cloneable()
                             ->itemLabel(function (array $state): ?string {
-                                if (!empty($state['cargo_entity_id'])) {
+                                if (! empty($state['cargo_entity_id'])) {
                                     $entity = CargoEntity::find($state['cargo_entity_id']);
                                     $total = 0;
-                                    if (!empty($state['years']) && is_array($state['years'])) {
+                                    if (! empty($state['years']) && is_array($state['years'])) {
                                         foreach ($state['years'] as $y) {
                                             $total += (int) ($y['count'] ?? 0);
                                         }
                                     }
-                                    return $entity ? "🏛️ [{$entity->entity_type_label}] {$entity->name_ar} — (الإجمالي: " . number_format($total) . " مادة/طرد)" : null;
+
+                                    return $entity ? "🏛️ [{$entity->entity_type_label}] {$entity->name_ar} — (الإجمالي: ".number_format($total).' مادة/طرد)' : null;
                                 }
+
                                 return '➕ جهة جديدة';
                             })
                             ->schema([
@@ -194,8 +205,8 @@ class CargoStatusRecordResource extends Resource
                                             ->orderBy('entity_type')
                                             ->orderBy('sort_order')
                                             ->get()
-                                            ->mapWithKeys(fn($e) => [
-                                                $e->id => "[{$e->entity_type_label}] {$e->name_ar}"
+                                            ->mapWithKeys(fn ($e) => [
+                                                $e->id => "[{$e->entity_type_label}] {$e->name_ar}",
                                             ])
                                     )
                                     ->searchable()
@@ -291,15 +302,15 @@ class CargoStatusRecordResource extends Resource
                 TextColumn::make('cargo_type')
                     ->label('نوع المواد')
                     ->badge()
-                    ->formatStateUsing(fn($state) => match($state) {
+                    ->formatStateUsing(fn ($state) => match ($state) {
                         'abandoned' => 'متخلفة',
                         'dangerous' => 'خطرة',
-                        default     => $state,
+                        default => $state,
                     })
-                    ->color(fn($state) => match($state) {
+                    ->color(fn ($state) => match ($state) {
                         'abandoned' => 'warning',
                         'dangerous' => 'danger',
-                        default     => 'gray',
+                        default => 'gray',
                     })
                     ->toggleable(),
 
@@ -329,7 +340,7 @@ class CargoStatusRecordResource extends Resource
 
                 TextColumn::make('total_count')
                     ->label('إجمالي المواد/الطرود')
-                    ->getStateUsing(fn($record) => number_format($record->total_count))
+                    ->getStateUsing(fn ($record) => number_format($record->total_count))
                     ->badge()
                     ->color('success')
                     ->toggleable(),
@@ -340,7 +351,7 @@ class CargoStatusRecordResource extends Resource
                     ->formatStateUsing(fn ($record) => $record->excel_file_name ?: ($record->excel_file_path ? 'تحميل الملف 📥' : '—'))
                     ->badge()
                     ->color(fn ($record) => $record->excel_file_path ? 'success' : 'gray')
-                    ->url(fn ($record) => $record->excel_file_path ? asset('storage/' . $record->excel_file_path) : null, shouldOpenInNewTab: true)
+                    ->url(fn ($record) => $record->excel_file_path ? asset('storage/'.$record->excel_file_path) : null, shouldOpenInNewTab: true)
                     ->tooltip(fn ($record) => $record->excel_file_path ? 'انقر لتحميل ملف الإكسل المرفق' : 'لا يوجد ملف مرفق')
                     ->toggleable(),
 
@@ -353,7 +364,7 @@ class CargoStatusRecordResource extends Resource
             ->filters([
                 SelectFilter::make('port_id')
                     ->label('الميناء')
-                    ->options(fn () => Port::where('is_active', true)->where(fn($q) => $q->where('has_cargo_status', true)->orWhereHas('cargoStatusRecords'))->orderBy('sort_order')->pluck('name_ar', 'id'))
+                    ->options(fn () => Port::where('is_active', true)->where(fn ($q) => $q->where('has_cargo_status', true)->orWhereHas('cargoStatusRecords'))->orderBy('sort_order')->pluck('name_ar', 'id'))
                     ->searchable(),
 
                 SelectFilter::make('cargo_type')
@@ -385,13 +396,13 @@ class CargoStatusRecordResource extends Resource
                         ->label('تحميل Excel')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->color('success')
-                        ->visible(fn (CargoStatusRecord $record) => !empty($record->excel_file_path))
-                        ->url(fn (CargoStatusRecord $record) => asset('storage/' . $record->excel_file_path), shouldOpenInNewTab: true),
+                        ->visible(fn (CargoStatusRecord $record) => ! empty($record->excel_file_path))
+                        ->url(fn (CargoStatusRecord $record) => asset('storage/'.$record->excel_file_path), shouldOpenInNewTab: true),
                     Action::make('clone_record')
                         ->label('نسخ إلى شهر آخر')
                         ->icon('heroicon-o-document-duplicate')
                         ->color('success')
-                        ->modalHeading(fn (CargoStatusRecord $record) => "نسخ بيانات موقف المواد ({$record->port?->name_ar} - " . ($record->cargo_type === 'abandoned' ? 'متخلفة' : 'خطرة') . ")")
+                        ->modalHeading(fn (CargoStatusRecord $record) => "نسخ بيانات موقف المواد ({$record->port?->name_ar} - ".($record->cargo_type === 'abandoned' ? 'متخلفة' : 'خطرة').')')
                         ->modalDescription('اختر السنة المالية والشهر المستهدف لنسخ وتكرار كافة بيانات القيود والجهات والأعداد إليه مباشرة.')
                         ->modalSubmitActionLabel('بدء النسخ والإنشاء')
                         ->modalIcon('heroicon-o-document-duplicate')
@@ -407,6 +418,7 @@ class CargoStatusRecordResource extends Resource
                                 ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
                                 ->default(function (CargoStatusRecord $record) {
                                     $nextMonthNum = ($record->month?->month_number % 12) + 1;
+
                                     return Month::where('month_number', $nextMonthNum)->first()?->id ?? $record->month_id;
                                 })
                                 ->required(),
@@ -435,28 +447,29 @@ class CargoStatusRecordResource extends Resource
                                     ->body("يوجد قيد مسجل مسبقاً لميناء ({$record->port?->name_ar}) في الشهر والسنة المحددين!")
                                     ->danger()
                                     ->send();
+
                                 return;
                             }
 
                             DB::transaction(function () use ($record, $targetYearId, $targetMonthId, $targetReportDate) {
                                 $newRecord = CargoStatusRecord::create([
-                                    'port_id'         => $record->port_id,
-                                    'cargo_type'      => $record->cargo_type,
-                                    'fiscal_year_id'  => $targetYearId,
-                                    'month_id'        => $targetMonthId,
-                                    'report_date'     => $targetReportDate,
-                                    'notes'           => $record->notes,
-                                    'created_by'      => Auth::id() ?? 1,
-                                    'total_count'     => 0,
+                                    'port_id' => $record->port_id,
+                                    'cargo_type' => $record->cargo_type,
+                                    'fiscal_year_id' => $targetYearId,
+                                    'month_id' => $targetMonthId,
+                                    'report_date' => $targetReportDate,
+                                    'notes' => $record->notes,
+                                    'created_by' => Auth::id() ?? 1,
+                                    'total_count' => 0,
                                 ]);
 
                                 foreach ($record->details as $detail) {
                                     CargoStatusDetail::create([
                                         'cargo_status_record_id' => $newRecord->id,
-                                        'cargo_entity_id'        => $detail->cargo_entity_id,
-                                        'year_label'             => $detail->year_label,
-                                        'count'                  => $detail->count,
-                                        'sort_order'             => $detail->sort_order,
+                                        'cargo_entity_id' => $detail->cargo_entity_id,
+                                        'year_label' => $detail->year_label,
+                                        'count' => $detail->count,
+                                        'sort_order' => $detail->sort_order,
                                     ]);
                                 }
 
@@ -491,8 +504,8 @@ class CargoStatusRecordResource extends Resource
                         ->modalHeading('⚠️ حذف نهائي لا رجعة فيه!')
                         ->successNotificationTitle('تم الحذف النهائي'),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make()->label('حذف مؤقت للمحدد'),
@@ -510,9 +523,9 @@ class CargoStatusRecordResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListCargoStatusRecords::route('/'),
+            'index' => Pages\ListCargoStatusRecords::route('/'),
             'create' => Pages\CreateCargoStatusRecord::route('/create'),
-            'edit'   => Pages\EditCargoStatusRecord::route('/{record}/edit'),
+            'edit' => Pages\EditCargoStatusRecord::route('/{record}/edit'),
         ];
     }
 }

@@ -14,8 +14,6 @@ use App\Models\MonthlyPortRecord;
 use App\Models\Port;
 use App\Models\RevenueCenter;
 use App\Models\RevenueRecord;
-use Illuminate\Database\Eloquent\Builder;
-
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -41,24 +39,32 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\HtmlString;
 
 class MonthlyPortRecordResource extends Resource
 {
     protected static ?string $model = MonthlyPortRecord::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
+
     protected static ?string $navigationLabel = 'السجلات التشغيلية للموانئ';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Operations;
+
     protected static ?string $modelLabel = 'سجل تشغيلي شهري';
+
     protected static ?string $pluralModelLabel = 'السجلات التشغيلية للموانئ';
+
     protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (!$user)
+        if (! $user) {
             return false;
+        }
 
         return $user->hasRole(['المدير العام', 'general_manager', 'مسؤول المتابعة المركزية والعمليات', 'operations_manager', 'مدخل بيانات الميناء', 'port_data_entry', 'مدقق / مراجع', 'reviewer'])
             || in_array($user->user_type, ['general_manager', 'operations_manager', 'port_data_entry', 'reviewer']);
@@ -81,6 +87,7 @@ class MonthlyPortRecordResource extends Resource
                                 if ($user?->isPortRestricted() && $user?->port_id) {
                                     return Port::where('id', $user->port_id)->pluck('name_ar', 'id');
                                 }
+
                                 return Port::where('is_active', true)
                                     ->where(function ($q) use ($record) {
                                         $q->where('has_monthly_records', true);
@@ -94,32 +101,34 @@ class MonthlyPortRecordResource extends Resource
                             ->required()
                             ->searchable()
                             ->live()
-                            ->afterStateUpdated(fn($get, $set) => static::autoFillRevenue($get, $set))
+                            ->afterStateUpdated(fn ($get, $set) => static::autoFillRevenue($get, $set))
                             ->default(function () {
                                 $user = Auth::user();
+
                                 return $user?->port_id;
                             })
                             ->disabled(function () {
                                 $user = Auth::user();
+
                                 return (bool) ($user?->isPortRestricted() && $user?->port_id);
                             }),
 
                         Select::make('fiscal_year_id')
                             ->label('السنة المالية')
-                            ->options(fn() => FiscalYear::pluck('year', 'id'))
-                            ->default(fn() => FiscalYear::where('is_current', true)->first()?->id)
+                            ->options(fn () => FiscalYear::pluck('year', 'id'))
+                            ->default(fn () => FiscalYear::where('is_current', true)->first()?->id)
                             ->live()
-                            ->afterStateUpdated(fn($get, $set) => static::autoFillRevenue($get, $set))
+                            ->afterStateUpdated(fn ($get, $set) => static::autoFillRevenue($get, $set))
                             ->required(),
 
                         Select::make('month_id')
                             ->label('الشهر')
-                            ->options(fn() => Month::orderBy('month_number')->get()->mapWithKeys(fn($m) => [$m->id => "{$m->month_number} - {$m->name_ar}"]))
+                            ->options(fn () => Month::orderBy('month_number')->get()->mapWithKeys(fn ($m) => [$m->id => "{$m->month_number} - {$m->name_ar}"]))
                             ->required()
                             ->live()
-                            ->afterStateUpdated(fn($get, $set) => static::autoFillRevenue($get, $set))
+                            ->afterStateUpdated(fn ($get, $set) => static::autoFillRevenue($get, $set))
                             ->rules([
-                                fn($get, $record) => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
+                                fn ($get, $record) => function (string $attribute, $value, \Closure $fail) use ($get, $record) {
                                     $portId = $get('port_id');
                                     $fiscalYearId = $get('fiscal_year_id');
 
@@ -178,7 +187,7 @@ class MonthlyPortRecordResource extends Resource
                             ->minValue(0)
                             ->default(0)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn($get, $set) => static::recalculateImported($get, $set)),
+                            ->afterStateUpdated(fn ($get, $set) => static::recalculateImported($get, $set)),
 
                         TextInput::make('imported_40ft')
                             ->label('40 قدم (مستورد)')
@@ -186,7 +195,7 @@ class MonthlyPortRecordResource extends Resource
                             ->minValue(0)
                             ->default(0)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn($get, $set) => static::recalculateImported($get, $set)),
+                            ->afterStateUpdated(fn ($get, $set) => static::recalculateImported($get, $set)),
 
                         TextInput::make('imported_45ft')
                             ->label('45 قدم (مستورد)')
@@ -194,7 +203,7 @@ class MonthlyPortRecordResource extends Resource
                             ->minValue(0)
                             ->default(0)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn($get, $set) => static::recalculateImported($get, $set)),
+                            ->afterStateUpdated(fn ($get, $set) => static::recalculateImported($get, $set)),
 
                         TextInput::make('imported_teu')
                             ->label('TEU المستورد')
@@ -215,7 +224,7 @@ class MonthlyPortRecordResource extends Resource
                             ->minValue(0)
                             ->default(0)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn($get, $set) => static::recalculateExported($get, $set)),
+                            ->afterStateUpdated(fn ($get, $set) => static::recalculateExported($get, $set)),
 
                         TextInput::make('exported_full_count')
                             ->label('عدد الحاويات المصدرة مملوءة')
@@ -223,7 +232,7 @@ class MonthlyPortRecordResource extends Resource
                             ->minValue(0)
                             ->default(0)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn($get, $set) => static::recalculateExported($get, $set)),
+                            ->afterStateUpdated(fn ($get, $set) => static::recalculateExported($get, $set)),
 
                         TextInput::make('exported_full_weight_tons')
                             ->label('الوزن بالطن للمصدر المليان')
@@ -278,7 +287,7 @@ class MonthlyPortRecordResource extends Resource
                                 return new HtmlString("<span class='text-rose-700 font-bold flex items-center gap-1'>⚠️ غير متطابق: مجموع المقاسات ({$sumSizes}) لا يساوي مجموع (فارغ + مملوء = {$sumStatus})</span>");
                             })
                             ->rules([
-                                fn($get) => function (string $attribute, $value, \Closure $fail) use ($get) {
+                                fn ($get) => function (string $attribute, $value, \Closure $fail) use ($get) {
                                     $empty = (int) ($get('exported_empty_count') ?? 0);
                                     $full = (int) ($get('exported_full_count') ?? 0);
                                     $c20 = (int) ($get('exported_20ft') ?? 0);
@@ -300,7 +309,7 @@ class MonthlyPortRecordResource extends Resource
                             ->minValue(0)
                             ->default(0)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn($get, $set) => static::recalculateExported($get, $set)),
+                            ->afterStateUpdated(fn ($get, $set) => static::recalculateExported($get, $set)),
 
                         TextInput::make('exported_40ft')
                             ->label('40 قدم (مصدر)')
@@ -308,7 +317,7 @@ class MonthlyPortRecordResource extends Resource
                             ->minValue(0)
                             ->default(0)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn($get, $set) => static::recalculateExported($get, $set)),
+                            ->afterStateUpdated(fn ($get, $set) => static::recalculateExported($get, $set)),
 
                         TextInput::make('exported_45ft')
                             ->label('45 قدم (مصدر)')
@@ -316,7 +325,7 @@ class MonthlyPortRecordResource extends Resource
                             ->minValue(0)
                             ->default(0)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn($get, $set) => static::recalculateExported($get, $set)),
+                            ->afterStateUpdated(fn ($get, $set) => static::recalculateExported($get, $set)),
 
                         TextInput::make('exported_teu')
                             ->label('TEU المصدر')
@@ -360,7 +369,7 @@ class MonthlyPortRecordResource extends Resource
                             ->minValue(0)
                             ->default(0)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn($get, $set) => static::recalculateOilTotal($get, $set)),
+                            ->afterStateUpdated(fn ($get, $set) => static::recalculateOilTotal($get, $set)),
 
                         TextInput::make('oil_imported_tons')
                             ->label('نفط ومشتقاته مستورد بالطن')
@@ -368,7 +377,7 @@ class MonthlyPortRecordResource extends Resource
                             ->minValue(0)
                             ->default(0)
                             ->live(debounce: 500)
-                            ->afterStateUpdated(fn($get, $set) => static::recalculateOilTotal($get, $set)),
+                            ->afterStateUpdated(fn ($get, $set) => static::recalculateOilTotal($get, $set)),
 
                         TextInput::make('oil_total_tons')
                             ->label('نفط ومشتقاته الكلي بالطن')
@@ -438,10 +447,11 @@ class MonthlyPortRecordResource extends Resource
                     if ($notify) {
                         Notification::make()
                             ->title('تم جلب الإيراد بنجاح')
-                            ->body('تم وضع المبلغ: ' . number_format((float) $revenueRecord->gross_revenue, 0) . ' د.ع')
+                            ->body('تم وضع المبلغ: '.number_format((float) $revenueRecord->gross_revenue, 0).' د.ع')
                             ->success()
                             ->send();
                     }
+
                     return;
                 }
             }
@@ -519,7 +529,7 @@ class MonthlyPortRecordResource extends Resource
                     ->label('الميناء')
                     ->sortable()
                     ->searchable(
-                        query: fn(Builder $query, string $search) => $query->whereHas('port', fn($q) => ArabicSearchHelper::applySearch($q, 'name_ar', $search)),
+                        query: fn (Builder $query, string $search) => $query->whereHas('port', fn ($q) => ArabicSearchHelper::applySearch($q, 'name_ar', $search)),
                         isIndividual: true,
                         isGlobal: true
                     )
@@ -543,7 +553,7 @@ class MonthlyPortRecordResource extends Resource
 
                 TextColumn::make('total_ships')
                     ->label('إجمالي البواخر')
-                    ->state(fn(MonthlyPortRecord $record) => $record->total_ships)
+                    ->state(fn (MonthlyPortRecord $record) => $record->total_ships)
                     ->numeric()
                     ->badge()
                     ->color('primary')
@@ -552,7 +562,7 @@ class MonthlyPortRecordResource extends Resource
 
                 TextColumn::make('total_teu')
                     ->label('إجمالي TEU')
-                    ->state(fn(MonthlyPortRecord $record) => $record->total_teu)
+                    ->state(fn (MonthlyPortRecord $record) => $record->total_teu)
                     ->numeric()
                     ->badge()
                     ->color('info')
@@ -561,7 +571,7 @@ class MonthlyPortRecordResource extends Resource
 
                 TextColumn::make('total_tonnage')
                     ->label('الطاقة بالطن')
-                    ->state(fn(MonthlyPortRecord $record) => number_format($record->total_tonnage, 0))
+                    ->state(fn (MonthlyPortRecord $record) => number_format($record->total_tonnage, 0))
                     ->alignEnd()
                     ->weight('bold')
                     ->toggleable(),
@@ -576,7 +586,7 @@ class MonthlyPortRecordResource extends Resource
 
                 TextColumn::make('status')
                     ->label('الحالة')
-                    ->formatStateUsing(fn($state) => match ($state) {
+                    ->formatStateUsing(fn ($state) => match ($state) {
                         'draft' => 'مسودة',
                         'submitted' => 'مُقدَّم للاعتماد',
                         'approved' => 'معتمد',
@@ -585,7 +595,7 @@ class MonthlyPortRecordResource extends Resource
                     })
                     ->badge()
                     ->searchable(isIndividual: true)
-                    ->color(fn($state) => match ($state) {
+                    ->color(fn ($state) => match ($state) {
                         'approved' => 'success',
                         'submitted' => 'warning',
                         'locked' => 'danger',
@@ -596,15 +606,15 @@ class MonthlyPortRecordResource extends Resource
             ->filters([
                 SelectFilter::make('port_id')
                     ->label('الميناء')
-                    ->options(fn() => Port::where('is_active', true)->where(fn($q) => $q->where('has_monthly_records', true)->orWhereHas('monthlyPortRecords'))->orderBy('sort_order')->pluck('name_ar', 'id')),
+                    ->options(fn () => Port::where('is_active', true)->where(fn ($q) => $q->where('has_monthly_records', true)->orWhereHas('monthlyPortRecords'))->orderBy('sort_order')->pluck('name_ar', 'id')),
 
                 SelectFilter::make('fiscal_year_id')
                     ->label('السنة المالية')
-                    ->options(fn() => FiscalYear::orderBy('year', 'desc')->pluck('year', 'id')),
+                    ->options(fn () => FiscalYear::orderBy('year', 'desc')->pluck('year', 'id')),
 
                 SelectFilter::make('month_id')
                     ->label('الشهر')
-                    ->options(fn() => Month::orderBy('month_number')->get()->mapWithKeys(fn($m) => [$m->id => "{$m->month_number} - {$m->name_ar}"])),
+                    ->options(fn () => Month::orderBy('month_number')->get()->mapWithKeys(fn ($m) => [$m->id => "{$m->month_number} - {$m->name_ar}"])),
 
                 SelectFilter::make('status')
                     ->label('الحالة')
@@ -634,7 +644,7 @@ class MonthlyPortRecordResource extends Resource
                         ->requiresConfirmation()
                         ->modalHeading('تقديم السجل للاعتماد والتدقيق')
                         ->modalDescription('هل أنت متأكد من اكتمال إدخال بيانات هذا الشهر وتقديمها للتدقيق؟')
-                        ->visible(fn(MonthlyPortRecord $record) => $record->status === 'draft' && !$record->trashed())
+                        ->visible(fn (MonthlyPortRecord $record) => $record->status === 'draft' && ! $record->trashed())
                         ->action(function (MonthlyPortRecord $record) {
                             $record->update([
                                 'status' => 'submitted',
@@ -655,7 +665,7 @@ class MonthlyPortRecordResource extends Resource
                         ->requiresConfirmation()
                         ->modalHeading('اعتماد السجل التشغيلي')
                         ->modalDescription('سيتم تثبيت واعتماد أرقام هذا الشهر بعد مراجعتها.')
-                        ->visible(fn(MonthlyPortRecord $record) => $record->status === 'submitted' && !$record->trashed() && Auth::user()?->hasRole(['admin', 'general_manager', 'operations_manager', 'reviewer']))
+                        ->visible(fn (MonthlyPortRecord $record) => $record->status === 'submitted' && ! $record->trashed() && Auth::user()?->hasRole(['admin', 'general_manager', 'operations_manager', 'reviewer']))
                         ->action(function (MonthlyPortRecord $record) {
                             $record->update([
                                 'status' => 'approved',
@@ -674,7 +684,7 @@ class MonthlyPortRecordResource extends Resource
                         ->modalHeading('نقل السجل إلى سلة المحذوفات')
                         ->modalDescription('سيتم نقل السجل مؤقتاً إلى سلة المحذوفات مع إمكانية استرداده لاحقاً.')
                         ->before(function (MonthlyPortRecord $record, DeleteAction $action) {
-                            if (in_array($record->status, ['approved', 'locked']) && !Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
+                            if (in_array($record->status, ['approved', 'locked']) && ! Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
                                 Notification::make()
                                     ->title('لا يمكن حذف سجل معتمد أو مقفل')
                                     ->body('هذا السجل تم اعتماده رسمياً. يجب إلغاء اعتماده أولاً من قبل الإدارة العامة قبل الحذف.')
@@ -691,18 +701,18 @@ class MonthlyPortRecordResource extends Resource
 
                     ForceDeleteAction::make()
                         ->label('حذف نهائي')
-                        ->visible(fn() => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                        ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
                     DeleteBulkAction::make()
                         ->label('حذف مؤقت للمحدد')
                         ->before(function ($records, DeleteBulkAction $action) {
-                            $hasApproved = $records->contains(fn($r) => in_array($r->status, ['approved', 'locked']));
-                            if ($hasApproved && !Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
+                            $hasApproved = $records->contains(fn ($r) => in_array($r->status, ['approved', 'locked']));
+                            if ($hasApproved && ! Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
                                 Notification::make()
                                     ->title('تحذير: توجد سجلات معتمدة')
                                     ->body('لا يمكن حذف السجلات المعتمدة جماعياً. يرجى إلغاء اعتمادها أولاً.')
@@ -714,7 +724,7 @@ class MonthlyPortRecordResource extends Resource
                     RestoreBulkAction::make()->label('استرداد المحدد'),
                     ForceDeleteBulkAction::make()
                         ->label('حذف نهائي للمحدد')
-                        ->visible(fn() => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
+                        ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
                 ]),
             ]);
     }

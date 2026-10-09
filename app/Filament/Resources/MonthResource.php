@@ -18,17 +18,25 @@ use Illuminate\Support\Facades\Auth;
 class MonthResource extends Resource
 {
     protected static ?string $model = Month::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
+
     protected static ?string $navigationLabel = 'الأشهر';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::MasterData;
+
     protected static ?string $modelLabel = 'شهر';
+
     protected static ?string $pluralModelLabel = 'الأشهر';
+
     protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return $user->hasRole(['المدير العام', 'general_manager', 'مسؤول المتابعة المركزية والعمليات', 'operations_manager'])
             || in_array($user->user_type, ['general_manager', 'operations_manager']);
@@ -75,8 +83,8 @@ class MonthResource extends Resource
                 ActionGroup::make([
                     ViewAction::make()->label('عرض'),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ]);
     }
 

@@ -16,7 +16,6 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -26,8 +25,11 @@ use Illuminate\Support\Facades\Auth;
 class ContainerItemsRelationManager extends RelationManager
 {
     protected static string $relationship = 'items';
+
     protected static ?string $title = 'تفاصيل الحاويات الفردية المسجلة';
+
     protected static ?string $modelLabel = 'حاوية';
+
     protected static ?string $pluralModelLabel = 'الحاويات';
 
     public function form(Schema $schema): Schema
@@ -82,7 +84,7 @@ class ContainerItemsRelationManager extends RelationManager
                 ->label('حالة الحاوية')
                 ->required()
                 ->options([
-                    'in_port'    => 'موجودة في الميناء',
+                    'in_port' => 'موجودة في الميناء',
                     'discharged' => 'تم اخراجها',
                 ])
                 ->default('in_port'),
@@ -156,7 +158,7 @@ class ContainerItemsRelationManager extends RelationManager
                 SelectFilter::make('status')
                     ->label('الحالة')
                     ->options([
-                        'in_port'    => 'موجودة في الميناء',
+                        'in_port' => 'موجودة في الميناء',
                         'discharged' => 'تم اخراجها',
                     ]),
             ])
@@ -170,6 +172,7 @@ class ContainerItemsRelationManager extends RelationManager
                         $data['container_type'] = $owner->container_type;
                         $data['created_by'] = Auth::id() ?? 1;
                         $data['is_manually_added'] = true;
+
                         return $data;
                     })
                     ->after(function () use ($owner) {

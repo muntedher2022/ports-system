@@ -13,8 +13,11 @@ use Illuminate\Support\Facades\Auth;
 class CargoStatsOverviewWidget extends Widget
 {
     protected static ?string $heading = '📦 إحصائيات ومؤشرات المواد والبضائع المتخلفة والخطرة';
+
     protected static ?int $sort = 6;
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
+
     protected string $view = 'filament.widgets.cargo-stats-overview-widget';
 
     public function getHeading(): ?string
@@ -25,7 +28,9 @@ class CargoStatsOverviewWidget extends Widget
     public static function canView(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return $user->hasRole(['super_admin', 'المدير العام', 'general_manager', 'reviewer', 'مدقق / مراجع', 'operations_manager', 'مسؤول المتابعة المركزية والعمليات'])
             || $user->can('view_any_cargo::status::record')
@@ -34,7 +39,7 @@ class CargoStatsOverviewWidget extends Widget
 
     public function getStats(): array
     {
-        $user   = Auth::user();
+        $user = Auth::user();
         $portId = ($user?->isPortRestricted() && $user?->port_id) ? $user->port_id : null;
 
         $currentYear = FiscalYear::where('is_current', true)->first()
@@ -47,8 +52,8 @@ class CargoStatsOverviewWidget extends Widget
             ->with(['details.entity'])
             ->get();
 
-        $abandonedTotal   = 0;
-        $abandonedGov     = 0;
+        $abandonedTotal = 0;
+        $abandonedGov = 0;
         $abandonedPrivate = 0;
 
         foreach ($abandonedRecords as $rec) {
@@ -77,18 +82,18 @@ class CargoStatsOverviewWidget extends Widget
         }
 
         // 3. الميناء الأكثر تسجيلاً للمواد
-        $topPortName  = '—';
+        $topPortName = '—';
         $topPortCount = 0;
         $ports = Port::where('is_active', true)->get();
         foreach ($ports as $p) {
-            $pCount = CargoStatusDetail::whereHas('record', function($q) use ($p, $currentYear) {
+            $pCount = CargoStatusDetail::whereHas('record', function ($q) use ($p, $currentYear) {
                 $q->where('port_id', $p->id)
-                  ->when($currentYear, fn($sq) => $sq->where('fiscal_year_id', $currentYear->id));
+                    ->when($currentYear, fn ($sq) => $sq->where('fiscal_year_id', $currentYear->id));
             })->sum('count');
 
             if ($pCount > $topPortCount) {
                 $topPortCount = $pCount;
-                $topPortName  = $p->name_ar;
+                $topPortName = $p->name_ar;
             }
         }
 
@@ -96,14 +101,14 @@ class CargoStatsOverviewWidget extends Widget
         $entitiesCount = CargoEntity::active()->count();
 
         return [
-            'abandonedTotal'   => $abandonedTotal,
-            'abandonedGov'     => $abandonedGov,
+            'abandonedTotal' => $abandonedTotal,
+            'abandonedGov' => $abandonedGov,
             'abandonedPrivate' => $abandonedPrivate,
-            'dangerousTotal'   => $dangerousTotal,
-            'topPortName'      => $topPortName,
-            'topPortCount'     => $topPortCount,
-            'entitiesCount'    => $entitiesCount,
-            'currentYear'      => $currentYear?->year ?? date('Y'),
+            'dangerousTotal' => $dangerousTotal,
+            'topPortName' => $topPortName,
+            'topPortCount' => $topPortCount,
+            'entitiesCount' => $entitiesCount,
+            'currentYear' => $currentYear?->year ?? date('Y'),
         ];
     }
 }

@@ -6,23 +6,24 @@ use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\RevenueCenter;
 use App\Models\RevenueRecord;
-use Illuminate\Support\Collection;
 use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class RevenueRecordExport implements FromArray, WithTitle, WithStyles, WithColumnWidths, WithEvents, WithStrictNullComparison
+class RevenueRecordExport implements FromArray, WithColumnWidths, WithEvents, WithStrictNullComparison, WithStyles, WithTitle
 {
     protected ?int $fiscalYearId;
+
     protected ?string $yearName;
+
     protected ?string $latestMonthName;
 
     public function __construct(?int $revenueCenterId = null, ?int $fiscalYearId = null)
@@ -40,7 +41,7 @@ class RevenueRecordExport implements FromArray, WithTitle, WithStyles, WithColum
     public function array(): array
     {
         $allCenters = RevenueCenter::where('is_active', true)->orderBy('sort_order')->get();
-        $allMonths  = Month::orderBy('month_number')->get();
+        $allMonths = Month::orderBy('month_number')->get();
 
         $records = RevenueRecord::where('fiscal_year_id', $this->fiscalYearId)->get();
 
@@ -54,11 +55,11 @@ class RevenueRecordExport implements FromArray, WithTitle, WithStyles, WithColum
             $centers = $allCenters;
         }
 
-        $recordsGrouped = $records->groupBy(fn ($r) => $r->month_id . '_' . $r->revenue_center_id);
+        $recordsGrouped = $records->groupBy(fn ($r) => $r->month_id.'_'.$r->revenue_center_id);
 
         // تصفية الأشهر لغاية آخر شهر تم إدخال بيانات له في السنة
-        $maxMonthId = $records->filter(fn($r) => (float)$r->gross_revenue > 0 || (float)$r->net_revenue > 0)->max('month_id');
-        $months = $maxMonthId 
+        $maxMonthId = $records->filter(fn ($r) => (float) $r->gross_revenue > 0 || (float) $r->net_revenue > 0)->max('month_id');
+        $months = $maxMonthId
             ? $allMonths->where('id', '<=', $maxMonthId)->values()
             : $allMonths;
 
@@ -84,11 +85,11 @@ class RevenueRecordExport implements FromArray, WithTitle, WithStyles, WithColum
             $row = [$month->name_ar];
 
             foreach ($centers as $center) {
-                $key = $month->id . '_' . $center->id;
+                $key = $month->id.'_'.$center->id;
                 $record = $recordsGrouped->get($key)?->first();
 
                 $gross = $record ? (float) $record->gross_revenue : 0;
-                $net   = $record ? (float) $record->net_revenue : 0;
+                $net = $record ? (float) $record->net_revenue : 0;
 
                 if ($record && ($gross > 0 || $net > 0)) {
                     $latestMonth = $month->name_ar;
@@ -96,7 +97,7 @@ class RevenueRecordExport implements FromArray, WithTitle, WithStyles, WithColum
 
                 $row[] = $gross;
                 $monthGross += $gross;
-                $monthNet   += $net;
+                $monthNet += $net;
                 $centerTotals[$center->id] += $gross;
             }
 
@@ -104,7 +105,7 @@ class RevenueRecordExport implements FromArray, WithTitle, WithStyles, WithColum
             $row[] = $monthNet;
 
             $grandGrossTotal += $monthGross;
-            $grandNetTotal   += $monthNet;
+            $grandNetTotal += $monthNet;
 
             $dataRows[] = $row;
         }
@@ -150,23 +151,23 @@ class RevenueRecordExport implements FromArray, WithTitle, WithStyles, WithColum
         $sheet->mergeCells("A1:{$lastColumn}1");
         $sheet->getStyle("A1:{$lastColumn}1")->applyFromArray([
             'font' => [
-                'bold'  => true,
+                'bold' => true,
                 'color' => ['rgb' => '0F172A'],
-                'size'  => 13,
-                'name'  => 'Calibri',
+                'size' => 13,
+                'name' => 'Calibri',
             ],
             'fill' => [
-                'fillType'   => Fill::FILL_SOLID,
+                'fillType' => Fill::FILL_SOLID,
                 'startColor' => ['rgb' => '7DD3FC'], // أزرق سماوي كما في الترويسة
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
             ],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_MEDIUM,
-                    'color'       => ['rgb' => '0F172A'],
+                    'color' => ['rgb' => '0F172A'],
                 ],
             ],
         ]);
@@ -175,24 +176,24 @@ class RevenueRecordExport implements FromArray, WithTitle, WithStyles, WithColum
         // 2. تنسيق صف رؤوس الأعمدة (الصف 2)
         $sheet->getStyle("A2:{$lastColumn}2")->applyFromArray([
             'font' => [
-                'bold'  => true,
+                'bold' => true,
                 'color' => ['rgb' => '0F172A'],
-                'size'  => 11,
-                'name'  => 'Calibri',
+                'size' => 11,
+                'name' => 'Calibri',
             ],
             'fill' => [
-                'fillType'   => Fill::FILL_SOLID,
+                'fillType' => Fill::FILL_SOLID,
                 'startColor' => ['rgb' => 'FACC15'], // أصفر مخضر/ليموني مطابق لجدول PDF
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
-                'wrapText'   => true,
+                'vertical' => Alignment::VERTICAL_CENTER,
+                'wrapText' => true,
             ],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color'       => ['rgb' => '000000'],
+                    'color' => ['rgb' => '000000'],
                 ],
             ],
         ]);
@@ -207,12 +208,12 @@ class RevenueRecordExport implements FromArray, WithTitle, WithStyles, WithColum
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
             ],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_THIN,
-                    'color'       => ['rgb' => '000000'],
+                    'color' => ['rgb' => '000000'],
                 ],
             ],
         ]);
@@ -227,23 +228,23 @@ class RevenueRecordExport implements FromArray, WithTitle, WithStyles, WithColum
         // 4. تنسيق صف المجموع النهائي (الصف الأخير)
         $sheet->getStyle("A{$lastRow}:{$lastColumn}{$lastRow}")->applyFromArray([
             'font' => [
-                'bold'  => true,
-                'size'  => 11,
-                'name'  => 'Calibri',
+                'bold' => true,
+                'size' => 11,
+                'name' => 'Calibri',
                 'color' => ['rgb' => '0F172A'],
             ],
             'fill' => [
-                'fillType'   => Fill::FILL_SOLID,
+                'fillType' => Fill::FILL_SOLID,
                 'startColor' => ['rgb' => 'BAE6FD'], // أزرق سماوي هادئ لصف المجموع
             ],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
+                'vertical' => Alignment::VERTICAL_CENTER,
             ],
             'borders' => [
                 'allBorders' => [
                     'borderStyle' => Border::BORDER_MEDIUM,
-                    'color'       => ['rgb' => '000000'],
+                    'color' => ['rgb' => '000000'],
                 ],
             ],
         ]);

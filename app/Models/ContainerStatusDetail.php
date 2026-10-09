@@ -9,6 +9,7 @@ use OwenIt\Auditing\Contracts\Auditable;
 class ContainerStatusDetail extends Model implements Auditable
 {
     use \OwenIt\Auditing\Auditable;
+
     protected $fillable = [
         'container_status_record_id',
         'container_entity_id',
@@ -19,7 +20,7 @@ class ContainerStatusDetail extends Model implements Auditable
 
     protected $casts = [
         'year_label' => 'string',
-        'count'      => 'integer',
+        'count' => 'integer',
         'sort_order' => 'integer',
     ];
 

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\FiscalYear;
 use App\Models\Month;
+use App\Models\MonthlyPortRecord;
 use App\Models\Port;
 use App\Models\RevenueCenter;
 use App\Models\RevenueRecord;
@@ -12,6 +13,7 @@ use App\Services\Pdf\ChromiumPdfDocument;
 class PdfReportService
 {
     protected PortAnalyticsService $portService;
+
     protected RevenueAnalyticsService $revenueService;
 
     public function __construct(PortAnalyticsService $portService, RevenueAnalyticsService $revenueService)
@@ -35,13 +37,13 @@ class PdfReportService
         return $pdf;
     }
 
-
     /**
      * ترويسة رسمية عامة للتقرير
      */
     protected function getReportHeaderHtml(string $title, string $subtitle = ''): string
     {
         $dateStr = date('Y/m/d H:i');
+
         return <<<HTML
         <table cellpadding="2" style="width: 100%; border-bottom: 2px solid #0f172a; margin-bottom: 6px;">
             <tr>
@@ -126,7 +128,7 @@ HTML;
     {
         $fiscalYear = FiscalYear::find($fiscalYearId);
         $allCenters = RevenueCenter::where('is_active', true)->orderBy('sort_order')->get();
-        $allMonths  = Month::orderBy('month_number')->get();
+        $allMonths = Month::orderBy('month_number')->get();
 
         $records = RevenueRecord::where('fiscal_year_id', $fiscalYearId)->get();
 
@@ -140,11 +142,11 @@ HTML;
             $centers = $allCenters;
         }
 
-        $recordsGrouped = $records->groupBy(fn ($r) => $r->month_id . '_' . $r->revenue_center_id);
+        $recordsGrouped = $records->groupBy(fn ($r) => $r->month_id.'_'.$r->revenue_center_id);
 
         // تصفية الأشهر لغاية آخر شهر تم إدخال بيانات له في السنة (استبعاد الأشهر الفارغة لنهاية السنة)
-        $maxMonthId = $records->filter(fn($r) => (float)$r->gross_revenue > 0 || (float)$r->net_revenue > 0)->max('month_id');
-        $months = $maxMonthId 
+        $maxMonthId = $records->filter(fn ($r) => (float) $r->gross_revenue > 0 || (float) $r->net_revenue > 0)->max('month_id');
+        $months = $maxMonthId
             ? $allMonths->where('id', '<=', $maxMonthId)->values()
             : $allMonths;
 
@@ -160,20 +162,20 @@ HTML;
 
         $wMonth = '8%';
         $wGross = '13%';
-        $wNet   = '13%';
-        
+        $wNet = '13%';
+
         $centerCount = max(1, count($centers));
         // المساحة المتبقية للمراكز = 100% - (8% + 13% + 13%) = 66%
-        $wCenterPercent = number_format(66 / $centerCount, 2) . '%';
+        $wCenterPercent = number_format(66 / $centerCount, 2).'%';
 
         $tableHtml = '<table cellpadding="3" border="1" style="border-collapse: collapse; border-color: #94a3b8; width: 100%; font-size: 8.5pt; text-align: center;">';
         $tableHtml .= '<thead><tr style="background-color: #0f172a; color: #ffffff; font-weight: bold; font-size: 9pt;">';
         $tableHtml .= "<th style=\"width: {$wMonth}; text-align: right;\">الشهر</th>";
-        
+
         foreach ($centers as $center) {
             $tableHtml .= "<th style=\"width: {$wCenterPercent};\">{$center->name_ar}</th>";
         }
-        
+
         $tableHtml .= "<th style=\"width: {$wGross}; background-color: #1e3a8a;\">الإيراد الكلي</th>";
         $tableHtml .= "<th style=\"width: {$wNet}; background-color: #065f46;\">الإيراد الصافي</th>";
         $tableHtml .= '</tr></thead><tbody>';
@@ -196,10 +198,10 @@ HTML;
             $rowHtml .= "<td style=\"width: {$wMonth}; text-align: right; font-weight: bold;\">{$month->name_ar}</td>";
 
             foreach ($centers as $center) {
-                $key = $month->id . '_' . $center->id;
+                $key = $month->id.'_'.$center->id;
                 $record = $recordsGrouped->get($key)?->first();
                 $gross = $record ? (float) $record->gross_revenue : 0;
-                $net   = $record ? (float) $record->net_revenue : 0;
+                $net = $record ? (float) $record->net_revenue : 0;
 
                 if ($record && ($gross > 0 || $net > 0)) {
                     $hasData = true;
@@ -213,9 +215,9 @@ HTML;
                 $prevGross = $prevCenterVals[$center->id] ?? null;
                 if ($gross > 0 && $prevGross !== null && $prevGross > 0) {
                     if ($gross > $prevGross) {
-                        $grossStr = '<span style="color:#15803d; font-weight:bold;">' . number_format($gross, 0) . ' <span style="font-size:6.5pt;">&#9650;</span></span>';
+                        $grossStr = '<span style="color:#15803d; font-weight:bold;">'.number_format($gross, 0).' <span style="font-size:6.5pt;">&#9650;</span></span>';
                     } elseif ($gross < $prevGross) {
-                        $grossStr = '<span style="color:#dc2626; font-weight:bold;">' . number_format($gross, 0) . ' <span style="font-size:6.5pt;">&#9660;</span></span>';
+                        $grossStr = '<span style="color:#dc2626; font-weight:bold;">'.number_format($gross, 0).' <span style="font-size:6.5pt;">&#9660;</span></span>';
                     } else {
                         $grossStr = number_format($gross, 0);
                     }
@@ -241,34 +243,38 @@ HTML;
             // تلوين الإيراد الكلي الشهري مع سهم الاتجاه
             if ($monthGross > 0 && $prevMonthGross !== null && $prevMonthGross > 0) {
                 if ($monthGross > $prevMonthGross) {
-                    $mGrossStr = '<span style="color:#15803d; font-weight:bold;">' . number_format($monthGross, 0) . ' <span style="font-size:7pt;">&#9650;</span></span>';
+                    $mGrossStr = '<span style="color:#15803d; font-weight:bold;">'.number_format($monthGross, 0).' <span style="font-size:7pt;">&#9650;</span></span>';
                 } elseif ($monthGross < $prevMonthGross) {
-                    $mGrossStr = '<span style="color:#dc2626; font-weight:bold;">' . number_format($monthGross, 0) . ' <span style="font-size:7pt;">&#9660;</span></span>';
+                    $mGrossStr = '<span style="color:#dc2626; font-weight:bold;">'.number_format($monthGross, 0).' <span style="font-size:7pt;">&#9660;</span></span>';
                 } else {
-                    $mGrossStr = '<span style="font-weight:bold;">' . number_format($monthGross, 0) . '</span>';
+                    $mGrossStr = '<span style="font-weight:bold;">'.number_format($monthGross, 0).'</span>';
                 }
             } else {
                 $mGrossStr = $monthGross > 0 ? number_format($monthGross, 0) : '-';
             }
-            if ($monthGross > 0) { $prevMonthGross = $monthGross; }
+            if ($monthGross > 0) {
+                $prevMonthGross = $monthGross;
+            }
 
             // تلوين الإيراد الصافي الشهري مع سهم الاتجاه
             if ($monthNet > 0 && $prevMonthNet !== null && $prevMonthNet > 0) {
                 if ($monthNet > $prevMonthNet) {
-                    $mNetStr = '<span style="color:#15803d; font-weight:bold;">' . number_format($monthNet, 0) . ' <span style="font-size:7pt;">&#9650;</span></span>';
+                    $mNetStr = '<span style="color:#15803d; font-weight:bold;">'.number_format($monthNet, 0).' <span style="font-size:7pt;">&#9650;</span></span>';
                 } elseif ($monthNet < $prevMonthNet) {
-                    $mNetStr = '<span style="color:#dc2626; font-weight:bold;">' . number_format($monthNet, 0) . ' <span style="font-size:7pt;">&#9660;</span></span>';
+                    $mNetStr = '<span style="color:#dc2626; font-weight:bold;">'.number_format($monthNet, 0).' <span style="font-size:7pt;">&#9660;</span></span>';
                 } else {
-                    $mNetStr = '<span style="font-weight:bold;">' . number_format($monthNet, 0) . '</span>';
+                    $mNetStr = '<span style="font-weight:bold;">'.number_format($monthNet, 0).'</span>';
                 }
             } else {
                 $mNetStr = $monthNet > 0 ? number_format($monthNet, 0) : '-';
             }
-            if ($monthNet > 0) { $prevMonthNet = $monthNet; }
+            if ($monthNet > 0) {
+                $prevMonthNet = $monthNet;
+            }
 
             $rowHtml .= "<td style=\"width: {$wGross}; font-weight: bold; background-color: #eff6ff; white-space: nowrap;\">{$mGrossStr}</td>";
             $rowHtml .= "<td style=\"width: {$wNet}; font-weight: bold; background-color: #ecfdf5; white-space: nowrap;\">{$mNetStr}</td>";
-            $rowHtml .= "</tr>";
+            $rowHtml .= '</tr>';
 
             $tableHtml .= $rowHtml;
         }
@@ -277,15 +283,16 @@ HTML;
         $tableHtml .= '<tr style="background-color: #0f172a; color: #ffffff; font-weight: bold; font-size: 8pt;">';
         $tableHtml .= "<td style=\"width: {$wMonth}; text-align: right;\">المجموع السنوي</td>";
         foreach ($centers as $center) {
-            $tableHtml .= "<td style=\"width: {$wCenterPercent}; white-space: nowrap;\">" . number_format($centerTotals[$center->id] ?? 0, 0) . "</td>";
+            $tableHtml .= "<td style=\"width: {$wCenterPercent}; white-space: nowrap;\">".number_format($centerTotals[$center->id] ?? 0, 0).'</td>';
         }
-        $tableHtml .= "<td style=\"width: {$wGross}; background-color: #1e3a8a; white-space: nowrap;\">" . number_format($grandGrossTotal, 0) . "</td>";
-        $tableHtml .= "<td style=\"width: {$wNet}; background-color: #065f46; white-space: nowrap;\">" . number_format($grandNetTotal, 0) . "</td>";
+        $tableHtml .= "<td style=\"width: {$wGross}; background-color: #1e3a8a; white-space: nowrap;\">".number_format($grandGrossTotal, 0).'</td>';
+        $tableHtml .= "<td style=\"width: {$wNet}; background-color: #065f46; white-space: nowrap;\">".number_format($grandNetTotal, 0).'</td>';
         $tableHtml .= '</tr>';
 
         $tableHtml .= '</tbody></table>';
 
-        $pdf->writeHTML($headerHtml . $tableHtml, true, false, true, false, '');
+        $pdf->writeHTML($headerHtml.$tableHtml, true, false, true, false, '');
+
         return $pdf->Output('تقرير_الإيراد_الكلي_للمراكز_السبعة.pdf', 'S');
     }
 
@@ -314,7 +321,8 @@ HTML;
             // تصفية الموانئ التي تحتوي على بيانات تشغيلية فقط واستبعاد أي ميناء بدون بيانات مثل المعقل
             $portsWithData = $ports->filter(function ($port) use ($fiscalYear, $month) {
                 $summary = $this->portService->getCumulativeSummary($fiscalYear->id, $month->month_number, $port->id);
-                return ($summary['total_ships'] > 0 || $summary['total_tonnage'] > 0 || $summary['total_teu'] > 0 || $summary['total_revenue'] > 0);
+
+                return $summary['total_ships'] > 0 || $summary['total_tonnage'] > 0 || $summary['total_teu'] > 0 || $summary['total_revenue'] > 0;
             })->values();
 
             // الصفحات التالية: كل صفحة فيها ميناء وتحته ميناء آخر
@@ -326,14 +334,16 @@ HTML;
             for ($i = 0; $i < count($portsWithData); $i += 2) {
                 $pdf->AddPage();
                 $pHeader = $this->getReportHeaderHtml(
-                    "اجمالي الطاقة الانتاجية لموانئ الشركة",
+                    'اجمالي الطاقة الانتاجية لموانئ الشركة',
                     "للفترة من 1 / 1 / {$fiscalYear->year} لغاية نهاية شهر {$month->name_ar} {$fiscalYear->year}"
                 );
 
                 $pageContent = $pHeader;
 
                 for ($j = 0; $j < 2; $j++) {
-                    if (!isset($portsWithData[$i + $j])) break;
+                    if (! isset($portsWithData[$i + $j])) {
+                        break;
+                    }
                     $port = $portsWithData[$i + $j];
                     $summary = $this->portService->getCumulativeSummary($fiscalYear->id, $month->month_number, $port->id);
                     $kpiCards = $this->getKpiCardsHtml($summary, false);
@@ -372,7 +382,7 @@ HTML;
                         $pageContent .= "<td style=\"width: {$wCol2}; text-align: right; font-weight: bold;\">{$r[1]}</td>";
                         $pageContent .= "<td style=\"width: {$wCol3}; text-align: center; font-weight: bold; color: #1e3a8a;\">{$r[2]}</td>";
                         $pageContent .= "<td style=\"width: {$wCol4}; text-align: center;\">{$r[3]}</td>";
-                        $pageContent .= "</tr>";
+                        $pageContent .= '</tr>';
                     }
                     $pageContent .= '</tbody></table>';
 
@@ -394,7 +404,7 @@ HTML;
         $summary = $this->portService->getCumulativeSummary($fiscalYear->id, $month->month_number, null);
 
         $headerHtml = $this->getReportHeaderHtml(
-            "اجمالي الطاقة الانتاجية للموانئ الأربعة مجتمعة (إجمالي الشركة)",
+            'اجمالي الطاقة الانتاجية للموانئ الأربعة مجتمعة (إجمالي الشركة)',
             "للفترة من 1 / 1 / {$fiscalYear->year} لغاية نهاية شهر {$month->name_ar} {$fiscalYear->year}"
         );
 
@@ -441,7 +451,7 @@ HTML;
             $tableHtml .= "<td style=\"width: {$wCol2}; text-align: right; font-weight: bold;\">{$r[1]}</td>";
             $tableHtml .= "<td style=\"width: {$wCol3}; text-align: center; font-weight: bold; color: #1e3a8a;\">{$r[2]}</td>";
             $tableHtml .= "<td style=\"width: {$wCol4}; text-align: center;\">{$r[3]}</td>";
-            $tableHtml .= "</tr>";
+            $tableHtml .= '</tr>';
         }
         $tableHtml .= '</tbody></table>';
 
@@ -473,11 +483,11 @@ HTML;
             $tableHtml .= "<td style=\"width: {$wCol2}; text-align: right;\">{$r[1]}</td>";
             $tableHtml .= "<td style=\"width: {$wCol3}; text-align: center; font-weight: bold; color: #0284c7;\">{$r[2]}</td>";
             $tableHtml .= "<td style=\"width: {$wCol4}; text-align: center;\">{$r[3]}</td>";
-            $tableHtml .= "</tr>";
+            $tableHtml .= '</tr>';
         }
         $tableHtml .= '</tbody></table>';
 
-        $pdf->writeHTML($headerHtml . $companyBanner . $kpiCards . $tableHtml, true, false, true, false, '');
+        $pdf->writeHTML($headerHtml.$companyBanner.$kpiCards.$tableHtml, true, false, true, false, '');
     }
 
     protected function addSinglePortCumulativePage(ChromiumPdfDocument $pdf, FiscalYear $fiscalYear, Month $month, Port $port): void
@@ -531,11 +541,11 @@ HTML;
             $tableHtml .= "<td style=\"width: {$wCol2}; text-align: right; font-weight: bold;\">{$r[1]}</td>";
             $tableHtml .= "<td style=\"width: {$wCol3}; text-align: center; font-weight: bold; color: #1e3a8a;\">{$r[2]}</td>";
             $tableHtml .= "<td style=\"width: {$wCol4}; text-align: center;\">{$r[3]}</td>";
-            $tableHtml .= "</tr>";
+            $tableHtml .= '</tr>';
         }
         $tableHtml .= '</tbody></table>';
 
-        $pdf->writeHTML($headerHtml . $portBanner . $kpiCards . $tableHtml, true, false, true, false, '');
+        $pdf->writeHTML($headerHtml.$portBanner.$kpiCards.$tableHtml, true, false, true, false, '');
     }
 
     /**
@@ -586,15 +596,15 @@ HTML;
 
             $tableHtml .= "<tr style=\"background-color: {$bg};\">";
             $tableHtml .= "<td style=\"width: {$wCol1}; text-align: right; font-weight: bold;\">{$row['label']}</td>";
-            $tableHtml .= "<td style=\"width: {$wCol2};\">" . number_format(round($row['prev_val']), 0) . "</td>";
-            $tableHtml .= "<td style=\"width: {$wCol3}; font-weight: bold; color: #1e3a8a;\">" . number_format(round($row['curr_val']), 0) . "</td>";
+            $tableHtml .= "<td style=\"width: {$wCol2};\">".number_format(round($row['prev_val']), 0).'</td>';
+            $tableHtml .= "<td style=\"width: {$wCol3}; font-weight: bold; color: #1e3a8a;\">".number_format(round($row['curr_val']), 0).'</td>';
             $tableHtml .= "<td style=\"width: {$wCol4};\">{$row['unit']}</td>";
-            $tableHtml .= "<td style=\"width: {$wCol5}; font-weight: bold; color: {$diffColor};\">{$diffSign}" . number_format(round($row['diff']), 0) . "{$arrow}</td>";
+            $tableHtml .= "<td style=\"width: {$wCol5}; font-weight: bold; color: {$diffColor};\">{$diffSign}".number_format(round($row['diff']), 0)."{$arrow}</td>";
             $tableHtml .= "<td style=\"width: {$wCol6}; font-weight: bold; color: {$diffColor};\">{$diffSign}{$row['percent']}%{$arrow}</td>";
-            $tableHtml .= "</tr>";
+            $tableHtml .= '</tr>';
         }
         $tableHtml .= '</tbody></table>';
-        $pdf->writeHTML($headerHtml . $companyBanner . $tableHtml, true, false, true, false, '');
+        $pdf->writeHTML($headerHtml.$companyBanner.$tableHtml, true, false, true, false, '');
 
         // الصفحات التالية: كل صفحة فيها ميناء وتحته ميناء - عمودي بخط كبير 10pt - 12.5pt
         $wP1 = '26%';
@@ -612,6 +622,7 @@ HTML;
                     return true;
                 }
             }
+
             return false;
         })->values();
 
@@ -625,20 +636,22 @@ HTML;
             $pageContent = $pHeader;
 
             for ($j = 0; $j < 2; $j++) {
-                if (!isset($portsWithData[$i + $j])) break;
+                if (! isset($portsWithData[$i + $j])) {
+                    break;
+                }
                 $port = $portsWithData[$i + $j];
                 $pComp = $this->portService->getCapacityComparison($prevYearId, $currYearId, $endMonthNumber, $port->id);
 
                 $pageContent .= "<div style=\"background-color: #1e3a8a; color: #ffffff; padding: 4px 10px; font-size: 12.5pt; font-weight: bold; text-align: center; border-radius: 4px; margin-bottom: 3px;\">{$port->name_ar}</div>";
                 $pageContent .= '<table cellpadding="3" border="1" style="border-collapse: collapse; border-color: #cbd5e1; width: 100%; font-size: 9pt; text-align: center;">';
-                $pageContent .= "<thead><tr style=\"background-color: #f1f5f9; font-weight: bold; font-size: 9.5pt;\">";
+                $pageContent .= '<thead><tr style="background-color: #f1f5f9; font-weight: bold; font-size: 9.5pt;">';
                 $pageContent .= "<th style=\"width: {$wP1}; text-align: right;\">المؤشر</th>";
                 $pageContent .= "<th style=\"width: {$wP2};\">سنة {$prevYear}</th>";
                 $pageContent .= "<th style=\"width: {$wP3};\">سنة {$currYear}</th>";
                 $pageContent .= "<th style=\"width: {$wP4};\">الوحدة</th>";
                 $pageContent .= "<th style=\"width: {$wP5};\">الفارق</th>";
                 $pageContent .= "<th style=\"width: {$wP6};\">% التغير</th>";
-                $pageContent .= "</tr></thead><tbody>";
+                $pageContent .= '</tr></thead><tbody>';
 
                 foreach ($pComp['comparison'] as $idx => $r) {
                     $diffColor = $r['diff'] >= 0 ? '#065f46' : '#991b1b';
@@ -648,12 +661,12 @@ HTML;
 
                     $pageContent .= "<tr style=\"background-color: {$bg};\">";
                     $pageContent .= "<td style=\"width: {$wP1}; text-align: right; font-weight: bold;\">{$r['label']}</td>";
-                    $pageContent .= "<td style=\"width: {$wP2};\">" . number_format(round($r['prev_val']), 0) . "</td>";
-                    $pageContent .= "<td style=\"width: {$wP3}; font-weight: bold; color: #1e3a8a;\">" . number_format(round($r['curr_val']), 0) . "</td>";
+                    $pageContent .= "<td style=\"width: {$wP2};\">".number_format(round($r['prev_val']), 0).'</td>';
+                    $pageContent .= "<td style=\"width: {$wP3}; font-weight: bold; color: #1e3a8a;\">".number_format(round($r['curr_val']), 0).'</td>';
                     $pageContent .= "<td style=\"width: {$wP4};\">{$r['unit']}</td>";
-                    $pageContent .= "<td style=\"width: {$wP5}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format(round($r['diff']), 0) . "{$arrow}</td>";
+                    $pageContent .= "<td style=\"width: {$wP5}; color: {$diffColor}; font-weight: bold;\">{$diffSign}".number_format(round($r['diff']), 0)."{$arrow}</td>";
                     $pageContent .= "<td style=\"width: {$wP6}; color: {$diffColor}; font-weight: bold;\">{$diffSign}{$r['percent']}%{$arrow}</td>";
-                    $pageContent .= "</tr>";
+                    $pageContent .= '</tr>';
                 }
                 $pageContent .= '</tbody></table>';
 
@@ -685,7 +698,7 @@ HTML;
         $pdf->AddPage();
 
         $headerHtml = $this->getReportHeaderHtml(
-            "مقارنة الإيراد لكل التشكيلات",
+            'مقارنة الإيراد لكل التشكيلات',
             "مقارنة سنوية وشهرية بين عامي {$prevYear} و {$currYear} (بالدينار العراقي)"
         );
 
@@ -714,8 +727,8 @@ HTML;
 
             $prevStr = $row['prev_val'] > 0 ? number_format($row['prev_val'], 0) : '—';
             $currStr = $row['curr_val'] > 0 ? number_format($row['curr_val'], 0) : '—';
-            $diffStr = $row['diff'] != 0 ? ($diffSign . number_format($row['diff'], 0) . $arrow) : '—';
-            $pctStr  = ($row['prev_val'] > 0 && $row['curr_val'] > 0) ? ($diffSign . $row['percent'] . '%' . $arrow) : '—';
+            $diffStr = $row['diff'] != 0 ? ($diffSign.number_format($row['diff'], 0).$arrow) : '—';
+            $pctStr = ($row['prev_val'] > 0 && $row['curr_val'] > 0) ? ($diffSign.$row['percent'].'%'.$arrow) : '—';
 
             $tableHtml .= "<tr style=\"background-color: {$bg};\">";
             $tableHtml .= "<td style=\"width: {$wCol1}; text-align: right; font-weight: bold;\">{$row['month_name']}</td>";
@@ -723,7 +736,7 @@ HTML;
             $tableHtml .= "<td style=\"width: {$wCol3}; font-weight: bold; color: #065f46;\">{$currStr}</td>";
             $tableHtml .= "<td style=\"width: {$wCol4}; font-weight: bold; color: {$diffColor};\">{$diffStr}</td>";
             $tableHtml .= "<td style=\"width: {$wCol5}; font-weight: bold; color: {$diffColor};\">{$pctStr}</td>";
-            $tableHtml .= "</tr>";
+            $tableHtml .= '</tr>';
         }
 
         // المجموع السنوي
@@ -732,13 +745,13 @@ HTML;
         $totArrow = $companyTable['total_diff'] > 0 ? ' &#9650;' : ($companyTable['total_diff'] < 0 ? ' &#9660;' : '');
         $tableHtml .= '<tr style="background-color: #064e3b; color: #ffffff; font-weight: bold; font-size: 11.5pt;">';
         $tableHtml .= "<td style=\"width: {$wCol1}; text-align: right;\">المجموع السنوي</td>";
-        $tableHtml .= "<td style=\"width: {$wCol2};\">" . number_format($companyTable['total_prev'], 0) . "</td>";
-        $tableHtml .= "<td style=\"width: {$wCol3};\">" . number_format($companyTable['total_curr'], 0) . "</td>";
-        $tableHtml .= "<td style=\"width: {$wCol4}; color: {$totDiffColor};\">{$totDiffSign}" . number_format($companyTable['total_diff'], 0) . "{$totArrow}</td>";
+        $tableHtml .= "<td style=\"width: {$wCol2};\">".number_format($companyTable['total_prev'], 0).'</td>';
+        $tableHtml .= "<td style=\"width: {$wCol3};\">".number_format($companyTable['total_curr'], 0).'</td>';
+        $tableHtml .= "<td style=\"width: {$wCol4}; color: {$totDiffColor};\">{$totDiffSign}".number_format($companyTable['total_diff'], 0)."{$totArrow}</td>";
         $tableHtml .= "<td style=\"width: {$wCol5}; color: {$totDiffColor};\">{$totDiffSign}{$companyTable['total_pct']}%{$totArrow}</td>";
         $tableHtml .= '</tr></tbody></table>';
 
-        $pdf->writeHTML($headerHtml . $companyBanner . $tableHtml, true, false, true, false, '');
+        $pdf->writeHTML($headerHtml.$companyBanner.$tableHtml, true, false, true, false, '');
 
         // الصفحات التالية: كل صفحة فيها تشكيلين / مركزين في وضع عمودي (Portrait) بخط كبير 10pt - 13pt
         $centerKeys = array_values(array_filter(array_keys($compData['tables']), fn ($k) => $k !== 'company'));
@@ -753,25 +766,27 @@ HTML;
             $pdf->AddPage();
             $cHeader = $this->getReportHeaderHtml(
                 "مقارنة الإيراد للتشكيلات بين عامي {$prevYear} و {$currYear}",
-                "تفاصيل الموانئ ومقر الشركة (بالدينار العراقي)"
+                'تفاصيل الموانئ ومقر الشركة (بالدينار العراقي)'
             );
 
             $pageContent = $cHeader;
 
             for ($j = 0; $j < 2; $j++) {
-                if (!isset($centerKeys[$i + $j])) break;
+                if (! isset($centerKeys[$i + $j])) {
+                    break;
+                }
                 $key = $centerKeys[$i + $j];
                 $cTable = $compData['tables'][$key];
 
                 $pageContent .= "<div style=\"background-color: #1e293b; color: #ffffff; padding: 4px 10px; font-size: 12.5pt; font-weight: bold; text-align: center; border-radius: 4px; margin-bottom: 3px;\">{$cTable['center_name']}</div>";
                 $pageContent .= '<table cellpadding="3" border="1" style="border-collapse: collapse; border-color: #cbd5e1; width: 100%; font-size: 9.5pt; text-align: center; margin-bottom: 6px;">';
-                $pageContent .= "<thead><tr style=\"background-color: #f1f5f9; font-weight: bold; font-size: 10pt;\">";
+                $pageContent .= '<thead><tr style="background-color: #f1f5f9; font-weight: bold; font-size: 10pt;">';
                 $pageContent .= "<th style=\"width: {$wCR1}; text-align: right;\">الشهر</th>";
                 $pageContent .= "<th style=\"width: {$wCR2};\">سنة {$prevYear} (د.ع)</th>";
                 $pageContent .= "<th style=\"width: {$wCR3};\">سنة {$currYear} (د.ع)</th>";
                 $pageContent .= "<th style=\"width: {$wCR4};\">الفارق (د.ع)</th>";
                 $pageContent .= "<th style=\"width: {$wCR5};\">نسبة التغير %</th>";
-                $pageContent .= "</tr></thead><tbody>";
+                $pageContent .= '</tr></thead><tbody>';
 
                 foreach ($cTable['rows'] as $r) {
                     $diffColor = $r['diff'] >= 0 ? '#065f46' : '#991b1b';
@@ -779,8 +794,8 @@ HTML;
                     $arrow = $r['diff'] > 0 ? ' <span style="font-size:6.5pt;">&#9650;</span>' : ($r['diff'] < 0 ? ' <span style="font-size:6.5pt;">&#9660;</span>' : '');
                     $pStr = $r['prev_val'] > 0 ? number_format($r['prev_val'], 0) : '—';
                     $cStr = $r['curr_val'] > 0 ? number_format($r['curr_val'], 0) : '—';
-                    $dStr = $r['diff'] != 0 ? ($diffSign . number_format($r['diff'], 0) . $arrow) : '—';
-                    $pctStr  = ($r['prev_val'] > 0 && $r['curr_val'] > 0) ? ($diffSign . $r['percent'] . '%' . $arrow) : '—';
+                    $dStr = $r['diff'] != 0 ? ($diffSign.number_format($r['diff'], 0).$arrow) : '—';
+                    $pctStr = ($r['prev_val'] > 0 && $r['curr_val'] > 0) ? ($diffSign.$r['percent'].'%'.$arrow) : '—';
 
                     $pageContent .= '<tr>';
                     $pageContent .= "<td style=\"width: {$wCR1}; text-align: right; font-weight: bold;\">{$r['month_name']}</td>";
@@ -796,9 +811,9 @@ HTML;
                 $totArrow = $cTable['total_diff'] > 0 ? ' &#9650;' : ($cTable['total_diff'] < 0 ? ' &#9660;' : '');
                 $pageContent .= '<tr style="background-color: #f1f5f9; font-weight: bold; font-size: 10pt;">';
                 $pageContent .= "<td style=\"width: {$wCR1}; text-align: right;\">المجموع</td>";
-                $pageContent .= "<td style=\"width: {$wCR2};\">" . number_format($cTable['total_prev'], 0) . "</td>";
-                $pageContent .= "<td style=\"width: {$wCR3}; color: #047857;\">" . number_format($cTable['total_curr'], 0) . "</td>";
-                $pageContent .= "<td style=\"width: {$wCR4}; color: {$totDColor};\">{$totDSign}" . number_format($cTable['total_diff'], 0) . "{$totArrow}</td>";
+                $pageContent .= "<td style=\"width: {$wCR2};\">".number_format($cTable['total_prev'], 0).'</td>';
+                $pageContent .= "<td style=\"width: {$wCR3}; color: #047857;\">".number_format($cTable['total_curr'], 0).'</td>';
+                $pageContent .= "<td style=\"width: {$wCR4}; color: {$totDColor};\">{$totDSign}".number_format($cTable['total_diff'], 0)."{$totArrow}</td>";
                 $pageContent .= "<td style=\"width: {$wCR5}; color: {$totDColor};\">{$totDSign}{$cTable['total_pct']}%{$totArrow}</td>";
                 $pageContent .= '</tr>';
 
@@ -836,13 +851,13 @@ HTML;
         $port = $portId ? Port::find($portId) : null;
         $portName = $port ? $port->name_ar : 'عموم موانئ الشركة (الموانئ الأربعة مجتمعة)';
 
-        $title = $comparisonType === 'capacity' 
+        $title = $comparisonType === 'capacity'
             ? 'مقارنة الطاقة الإنتاجية التشغيلية متعددة السنوات'
             : 'مقارنة الإيرادات المالية لكافة المراكز متعددة السنوات';
 
         $subtitle = ($periodScope === 'month')
-            ? "لشهر {$monthName} — للسنوات (" . $years->pluck('year')->implode(' - ') . ")"
-            : "المجموع السنوي الكامل / التراكمي — للسنوات (" . $years->pluck('year')->implode(' - ') . ")";
+            ? "لشهر {$monthName} — للسنوات (".$years->pluck('year')->implode(' - ').')'
+            : 'المجموع السنوي الكامل / التراكمي — للسنوات ('.$years->pluck('year')->implode(' - ').')';
 
         if ($comparisonType === 'capacity') {
             $subtitle .= " — {$portName}";
@@ -857,11 +872,11 @@ HTML;
         $wMetric = '30%';
         $wDiff = '10%';
         $wPct = '10%';
-        $wYear = number_format(50 / max(1, $yearCount), 2) . '%';
+        $wYear = number_format(50 / max(1, $yearCount), 2).'%';
 
         $tableHtml = '<table cellpadding="3" border="1" style="border-collapse: collapse; border-color: #94a3b8; width: 100%; font-size: 8.5pt; text-align: center;">';
         $tableHtml .= '<thead><tr style="background-color: #0f172a; color: #ffffff; font-weight: bold; font-size: 9pt;">';
-        $tableHtml .= "<th style=\"width: {$wMetric}; text-align: right;\">" . ($comparisonType === 'capacity' ? 'المؤشر / البيان التشغيلي' : 'مركز الإيراد / التشكيل') . "</th>";
+        $tableHtml .= "<th style=\"width: {$wMetric}; text-align: right;\">".($comparisonType === 'capacity' ? 'المؤشر / البيان التشغيلي' : 'مركز الإيراد / التشكيل').'</th>';
 
         foreach ($years as $y) {
             $tableHtml .= "<th style=\"width: {$wYear};\">سنة {$y->year}</th>";
@@ -873,23 +888,23 @@ HTML;
         if ($comparisonType === 'capacity') {
             $analyticsService = app(PortAnalyticsService::class);
             $metrics = [
-                'total_ships'          => 'إجمالي عدد البواخر والناقلات (سفينة)',
-                'container_ships'      => 'عدد بواخر الحاويات',
-                'cargo_ships'          => 'عدد بواخر البضائع المتنوعة',
-                'oil_tankers'          => 'عدد الناقلات النفطية',
-                'total_containers'     => 'إجمالي عدد الحاويات (مستوردة + TEU)',
-                'imported_containers'  => 'عدد الحاويات المستوردة (حاوية)',
-                'imported_teu'         => 'الحاويات المستوردة مكافئ (TEU)',
-                'exported_containers'  => 'إجمالي الحاويات المصدرة (فارغ + مليان)',
-                'exported_teu'         => 'الحاويات المصدرة مكافئ (TEU)',
-                'total_tonnage'        => 'الطاقة الإنتاجية الكلية (طن)',
-                'imported_cargo_tons'  => 'وزن البضائع المستوردة بالطن',
-                'exported_cargo_tons'  => 'وزن البضائع المصدرة بالطن',
-                'general_cargo_tons'   => 'وزن البضائع المتنوعة بالطن',
-                'oil_total_tons'       => 'إجمالي أطنان النفط والمشتقات (طن)',
-                'imported_cars'        => 'عدد السيارات المستوردة (سيارة)',
-                'daily_avg_tonnage'    => 'المعدل اليومي لمناولة البضائع (طن/يوم)',
-                'monthly_avg_tonnage'  => 'المعدل الشهري لمناولة البضائع (طن/شهر)',
+                'total_ships' => 'إجمالي عدد البواخر والناقلات (سفينة)',
+                'container_ships' => 'عدد بواخر الحاويات',
+                'cargo_ships' => 'عدد بواخر البضائع المتنوعة',
+                'oil_tankers' => 'عدد الناقلات النفطية',
+                'total_containers' => 'إجمالي عدد الحاويات (مستوردة + TEU)',
+                'imported_containers' => 'عدد الحاويات المستوردة (حاوية)',
+                'imported_teu' => 'الحاويات المستوردة مكافئ (TEU)',
+                'exported_containers' => 'إجمالي الحاويات المصدرة (فارغ + مليان)',
+                'exported_teu' => 'الحاويات المصدرة مكافئ (TEU)',
+                'total_tonnage' => 'الطاقة الإنتاجية الكلية (طن)',
+                'imported_cargo_tons' => 'وزن البضائع المستوردة بالطن',
+                'exported_cargo_tons' => 'وزن البضائع المصدرة بالطن',
+                'general_cargo_tons' => 'وزن البضائع المتنوعة بالطن',
+                'oil_total_tons' => 'إجمالي أطنان النفط والمشتقات (طن)',
+                'imported_cars' => 'عدد السيارات المستوردة (سيارة)',
+                'daily_avg_tonnage' => 'المعدل اليومي لمناولة البضائع (طن/يوم)',
+                'monthly_avg_tonnage' => 'المعدل الشهري لمناولة البضائع (طن/شهر)',
             ];
 
             foreach ($metrics as $key => $label) {
@@ -903,54 +918,56 @@ HTML;
                 $rowVals = [];
                 foreach ($years as $y) {
                     if ($periodScope === 'month') {
-                        $q = \App\Models\MonthlyPortRecord::where('fiscal_year_id', $y->id)->where('month_id', $monthNumber);
-                        if ($portId) { $q->where('port_id', $portId); }
+                        $q = MonthlyPortRecord::where('fiscal_year_id', $y->id)->where('month_id', $monthNumber);
+                        if ($portId) {
+                            $q->where('port_id', $portId);
+                        }
                         $recs = $q->get();
-                        $val = match($key) {
-                            'total_ships'         => $recs->sum('total_container_ships') + $recs->sum('general_cargo_ships') + $recs->sum('oil_tankers_count') + $recs->sum('car_carrier_ships'),
-                            'container_ships'     => $recs->sum('total_container_ships'),
-                            'cargo_ships'         => $recs->sum('general_cargo_ships'),
-                            'oil_tankers'         => $recs->sum('oil_tankers_count'),
-                            'total_containers'    => $recs->sum('imported_containers_count') + $recs->sum('exported_containers_count'),
+                        $val = match ($key) {
+                            'total_ships' => $recs->sum('total_container_ships') + $recs->sum('general_cargo_ships') + $recs->sum('oil_tankers_count') + $recs->sum('car_carrier_ships'),
+                            'container_ships' => $recs->sum('total_container_ships'),
+                            'cargo_ships' => $recs->sum('general_cargo_ships'),
+                            'oil_tankers' => $recs->sum('oil_tankers_count'),
+                            'total_containers' => $recs->sum('imported_containers_count') + $recs->sum('exported_containers_count'),
                             'imported_containers' => $recs->sum('imported_containers_count'),
-                            'imported_teu'        => $recs->sum('imported_teu'),
+                            'imported_teu' => $recs->sum('imported_teu'),
                             'exported_containers' => $recs->sum('exported_containers_count'),
-                            'exported_teu'        => $recs->sum('exported_teu'),
-                            'total_tonnage'       => (float) $recs->sum('imported_containers_weight_tons') + (float) $recs->sum('exported_full_weight_tons') + (float) $recs->sum('general_cargo_weight_tons') + (float) $recs->sum('oil_total_tons') + (float) $recs->sum('imported_cars_weight_tons'),
+                            'exported_teu' => $recs->sum('exported_teu'),
+                            'total_tonnage' => (float) $recs->sum('imported_containers_weight_tons') + (float) $recs->sum('exported_full_weight_tons') + (float) $recs->sum('general_cargo_weight_tons') + (float) $recs->sum('oil_total_tons') + (float) $recs->sum('imported_cars_weight_tons'),
                             'imported_cargo_tons' => (float) $recs->sum('imported_containers_weight_tons') + (float) $recs->sum('imported_cars_weight_tons'),
                             'exported_cargo_tons' => (float) $recs->sum('exported_full_weight_tons'),
-                            'general_cargo_tons'  => (float) $recs->sum('general_cargo_weight_tons'),
-                            'oil_total_tons'      => (float) $recs->sum('oil_total_tons'),
-                            'imported_cars'       => $recs->sum('imported_cars_count'),
-                            'daily_avg_tonnage'   => ((float) $recs->sum('imported_containers_weight_tons') + (float) $recs->sum('exported_full_weight_tons') + (float) $recs->sum('general_cargo_weight_tons') + (float) $recs->sum('oil_total_tons') + (float) $recs->sum('imported_cars_weight_tons')) / 30,
+                            'general_cargo_tons' => (float) $recs->sum('general_cargo_weight_tons'),
+                            'oil_total_tons' => (float) $recs->sum('oil_total_tons'),
+                            'imported_cars' => $recs->sum('imported_cars_count'),
+                            'daily_avg_tonnage' => ((float) $recs->sum('imported_containers_weight_tons') + (float) $recs->sum('exported_full_weight_tons') + (float) $recs->sum('general_cargo_weight_tons') + (float) $recs->sum('oil_total_tons') + (float) $recs->sum('imported_cars_weight_tons')) / 30,
                             'monthly_avg_tonnage' => (float) $recs->sum('imported_containers_weight_tons') + (float) $recs->sum('exported_full_weight_tons') + (float) $recs->sum('general_cargo_weight_tons') + (float) $recs->sum('oil_total_tons') + (float) $recs->sum('imported_cars_weight_tons'),
-                            default               => 0,
+                            default => 0,
                         };
                     } else {
                         $sum = $analyticsService->getCumulativeSummary($y->id, 12, $portId);
-                        $val = match($key) {
-                            'total_ships'         => $sum['total_ships'] ?? 0,
-                            'container_ships'     => $sum['container_ships'] ?? 0,
-                            'cargo_ships'         => $sum['cargo_ships'] ?? 0,
-                            'oil_tankers'         => $sum['oil_tankers'] ?? 0,
-                            'total_containers'    => ($sum['imported_containers'] ?? 0) + ($sum['exported_containers'] ?? 0),
+                        $val = match ($key) {
+                            'total_ships' => $sum['total_ships'] ?? 0,
+                            'container_ships' => $sum['container_ships'] ?? 0,
+                            'cargo_ships' => $sum['cargo_ships'] ?? 0,
+                            'oil_tankers' => $sum['oil_tankers'] ?? 0,
+                            'total_containers' => ($sum['imported_containers'] ?? 0) + ($sum['exported_containers'] ?? 0),
                             'imported_containers' => $sum['imported_containers'] ?? 0,
-                            'imported_teu'        => $sum['imported_teu'] ?? 0,
+                            'imported_teu' => $sum['imported_teu'] ?? 0,
                             'exported_containers' => $sum['exported_containers'] ?? 0,
-                            'exported_teu'        => $sum['exported_teu'] ?? 0,
-                            'total_tonnage'       => $sum['total_tonnage'] ?? 0,
+                            'exported_teu' => $sum['exported_teu'] ?? 0,
+                            'total_tonnage' => $sum['total_tonnage'] ?? 0,
                             'imported_cargo_tons' => $sum['imported_cargo_tons'] ?? 0,
                             'exported_cargo_tons' => $sum['exported_cargo_tons'] ?? 0,
-                            'general_cargo_tons'  => $sum['general_cargo_tons'] ?? 0,
-                            'oil_total_tons'      => $sum['oil_total_tons'] ?? 0,
-                            'imported_cars'       => $sum['imported_cars'] ?? 0,
-                            'daily_avg_tonnage'   => $sum['daily_avg_tonnage'] ?? 0,
+                            'general_cargo_tons' => $sum['general_cargo_tons'] ?? 0,
+                            'oil_total_tons' => $sum['oil_total_tons'] ?? 0,
+                            'imported_cars' => $sum['imported_cars'] ?? 0,
+                            'daily_avg_tonnage' => $sum['daily_avg_tonnage'] ?? 0,
                             'monthly_avg_tonnage' => $sum['monthly_avg_tonnage'] ?? 0,
-                            default               => 0,
+                            default => 0,
                         };
                     }
                     $rowVals[] = (float) $val;
-                    $rowHtml .= "<td style=\"width: {$wYear};\">" . number_format($val, 0) . "</td>";
+                    $rowHtml .= "<td style=\"width: {$wYear};\">".number_format($val, 0).'</td>';
                 }
 
                 $firstVal = reset($rowVals);
@@ -961,9 +978,9 @@ HTML;
                 $diffSign = $diff > 0 ? '+' : '';
                 $arrow = $diff > 0 ? ' <span style="font-size:7pt;">&#9650;</span>' : ($diff < 0 ? ' <span style="font-size:7pt;">&#9660;</span>' : '');
 
-                $rowHtml .= "<td style=\"width: {$wDiff}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($diff, 0) . "{$arrow}</td>";
-                $rowHtml .= "<td style=\"width: {$wPct}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($pct, 1) . "%{$arrow}</td>";
-                $rowHtml .= "</tr>";
+                $rowHtml .= "<td style=\"width: {$wDiff}; color: {$diffColor}; font-weight: bold;\">{$diffSign}".number_format($diff, 0)."{$arrow}</td>";
+                $rowHtml .= "<td style=\"width: {$wPct}; color: {$diffColor}; font-weight: bold;\">{$diffSign}".number_format($pct, 1)."%{$arrow}</td>";
+                $rowHtml .= '</tr>';
 
                 $tableHtml .= $rowHtml;
             }
@@ -972,22 +989,22 @@ HTML;
             // مقارنة الإيرادات المالية
             $centers = RevenueCenter::where('is_active', true)->orderBy('sort_order')->get();
             $grandGross = array_fill(0, count($years), 0);
-            $grandNet   = array_fill(0, count($years), 0);
+            $grandNet = array_fill(0, count($years), 0);
 
             foreach ($centers as $c) {
-                $rowHtml = "<tr>";
+                $rowHtml = '<tr>';
                 $rowHtml .= "<td style=\"width: {$wMetric}; text-align: right; font-weight: bold;\">{$c->name_ar}</td>";
 
                 $rowVals = [];
                 foreach ($years as $idx => $y) {
-                    $q = \App\Models\RevenueRecord::where('fiscal_year_id', $y->id)->where('revenue_center_id', $c->id);
+                    $q = RevenueRecord::where('fiscal_year_id', $y->id)->where('revenue_center_id', $c->id);
                     if ($periodScope === 'month') {
                         $q->where('month_id', $monthNumber);
                     }
                     $val = (float) $q->sum('gross_revenue');
                     $rowVals[] = $val;
                     $grandGross[$idx] += $val;
-                    $rowHtml .= "<td style=\"width: {$wYear};\">" . number_format($val, 0) . "</td>";
+                    $rowHtml .= "<td style=\"width: {$wYear};\">".number_format($val, 0).'</td>';
                 }
 
                 $firstVal = reset($rowVals);
@@ -998,15 +1015,15 @@ HTML;
                 $diffSign = $diff > 0 ? '+' : '';
                 $arrow = $diff > 0 ? ' <span style="font-size:7pt;">&#9650;</span>' : ($diff < 0 ? ' <span style="font-size:7pt;">&#9660;</span>' : '');
 
-                $rowHtml .= "<td style=\"width: {$wDiff}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($diff, 0) . "{$arrow}</td>";
-                $rowHtml .= "<td style=\"width: {$wPct}; color: {$diffColor}; font-weight: bold;\">{$diffSign}" . number_format($pct, 1) . "%{$arrow}</td>";
-                $rowHtml .= "</tr>";
+                $rowHtml .= "<td style=\"width: {$wDiff}; color: {$diffColor}; font-weight: bold;\">{$diffSign}".number_format($diff, 0)."{$arrow}</td>";
+                $rowHtml .= "<td style=\"width: {$wPct}; color: {$diffColor}; font-weight: bold;\">{$diffSign}".number_format($pct, 1)."%{$arrow}</td>";
+                $rowHtml .= '</tr>';
 
                 $tableHtml .= $rowHtml;
             }
 
             // حساب الفارق الكلي الذكي للإيراد الكلي
-            $nonZeroG = array_filter($grandGross, fn($v) => $v > 0);
+            $nonZeroG = array_filter($grandGross, fn ($v) => $v > 0);
             if (count($nonZeroG) >= 2) {
                 $firstG = reset($nonZeroG);
                 $lastG = end($nonZeroG);
@@ -1026,22 +1043,22 @@ HTML;
             $tableHtml .= '<tr style="background-color: #0f172a; color: #ffffff; font-weight: bold; font-size: 9pt;">';
             $tableHtml .= "<td style=\"width: {$wMetric}; text-align: right;\">إجمالي الإيراد الكلي للشركة</td>";
             foreach ($grandGross as $gVal) {
-                $tableHtml .= "<td style=\"width: {$wYear}; color: #fde047;\">" . number_format($gVal, 0) . "</td>";
+                $tableHtml .= "<td style=\"width: {$wYear}; color: #fde047;\">".number_format($gVal, 0).'</td>';
             }
-            $tableHtml .= "<td style=\"width: {$wDiff}; color: {$gColor};\">{$gSign}" . number_format($diffG, 0) . "{$gArrow}</td>";
-            $tableHtml .= "<td style=\"width: {$wPct}; color: {$gColor};\">{$gSign}" . number_format($pctG, 1) . "%{$gArrow}</td>";
+            $tableHtml .= "<td style=\"width: {$wDiff}; color: {$gColor};\">{$gSign}".number_format($diffG, 0)."{$gArrow}</td>";
+            $tableHtml .= "<td style=\"width: {$wPct}; color: {$gColor};\">{$gSign}".number_format($pctG, 1)."%{$gArrow}</td>";
             $tableHtml .= '</tr>';
 
             // حساب الإيراد الصافي للشركة
             foreach ($years as $idx => $y) {
-                $q = \App\Models\RevenueRecord::where('fiscal_year_id', $y->id);
+                $q = RevenueRecord::where('fiscal_year_id', $y->id);
                 if ($periodScope === 'month') {
                     $q->where('month_id', $monthNumber);
                 }
                 $grandNet[$idx] = (float) $q->sum('net_revenue');
             }
 
-            $nonZeroN = array_filter($grandNet, fn($v) => $v > 0);
+            $nonZeroN = array_filter($grandNet, fn ($v) => $v > 0);
             if (count($nonZeroN) >= 2) {
                 $firstN = reset($nonZeroN);
                 $lastN = end($nonZeroN);
@@ -1061,16 +1078,17 @@ HTML;
             $tableHtml .= '<tr style="background-color: #064e3b; color: #ffffff; font-weight: bold; font-size: 9pt;">';
             $tableHtml .= "<td style=\"width: {$wMetric}; text-align: right;\">الإيراد الصافي لعموم الشركة</td>";
             foreach ($grandNet as $nVal) {
-                $tableHtml .= "<td style=\"width: {$wYear}; color: #a7f3d0;\">" . number_format($nVal, 0) . "</td>";
+                $tableHtml .= "<td style=\"width: {$wYear}; color: #a7f3d0;\">".number_format($nVal, 0).'</td>';
             }
-            $tableHtml .= "<td style=\"width: {$wDiff}; color: {$nColor};\">{$nSign}" . number_format($diffN, 0) . "{$nArrow}</td>";
-            $tableHtml .= "<td style=\"width: {$wPct}; color: {$nColor};\">{$nSign}" . number_format($pctN, 1) . "%{$nArrow}</td>";
+            $tableHtml .= "<td style=\"width: {$wDiff}; color: {$nColor};\">{$nSign}".number_format($diffN, 0)."{$nArrow}</td>";
+            $tableHtml .= "<td style=\"width: {$wPct}; color: {$nColor};\">{$nSign}".number_format($pctN, 1)."%{$nArrow}</td>";
             $tableHtml .= '</tr>';
         }
 
         $tableHtml .= '</tbody></table>';
 
-        $pdf->writeHTML($headerHtml . $tableHtml, true, false, true, false, '');
+        $pdf->writeHTML($headerHtml.$tableHtml, true, false, true, false, '');
+
         return $pdf->Output('تقرير_مقارنة_الأداء_متعددة_السنوات.pdf', 'S');
     }
 
@@ -1090,20 +1108,20 @@ HTML;
         $stats = $service->getYearlyStandardDeviation($fiscalYearId, $portId);
         $mStats = $stats[$metric] ?? [];
 
-        $metricTitle = match($metric) {
+        $metricTitle = match ($metric) {
             'tonnage' => 'الطاقة الإنتاجية الكلية (بالطن)',
             'revenue' => 'الإيرادات المالية الكلية (بالدينار العراقي)',
-            'ships'   => 'حركة البواخر والناقلات الواصلة (سفينة)',
-            'teu'     => 'الحاويات المكافئة المتداولة (TEU)',
-            default   => 'الأداء العام',
+            'ships' => 'حركة البواخر والناقلات الواصلة (سفينة)',
+            'teu' => 'الحاويات المكافئة المتداولة (TEU)',
+            default => 'الأداء العام',
         };
 
-        $unit = match($metric) {
+        $unit = match ($metric) {
             'tonnage' => 'طن',
             'revenue' => 'د.ع',
-            'ships'   => 'سفينة',
-            'teu'     => 'TEU',
-            default   => '',
+            'ships' => 'سفينة',
+            'teu' => 'TEU',
+            default => '',
         };
 
         $title = "تقرير تحليل الانحراف المعياري واستقرار الأداء — {$metricTitle}";
@@ -1123,10 +1141,10 @@ HTML;
         $summaryHtml .= '<th style="width: 25%;">تقييم الاستقرار</th>';
         $summaryHtml .= '</tr>';
         $summaryHtml .= '<tr style="font-weight: bold; background-color: #f8fafc;">';
-        $summaryHtml .= '<td style="width: 25%;">' . number_format($mStats['mean'] ?? 0, 1) . ' ' . $unit . '</td>';
-        $summaryHtml .= '<td style="width: 25%; color: #1e3a8a;">± ' . number_format($mStats['std_dev'] ?? 0, 1) . ' ' . $unit . '</td>';
-        $summaryHtml .= '<td style="width: 25%; color: #047857;">' . number_format($mStats['cv'] ?? 0, 1) . '%</td>';
-        $summaryHtml .= '<td style="width: 25%; color: #0f172a;">' . ($mStats['stability'] ?? '—') . '</td>';
+        $summaryHtml .= '<td style="width: 25%;">'.number_format($mStats['mean'] ?? 0, 1).' '.$unit.'</td>';
+        $summaryHtml .= '<td style="width: 25%; color: #1e3a8a;">± '.number_format($mStats['std_dev'] ?? 0, 1).' '.$unit.'</td>';
+        $summaryHtml .= '<td style="width: 25%; color: #047857;">'.number_format($mStats['cv'] ?? 0, 1).'%</td>';
+        $summaryHtml .= '<td style="width: 25%; color: #0f172a;">'.($mStats['stability'] ?? '—').'</td>';
         $summaryHtml .= '</tr></table>';
 
         // جدول المصفوفة الشهرية
@@ -1150,13 +1168,13 @@ HTML;
                 $devSign = $dev > 0 ? '+' : '';
                 $devColor = $dev >= 0 ? '#047857' : '#b91c1c';
 
-                $assessment = match(true) {
-                    $zScore >= 1.0  => 'نشاط مرتفع فوق المعدل',
+                $assessment = match (true) {
+                    $zScore >= 1.0 => 'نشاط مرتفع فوق المعدل',
                     $zScore >= -1.0 => 'ضمن النطاق الطبيعي المستقر',
-                    default         => 'تراجع تحت المعدل الطبيعي',
+                    default => 'تراجع تحت المعدل الطبيعي',
                 };
-                $zStr = ($zScore > 0 ? '+' : '') . number_format($zScore, 2) . ' σ';
-                $devStr = $devSign . number_format($dev, 0);
+                $zStr = ($zScore > 0 ? '+' : '').number_format($zScore, 2).' σ';
+                $devStr = $devSign.number_format($dev, 0);
             } else {
                 $devStr = '—';
                 $zStr = '—';
@@ -1166,7 +1184,7 @@ HTML;
 
             $tableHtml .= '<tr>';
             $tableHtml .= "<td style=\"width: 20%; text-align: right; font-weight: bold;\">{$mData['month_name']}</td>";
-            $tableHtml .= "<td style=\"width: 22%; font-weight: bold;\">" . ($val > 0 ? number_format($val, 0) : '—') . "</td>";
+            $tableHtml .= '<td style="width: 22%; font-weight: bold;">'.($val > 0 ? number_format($val, 0) : '—').'</td>';
             $tableHtml .= "<td style=\"width: 22%; color: {$devColor}; font-weight: bold;\">{$devStr}</td>";
             $tableHtml .= "<td style=\"width: 16%;\">{$zStr}</td>";
             $tableHtml .= "<td style=\"width: 20%;\">{$assessment}</td>";
@@ -1237,12 +1255,12 @@ HTML;
         $actionGuideHtml .= '</tr>';
 
         // توصية المؤشر المخصص
-        $metricAction = match($metric) {
+        $metricAction = match ($metric) {
             'tonnage' => '<strong>توصية الطاقة الإنتاجية (طن):</strong> تسريع معدلات التفريغ بالساعة (TPH)، صيانة السيور الناقلة ومضخات السوائل، والتنسيق المسبق مع أساطيل النقل البري.',
             'revenue' => '<strong>توصية الإيرادات المالية:</strong> تدقيق رسوم الخدمات الملاحية والرسو، تسريع التحصيل الإلكتروني، ومتابعة الفارق بين الإيراد الكلي والصافي لضبط التكاليف.',
-            'ships'   => '<strong>توصية حركة البواخر:</strong> ضمان جاهزية قاطرات السحب وزوارق الإرشاد، تأمين أعماق القنوات الملاحية، وتطبيق خطة التخصيص المسبق للأرصفة (Berth Allocation).',
-            'teu'     => '<strong>توصية تداول الحاويات (TEU):</strong> خفض فترة مكوث الحاويات (Dwell Time)، تسريع إعادة الحاويات الفارغة، وتكثيف تشغيل رافعات الساحات (RTG).',
-            default   => '<strong>توصية عامة:</strong> الالتزام بالمعايير التشغيلية المعتمدة وتكثيف التنسيق بين إدارات الموانئ والملاحة.',
+            'ships' => '<strong>توصية حركة البواخر:</strong> ضمان جاهزية قاطرات السحب وزوارق الإرشاد، تأمين أعماق القنوات الملاحية، وتطبيق خطة التخصيص المسبق للأرصفة (Berth Allocation).',
+            'teu' => '<strong>توصية تداول الحاويات (TEU):</strong> خفض فترة مكوث الحاويات (Dwell Time)، تسريع إعادة الحاويات الفارغة، وتكثيف تشغيل رافعات الساحات (RTG).',
+            default => '<strong>توصية عامة:</strong> الالتزام بالمعايير التشغيلية المعتمدة وتكثيف التنسيق بين إدارات الموانئ والملاحة.',
         };
 
         $actionGuideHtml .= '<tr style="background-color: #f8fafc;">';
@@ -1251,7 +1269,8 @@ HTML;
 
         $actionGuideHtml .= '</table></div>';
 
-        $pdf->writeHTML($headerHtml . $summaryHtml . $tableHtml . $actionGuideHtml, true, false, true, false, '');
+        $pdf->writeHTML($headerHtml.$summaryHtml.$tableHtml.$actionGuideHtml, true, false, true, false, '');
+
         return $pdf->Output('تقرير_الانحراف_المعياري_والاستقرار.pdf', 'S');
     }
 }

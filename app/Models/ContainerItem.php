@@ -10,8 +10,8 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class ContainerItem extends Model implements Auditable
 {
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
 
     protected $fillable = [
         'container_status_record_id',
@@ -39,8 +39,8 @@ class ContainerItem extends Model implements Auditable
     ];
 
     protected $casts = [
-        'arrival_date'      => 'date',
-        'discharge_date'   => 'date',
+        'arrival_date' => 'date',
+        'discharge_date' => 'date',
         'is_manually_added' => 'boolean',
     ];
 
@@ -105,8 +105,8 @@ class ContainerItem extends Model implements Auditable
     {
         return match ($this->status) {
             'discharged' => 'تم اخراجها',
-            'in_port'    => 'موجودة في الميناء',
-            default      => 'موجودة في الميناء',
+            'in_port' => 'موجودة في الميناء',
+            default => 'موجودة في الميناء',
         };
     }
 
@@ -114,8 +114,8 @@ class ContainerItem extends Model implements Auditable
     {
         return match ($this->status) {
             'discharged' => 'success',
-            'in_port'    => 'warning',
-            default      => 'warning',
+            'in_port' => 'warning',
+            default => 'warning',
         };
     }
 
@@ -130,7 +130,9 @@ class ContainerItem extends Model implements Auditable
     public static function syncRecordDetails(int $recordId): void
     {
         $record = ContainerStatusRecord::find($recordId);
-        if (!$record) return;
+        if (! $record) {
+            return;
+        }
 
         // Group container items by entity and arrival year
         $aggregates = static::where('container_status_record_id', $recordId)
@@ -153,7 +155,7 @@ class ContainerItem extends Model implements Auditable
             }
 
             $eid = $agg->container_entity_id;
-            if (!isset($grouped[$eid][$targetYear])) {
+            if (! isset($grouped[$eid][$targetYear])) {
                 $grouped[$eid][$targetYear] = 0;
             }
             $grouped[$eid][$targetYear] += (int) $agg->total_count;
@@ -164,13 +166,15 @@ class ContainerItem extends Model implements Auditable
 
         foreach ($grouped as $eid => $yearCounts) {
             foreach ($yearCounts as $yearLabel => $count) {
-                if ($count <= 0) continue;
+                if ($count <= 0) {
+                    continue;
+                }
                 ContainerStatusDetail::create([
                     'container_status_record_id' => $record->id,
-                    'container_entity_id'        => $eid,
-                    'year_label'                 => (string) $yearLabel,
-                    'count'                      => (int) $count,
-                    'sort_order'                 => $sortOrder++,
+                    'container_entity_id' => $eid,
+                    'year_label' => (string) $yearLabel,
+                    'count' => (int) $count,
+                    'sort_order' => $sortOrder++,
                 ]);
                 $totalRecordCount += (int) $count;
             }

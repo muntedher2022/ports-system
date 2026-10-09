@@ -3,15 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class CargoStatusRecord extends Model implements Auditable
 {
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
 
     protected $fillable = [
         'port_id',
@@ -63,10 +63,10 @@ class CargoStatusRecord extends Model implements Auditable
 
     public function getCargoTypeLabelAttribute(): string
     {
-        return match($this->cargo_type) {
+        return match ($this->cargo_type) {
             'abandoned' => 'مواد وبضائع متخلفة',
             'dangerous' => 'مواد وبضائع خطرة',
-            default     => $this->cargo_type,
+            default => $this->cargo_type,
         };
     }
 
@@ -90,7 +90,7 @@ class CargoStatusRecord extends Model implements Auditable
     public function getGovernmentTotalAttribute(): int
     {
         return $this->details()
-            ->whereHas('entity', fn($q) => $q->where('entity_type', 'government'))
+            ->whereHas('entity', fn ($q) => $q->where('entity_type', 'government'))
             ->sum('count');
     }
 
@@ -98,7 +98,7 @@ class CargoStatusRecord extends Model implements Auditable
     public function getPrivateTotalAttribute(): int
     {
         return $this->details()
-            ->whereHas('entity', fn($q) => $q->where('entity_type', 'private'))
+            ->whereHas('entity', fn ($q) => $q->where('entity_type', 'private'))
             ->sum('count');
     }
 }

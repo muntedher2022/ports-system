@@ -11,13 +11,16 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 class PortShareChart extends ApexChartWidget
 {
     protected static ?string $chartId = 'portShareChart';
+
     protected static ?string $heading = '📊 نسبة مساهمة الموانئ في إجمالي البضائع والنشاط';
+
     protected static ?int $sort = 3;
 
     public static function canView(): bool
     {
         // يظهر للمدير العام ومسؤول العمليات فقط (لا حاجة له للمستخدم المقيد بميناء واحد)
         $user = Auth::user();
+
         return ! ($user?->isPortRestricted() && $user?->port_id);
     }
 

@@ -11,7 +11,6 @@ use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\RevenueCenter;
 use App\Models\RevenueRecord;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkActionGroup;
@@ -37,22 +36,31 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TrashedFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
 class RevenueRecordResource extends Resource
 {
     protected static ?string $model = RevenueRecord::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+
     protected static ?string $navigationLabel = 'سجلات الإيراد للموانئ';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Operations;
+
     protected static ?string $modelLabel = 'سجل إيراد شهري';
+
     protected static ?string $pluralModelLabel = 'سجلات الإيراد للموانئ';
+
     protected static ?int $navigationSort = 2;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return $user->hasRole(['المدير العام', 'general_manager', 'مسؤول المتابعة المركزية والعمليات', 'operations_manager', 'مسؤول الإيراد المالي', 'finance_manager', 'مدقق / مراجع', 'reviewer'])
             || in_array($user->user_type, ['general_manager', 'operations_manager', 'finance_manager', 'reviewer']);
@@ -246,10 +254,10 @@ class RevenueRecordResource extends Resource
                 SelectFilter::make('status')
                     ->label('الحالة')
                     ->options([
-                        'draft'     => 'مسودة',
+                        'draft' => 'مسودة',
                         'submitted' => 'مُقدَّم للاعتماد',
-                        'approved'  => 'معتمد',
-                        'locked'    => 'مقفل',
+                        'approved' => 'معتمد',
+                        'locked' => 'مقفل',
                     ]),
 
                 TrashedFilter::make()
@@ -271,10 +279,10 @@ class RevenueRecordResource extends Resource
                         ->requiresConfirmation()
                         ->modalHeading('تقديم سجل الإيراد للاعتماد')
                         ->modalDescription('هل أنت متأكد من صحة أرقام الإيراد وتقديمها للاعتماد المالي؟')
-                        ->visible(fn (RevenueRecord $record) => $record->status === 'draft' && !$record->trashed())
+                        ->visible(fn (RevenueRecord $record) => $record->status === 'draft' && ! $record->trashed())
                         ->action(function (RevenueRecord $record) {
                             $record->update([
-                                'status'       => 'submitted',
+                                'status' => 'submitted',
                                 'submitted_by' => Auth::id(),
                                 'submitted_at' => now(),
                             ]);
@@ -292,10 +300,10 @@ class RevenueRecordResource extends Resource
                         ->requiresConfirmation()
                         ->modalHeading('اعتماد سجل الإيراد المالي')
                         ->modalDescription('سيتم تثبيت واعتماد مبالغ الإيراد للشهر.')
-                        ->visible(fn (RevenueRecord $record) => $record->status === 'submitted' && !$record->trashed() && Auth::user()?->hasRole(['admin', 'general_manager', 'finance_manager', 'reviewer']))
+                        ->visible(fn (RevenueRecord $record) => $record->status === 'submitted' && ! $record->trashed() && Auth::user()?->hasRole(['admin', 'general_manager', 'finance_manager', 'reviewer']))
                         ->action(function (RevenueRecord $record) {
                             $record->update([
-                                'status'      => 'approved',
+                                'status' => 'approved',
                                 'approved_by' => Auth::id(),
                                 'approved_at' => now(),
                             ]);
@@ -311,7 +319,7 @@ class RevenueRecordResource extends Resource
                         ->modalHeading('نقل سجل الإيراد إلى سلة المحذوفات')
                         ->modalDescription('سيتم نقل هذا السجل المالي إلى سلة المحذوفات مع إمكانية استرداده.')
                         ->before(function (RevenueRecord $record, DeleteAction $action) {
-                            if (in_array($record->status, ['approved', 'locked']) && !Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
+                            if (in_array($record->status, ['approved', 'locked']) && ! Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
                                 Notification::make()
                                     ->title('لا يمكن حذف سجل إيراد معتمد')
                                     ->body('هذا السجل المالي معتمد رسمياً. يجب إلغاء اعتماده أولاً قبل حذفه.')
@@ -330,8 +338,8 @@ class RevenueRecordResource extends Resource
                         ->label('حذف نهائي')
                         ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -339,7 +347,7 @@ class RevenueRecordResource extends Resource
                         ->label('حذف مؤقت للمحدد')
                         ->before(function ($records, DeleteBulkAction $action) {
                             $hasApproved = $records->contains(fn ($r) => in_array($r->status, ['approved', 'locked']));
-                            if ($hasApproved && !Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
+                            if ($hasApproved && ! Auth::user()?->hasRole(['super_admin', 'المدير العام', 'general_manager'])) {
                                 Notification::make()
                                     ->title('تحذير: توجد سجلات مالية معتمدة')
                                     ->body('لا يمكن حذف سجلات الإيراد المعتمدة جماعياً. يرجى إلغاء اعتمادها أولاً.')
@@ -359,9 +367,9 @@ class RevenueRecordResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => ListRevenueRecords::route('/'),
+            'index' => ListRevenueRecords::route('/'),
             'create' => CreateRevenueRecord::route('/create'),
-            'edit'   => EditRevenueRecord::route('/{record}/edit'),
+            'edit' => EditRevenueRecord::route('/{record}/edit'),
         ];
     }
 }

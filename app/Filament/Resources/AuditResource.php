@@ -25,18 +25,25 @@ use Illuminate\Support\HtmlString;
 class AuditResource extends Resource
 {
     protected static ?string $model = Audit::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedFingerPrint;
+
     protected static ?string $navigationLabel = 'سجل تتبع العمليات (Audit Trail)';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::SystemAdmin;
+
     protected static ?string $modelLabel = 'سجل نشاط';
+
     protected static ?string $pluralModelLabel = 'سجل تتبع العمليات والأنشطة';
+
     protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (!$user)
+        if (! $user) {
             return false;
+        }
 
         return $user->hasRole(['super_admin', 'المدير العام', 'general_manager', 'مدقق / مراجع', 'reviewer'])
             || in_array($user->user_type, ['general_manager', 'reviewer']);
@@ -50,17 +57,17 @@ class AuditResource extends Resource
                 ->schema([
                     TextInput::make('user.name')
                         ->label('المستخدم المسؤول')
-                        ->default(fn($record) => $record?->user?->name ?? 'مستخدم النظام')
+                        ->default(fn ($record) => $record?->user?->name ?? 'مستخدم النظام')
                         ->disabled(),
 
                     TextInput::make('event_label')
                         ->label('نوع العملية')
-                        ->default(fn($record) => $record?->event_label ?? $record?->event)
+                        ->default(fn ($record) => $record?->event_label ?? $record?->event)
                         ->disabled(),
 
                     TextInput::make('auditable_type_label')
                         ->label('القسم / الكيان المتأثر')
-                        ->default(fn($record) => $record?->auditable_type_label)
+                        ->default(fn ($record) => $record?->auditable_type_label)
                         ->disabled(),
 
                     TextInput::make('ip_address')
@@ -69,7 +76,7 @@ class AuditResource extends Resource
 
                     TextInput::make('created_at')
                         ->label('تاريخ ووقت التنفيذ')
-                        ->formatStateUsing(fn($state) => $state ? date('Y-m-d H:i:s', strtotime($state)) : '—')
+                        ->formatStateUsing(fn ($state) => $state ? date('Y-m-d H:i:s', strtotime($state)) : '—')
                         ->disabled(),
 
                     TextInput::make('tags')
@@ -86,7 +93,8 @@ class AuditResource extends Resource
                             if (empty($record?->old_values)) {
                                 return new HtmlString('<div class="p-3 bg-gray-50 dark:bg-gray-800 text-gray-400 rounded-lg text-sm">لا توجد قيم سابقة (عملية إضافة جديدة أو تصدير)</div>');
                             }
-                            $html = '<div class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-xs font-mono overflow-auto max-h-60" dir="ltr"><pre>' . htmlspecialchars(json_encode($record->old_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) . '</pre></div>';
+                            $html = '<div class="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900 rounded-lg text-xs font-mono overflow-auto max-h-60" dir="ltr"><pre>'.htmlspecialchars(json_encode($record->old_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)).'</pre></div>';
+
                             return new HtmlString($html);
                         }),
 
@@ -96,7 +104,8 @@ class AuditResource extends Resource
                             if (empty($record?->new_values)) {
                                 return new HtmlString('<div class="p-3 bg-gray-50 dark:bg-gray-800 text-gray-400 rounded-lg text-sm">لا توجد قيم جديدة (عملية حذف)</div>');
                             }
-                            $html = '<div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-lg text-xs font-mono overflow-auto max-h-60" dir="ltr"><pre>' . htmlspecialchars(json_encode($record->new_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)) . '</pre></div>';
+                            $html = '<div class="p-3 bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-900 rounded-lg text-xs font-mono overflow-auto max-h-60" dir="ltr"><pre>'.htmlspecialchars(json_encode($record->new_values, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE)).'</pre></div>';
+
                             return new HtmlString($html);
                         }),
                 ]),
@@ -110,7 +119,7 @@ class AuditResource extends Resource
                 TextColumn::make('created_at')
                     ->label('التاريخ والوقت')
                     ->dateTime('Y-m-d H:i:s')
-                    ->description(fn(Audit $record) => $record->created_at?->diffForHumans())
+                    ->description(fn (Audit $record) => $record->created_at?->diffForHumans())
                     ->searchable(isIndividual: true)
                     ->sortable()
                     ->weight('bold'),
@@ -118,7 +127,7 @@ class AuditResource extends Resource
                 TextColumn::make('user.name')
                     ->label('المستخدم')
                     ->default('النظام / زائر')
-                    ->description(fn(Audit $record) => $record->user?->user_type ? match ($record->user->user_type) {
+                    ->description(fn (Audit $record) => $record->user?->user_type ? match ($record->user->user_type) {
                         'general_manager' => 'المدير العام',
                         'operations_manager' => 'مسؤول العمليات',
                         'finance_manager' => 'مسؤول الإيرادات',
@@ -132,8 +141,8 @@ class AuditResource extends Resource
                 TextColumn::make('event_label')
                     ->label('نوع العملية')
                     ->badge()
-                    ->color(fn(Audit $record) => $record->event_color)
-                    ->icon(fn(Audit $record) => $record->event_icon)
+                    ->color(fn (Audit $record) => $record->event_color)
+                    ->icon(fn (Audit $record) => $record->event_icon)
                     ->alignCenter()
                     ->searchable(isIndividual: true, query: function (Builder $query, string $search) {
                         $query->where('event', 'like', "%{$search}%");
@@ -180,20 +189,20 @@ class AuditResource extends Resource
 
                 SelectFilter::make('user_id')
                     ->label('المستخدم')
-                    ->options(fn() => User::orderBy('name')->pluck('name', 'id')),
+                    ->options(fn () => User::orderBy('name')->pluck('name', 'id')),
 
                 SelectFilter::make('auditable_type')
                     ->label('القسم المستهدف')
                     ->options([
-                        'App\\Models\\MonthlyPortRecord'     => 'السجلات التشغيلية للموانئ',
-                        'App\\Models\\RevenueRecord'         => 'سجلات الإيراد للموانئ والمراكز',
+                        'App\\Models\\MonthlyPortRecord' => 'السجلات التشغيلية للموانئ',
+                        'App\\Models\\RevenueRecord' => 'سجلات الإيراد للموانئ والمراكز',
                         'App\\Models\\ContainerStatusRecord' => 'سجلات الحاويات المتخلفة والخطرة',
-                        'App\\Models\\ContainerEntity'       => 'جهات ووزارات الحاويات',
-                        'App\\Models\\Port'                  => 'الموانئ',
-                        'App\\Models\\RevenueCenter'         => 'مراكز الإيراد',
-                        'App\\Models\\FiscalYear'            => 'السنوات المالية',
-                        'App\\Models\\User'                  => 'المستخدمون',
-                        'Report'                             => 'التقارير والمقارنات والتصدير',
+                        'App\\Models\\ContainerEntity' => 'جهات ووزارات الحاويات',
+                        'App\\Models\\Port' => 'الموانئ',
+                        'App\\Models\\RevenueCenter' => 'مراكز الإيراد',
+                        'App\\Models\\FiscalYear' => 'السنوات المالية',
+                        'App\\Models\\User' => 'المستخدمون',
+                        'Report' => 'التقارير والمقارنات والتصدير',
                     ]),
 
                 Filter::make('created_at')
@@ -213,8 +222,8 @@ class AuditResource extends Resource
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
-                            ->when($data['from_date'] ?? null, fn(Builder $q, $date) => $q->whereDate('created_at', '>=', $date))
-                            ->when($data['to_date'] ?? null, fn(Builder $q, $date) => $q->whereDate('created_at', '<=', $date));
+                            ->when($data['from_date'] ?? null, fn (Builder $q, $date) => $q->whereDate('created_at', '>=', $date))
+                            ->when($data['to_date'] ?? null, fn (Builder $q, $date) => $q->whereDate('created_at', '<=', $date));
                     }),
             ])
             ->actions([

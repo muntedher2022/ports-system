@@ -14,19 +14,19 @@ class Audit extends BaseAudit
     public function getEventLabelAttribute(): string
     {
         return match ($this->event) {
-            'created'        => 'إضافة قيد جديد',
-            'updated'        => 'تعديل بيانات',
-            'deleted'        => 'حذف مؤقت',
-            'restored'       => 'استرداد من الحذف',
-            'forceDeleted'   => 'حذف نهائي',
+            'created' => 'إضافة قيد جديد',
+            'updated' => 'تعديل بيانات',
+            'deleted' => 'حذف مؤقت',
+            'restored' => 'استرداد من الحذف',
+            'forceDeleted' => 'حذف نهائي',
             'exported_excel' => 'تصدير ملف Excel',
-            'exported_pdf'   => 'تصدير تقرير PDF',
-            'printed'        => 'طباعة تقرير',
-            'login'          => 'تسجيل دخول للنظام',
-            'logout'         => 'تسجيل خروج',
-            'approved'       => 'اعتماد رسمي للسجل',
-            'submitted'      => 'تقديم السجل للاعتماد',
-            default          => $this->event,
+            'exported_pdf' => 'تصدير تقرير PDF',
+            'printed' => 'طباعة تقرير',
+            'login' => 'تسجيل دخول للنظام',
+            'logout' => 'تسجيل خروج',
+            'approved' => 'اعتماد رسمي للسجل',
+            'submitted' => 'تقديم السجل للاعتماد',
+            default => $this->event,
         };
     }
 
@@ -36,17 +36,17 @@ class Audit extends BaseAudit
     public function getEventColorAttribute(): string
     {
         return match ($this->event) {
-            'created'        => 'success',
-            'updated'        => 'info',
-            'deleted'        => 'warning',
-            'restored'       => 'primary',
-            'forceDeleted'   => 'danger',
+            'created' => 'success',
+            'updated' => 'info',
+            'deleted' => 'warning',
+            'restored' => 'primary',
+            'forceDeleted' => 'danger',
             'exported_excel' => 'success',
-            'exported_pdf'   => 'danger',
-            'printed'        => 'gray',
-            'approved'       => 'success',
-            'submitted'      => 'warning',
-            default          => 'gray',
+            'exported_pdf' => 'danger',
+            'printed' => 'gray',
+            'approved' => 'success',
+            'submitted' => 'warning',
+            default => 'gray',
         };
     }
 
@@ -56,17 +56,17 @@ class Audit extends BaseAudit
     public function getEventIconAttribute(): string
     {
         return match ($this->event) {
-            'created'        => 'heroicon-o-plus-circle',
-            'updated'        => 'heroicon-o-pencil-square',
-            'deleted'        => 'heroicon-o-trash',
-            'restored'       => 'heroicon-o-arrow-uturn-left',
-            'forceDeleted'   => 'heroicon-o-x-circle',
+            'created' => 'heroicon-o-plus-circle',
+            'updated' => 'heroicon-o-pencil-square',
+            'deleted' => 'heroicon-o-trash',
+            'restored' => 'heroicon-o-arrow-uturn-left',
+            'forceDeleted' => 'heroicon-o-x-circle',
             'exported_excel' => 'heroicon-o-table-cells',
-            'exported_pdf'   => 'heroicon-o-document-arrow-down',
-            'printed'        => 'heroicon-o-printer',
-            'approved'       => 'heroicon-o-check-badge',
-            'submitted'      => 'heroicon-o-paper-airplane',
-            default          => 'heroicon-o-clock',
+            'exported_pdf' => 'heroicon-o-document-arrow-down',
+            'printed' => 'heroicon-o-printer',
+            'approved' => 'heroicon-o-check-badge',
+            'submitted' => 'heroicon-o-paper-airplane',
+            default => 'heroicon-o-clock',
         };
     }
 
@@ -78,21 +78,21 @@ class Audit extends BaseAudit
         $type = class_basename($this->auditable_type ?? '');
 
         return match ($type) {
-            'MonthlyPortRecord'     => 'السجلات التشغيلية للموانئ',
-            'RevenueRecord'         => 'سجلات الإيراد للموانئ والمراكز',
+            'MonthlyPortRecord' => 'السجلات التشغيلية للموانئ',
+            'RevenueRecord' => 'سجلات الإيراد للموانئ والمراكز',
             'ContainerStatusRecord' => 'سجلات الحاويات المتخلفة والخطرة',
-            'ContainerEntity'       => 'جهات ووزارات الحاويات',
+            'ContainerEntity' => 'جهات ووزارات الحاويات',
             'ContainerStatusDetail' => 'تفاصيل أعداد الحاويات',
-            'CargoStatusRecord'     => 'سجلات المواد والبضائع المتخلفة والخطرة',
-            'CargoEntity'           => 'جهات ووزارات المواد والبضائع',
-            'CargoStatusDetail'     => 'تفاصيل أعداد المواد والبضائع',
-            'Port'                  => 'الموانئ',
-            'RevenueCenter'         => 'مراكز الإيراد',
-            'FiscalYear'            => 'السنوات المالية',
-            'Month'                 => 'الأشهر',
-            'User'                  => 'المستخدمون والحسابات',
-            'Report', 'Audit'       => 'التقارير والمقارنات والتصدير',
-            default                 => $type ?: 'العمليات العامة',
+            'CargoStatusRecord' => 'سجلات المواد والبضائع المتخلفة والخطرة',
+            'CargoEntity' => 'جهات ووزارات المواد والبضائع',
+            'CargoStatusDetail' => 'تفاصيل أعداد المواد والبضائع',
+            'Port' => 'الموانئ',
+            'RevenueCenter' => 'مراكز الإيراد',
+            'FiscalYear' => 'السنوات المالية',
+            'Month' => 'الأشهر',
+            'User' => 'المستخدمون والحسابات',
+            'Report', 'Audit' => 'التقارير والمقارنات والتصدير',
+            default => $type ?: 'العمليات العامة',
         };
     }
 
@@ -102,8 +102,8 @@ class Audit extends BaseAudit
     public function getTargetRecordDescriptionAttribute(): string
     {
         $type = $this->auditable_type;
-        if (empty($type) || !class_exists($type)) {
-            return $this->tags ?: ('سجل رقم #' . ($this->auditable_id ?? '—'));
+        if (empty($type) || ! class_exists($type)) {
+            return $this->tags ?: ('سجل رقم #'.($this->auditable_id ?? '—'));
         }
 
         try {
@@ -112,8 +112,8 @@ class Audit extends BaseAudit
             $record = null;
         }
 
-        if (!$record) {
-            return $this->tags ?: ('سجل رقم #' . ($this->auditable_id ?? '—'));
+        if (! $record) {
+            return $this->tags ?: ('سجل رقم #'.($this->auditable_id ?? '—'));
         }
 
         if ($record instanceof MonthlyPortRecord) {
@@ -126,6 +126,7 @@ class Audit extends BaseAudit
 
         if ($record instanceof ContainerStatusRecord) {
             $typeLabel = $record->container_type === 'dangerous' ? 'حاويات خطرة' : 'حاويات متخلفة';
+
             return "{$record->port?->name_ar} - [{$typeLabel}] شهر {$record->month?->name_ar} {$record->fiscalYear?->year}";
         }
 
@@ -135,11 +136,13 @@ class Audit extends BaseAudit
 
         if ($record instanceof ContainerStatusDetail) {
             $yearStr = is_numeric($record->year_label) ? "سنة {$record->year_label}" : $record->year_label;
+
             return "تفاصيل: {$record->entity?->name_ar} - {$yearStr} ({$record->count} حاوية)";
         }
 
         if ($record instanceof CargoStatusRecord) {
             $typeLabel = $record->cargo_type === 'dangerous' ? 'مواد خطرة' : 'مواد متخلفة';
+
             return "{$record->port?->name_ar} - [{$typeLabel}] شهر {$record->month?->name_ar} {$record->fiscalYear?->year}";
         }
 
@@ -149,6 +152,7 @@ class Audit extends BaseAudit
 
         if ($record instanceof CargoStatusDetail) {
             $yearStr = is_numeric($record->year_label) ? "سنة {$record->year_label}" : $record->year_label;
+
             return "تفاصيل مواد: {$record->entity?->name_ar} - {$yearStr} ({$record->count} مادة/طرد)";
         }
 
@@ -168,6 +172,6 @@ class Audit extends BaseAudit
             return "المستخدم: {$record->name} ({$record->email})";
         }
 
-        return $this->tags ?: ('سجل رقم #' . ($this->auditable_id ?? '—'));
+        return $this->tags ?: ('سجل رقم #'.($this->auditable_id ?? '—'));
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Middleware;
 
+use App\Licensing\LicensingService;
+use App\Services\AdminOtpService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -17,10 +19,10 @@ class VerifyAdminOtp
             $user = auth()->user();
 
             // التحقق من تفعيل التوثيق الثنائي في الترخيص
-            $check = \App\Licensing\LicensingService::check();
+            $check = LicensingService::check();
             $adminOtpEnabled = $check['valid'] && ($check['license']['admin_otp_enabled'] ?? false);
 
-            if (!$adminOtpEnabled) {
+            if (! $adminOtpEnabled) {
                 return $next($request);
             }
 
@@ -50,7 +52,7 @@ class VerifyAdminOtp
             // إذا لم يتم التحقق بعد (سواء عبر الواتساب/البريد أو عبر تطبيق المصادقة)
             if (session('admin_otp_verified') !== true && session('totp_verified') !== true) {
                 // التأكد من توليد وإرسال الرمز في حال لم يكن مرسلاً بعد أو انتهت صلاحيته
-                \App\Services\AdminOtpService::generateAndSend($user, $request->ip(), force: false);
+                AdminOtpService::generateAndSend($user, $request->ip(), force: false);
 
                 // Redirect to the verification page
                 return redirect()->route('filament.admin.pages.verify-otp');

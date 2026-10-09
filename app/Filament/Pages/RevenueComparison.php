@@ -12,15 +12,21 @@ use Illuminate\Support\Facades\Auth;
 class RevenueComparison extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedScale;
+
     protected static ?string $navigationLabel = 'مقارنة الإيراد لكل التشكيلات';
+
     protected static ?string $title = 'مقارنة الإيراد لكل التشكيلات بين عامين';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Analytics;
+
     protected static ?int $navigationSort = 3;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         if ($user->hasRole(['super_admin', 'المدير العام', 'general_manager']) || $user->user_type === 'general_manager') {
             return true;
@@ -34,6 +40,7 @@ class RevenueComparison extends Page
     protected string $view = 'filament.pages.revenue-comparison';
 
     public ?int $prevFiscalYearId = null;
+
     public ?int $currFiscalYearId = null;
 
     public function mount(): void
@@ -57,9 +64,9 @@ class RevenueComparison extends Page
 
         return [
             'fiscalYears' => $fiscalYears,
-            'prevYear'    => $comparison['prevYear'],
-            'currYear'    => $comparison['currYear'],
-            'tables'      => $comparison['tables'],
+            'prevYear' => $comparison['prevYear'],
+            'currYear' => $comparison['currYear'],
+            'tables' => $comparison['tables'],
         ];
     }
 }

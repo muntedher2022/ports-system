@@ -3,31 +3,30 @@
 namespace App\Imports;
 
 use App\Models\MonthlyPortRecord;
+use App\Models\RevenueCenter;
+use App\Models\RevenueRecord;
 use Illuminate\Support\Facades\Auth;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class PortRecordImport implements
-    ToModel,
-    WithHeadingRow,
-    SkipsEmptyRows,
-    WithBatchInserts,
-    WithChunkReading
+class PortRecordImport implements SkipsEmptyRows, ToModel, WithBatchInserts, WithChunkReading, WithHeadingRow
 {
     public int $importedCount = 0;
-    public int $updatedCount  = 0;
-    public array $failures    = [];
+
+    public int $updatedCount = 0;
+
+    public array $failures = [];
 
     public function model(array $row): ?MonthlyPortRecord
     {
-        $portId       = (int) $this->extract($row, 'port_id');
+        $portId = (int) $this->extract($row, 'port_id');
         $fiscalYearId = (int) $this->extract($row, 'fiscal_year_id');
-        $monthId      = (int) $this->extract($row, 'month_id');
+        $monthId = (int) $this->extract($row, 'month_id');
 
-        if (!$portId || !$fiscalYearId || !$monthId) {
+        if (! $portId || ! $fiscalYearId || ! $monthId) {
             return null;
         }
 
@@ -40,7 +39,7 @@ class PortRecordImport implements
 
         // الحاويات المصدرة
         $expEmpty = $this->int($row, 'exported_empty_count');
-        $expFull  = $this->int($row, 'exported_full_count');
+        $expFull = $this->int($row, 'exported_full_count');
         $calculatedExpCount = $expEmpty + $expFull;
 
         $exp20 = $this->int($row, 'exported_20ft');
@@ -54,20 +53,20 @@ class PortRecordImport implements
         $calculatedOilTotal = $oilExported + $oilImported;
 
         $existing = MonthlyPortRecord::withTrashed()->where([
-            'port_id'        => $portId,
+            'port_id' => $portId,
             'fiscal_year_id' => $fiscalYearId,
-            'month_id'       => $monthId,
+            'month_id' => $monthId,
         ])->first();
 
         // الإيراد المالي: إذا تُرِك 0 أو فارغاً، يتم جلبه تلقائياً من سجلات الإيراد المالي للميناء
         $revenue = $this->dec($row, 'total_revenue');
         if ($revenue <= 0) {
-            $revenueCenter = \App\Models\RevenueCenter::where('port_id', $portId)->first();
+            $revenueCenter = RevenueCenter::where('port_id', $portId)->first();
             if ($revenueCenter) {
-                $revRecord = \App\Models\RevenueRecord::where([
+                $revRecord = RevenueRecord::where([
                     'revenue_center_id' => $revenueCenter->id,
-                    'fiscal_year_id'    => $fiscalYearId,
-                    'month_id'          => $monthId,
+                    'fiscal_year_id' => $fiscalYearId,
+                    'month_id' => $monthId,
                 ])->first();
                 if ($revRecord) {
                     $revenue = (float) $revRecord->gross_revenue;
@@ -76,48 +75,48 @@ class PortRecordImport implements
         }
 
         $data = [
-            'port_id'                          => $portId,
-            'fiscal_year_id'                   => $fiscalYearId,
-            'month_id'                         => $monthId,
+            'port_id' => $portId,
+            'fiscal_year_id' => $fiscalYearId,
+            'month_id' => $monthId,
 
             // 1. حركة البواخر والسيارات
-            'total_container_ships'            => $this->int($row, 'total_container_ships'),
-            'general_cargo_ships'              => $this->int($row, 'general_cargo_ships'),
-            'oil_tankers_count'                => $this->int($row, 'oil_tankers_count'),
-            'car_carrier_ships'                => $this->int($row, 'car_carrier_ships'),
-            'imported_cars_count'              => $this->int($row, 'imported_cars_count'),
-            'imported_cars_weight_tons'        => $this->dec($row, 'imported_cars_weight_tons'),
+            'total_container_ships' => $this->int($row, 'total_container_ships'),
+            'general_cargo_ships' => $this->int($row, 'general_cargo_ships'),
+            'oil_tankers_count' => $this->int($row, 'oil_tankers_count'),
+            'car_carrier_ships' => $this->int($row, 'car_carrier_ships'),
+            'imported_cars_count' => $this->int($row, 'imported_cars_count'),
+            'imported_cars_weight_tons' => $this->dec($row, 'imported_cars_weight_tons'),
 
             // 2. الحاويات المستوردة
-            'imported_containers_weight_tons'  => $this->dec($row, 'imported_containers_weight_tons'),
-            'imported_containers_count'        => ($this->int($row, 'imported_containers_count') > 0) ? $this->int($row, 'imported_containers_count') : $calculatedImpCount,
-            'imported_20ft'                    => $imp20,
-            'imported_40ft'                    => $imp40,
-            'imported_45ft'                    => $imp45,
-            'imported_teu'                     => $calculatedImpTeu, // محسوب تلقائياً
+            'imported_containers_weight_tons' => $this->dec($row, 'imported_containers_weight_tons'),
+            'imported_containers_count' => ($this->int($row, 'imported_containers_count') > 0) ? $this->int($row, 'imported_containers_count') : $calculatedImpCount,
+            'imported_20ft' => $imp20,
+            'imported_40ft' => $imp40,
+            'imported_45ft' => $imp45,
+            'imported_teu' => $calculatedImpTeu, // محسوب تلقائياً
 
             // 3. الحاويات المصدرة
-            'exported_empty_count'             => $expEmpty,
-            'exported_full_count'              => $expFull,
-            'exported_full_weight_tons'        => $this->dec($row, 'exported_full_weight_tons'),
-            'exported_containers_count'        => $calculatedExpCount, // محسوب تلقائياً
-            'exported_20ft'                    => $exp20,
-            'exported_40ft'                    => $exp40,
-            'exported_45ft'                    => $exp45,
-            'exported_teu'                     => $calculatedExpTeu, // محسوب تلقائياً
+            'exported_empty_count' => $expEmpty,
+            'exported_full_count' => $expFull,
+            'exported_full_weight_tons' => $this->dec($row, 'exported_full_weight_tons'),
+            'exported_containers_count' => $calculatedExpCount, // محسوب تلقائياً
+            'exported_20ft' => $exp20,
+            'exported_40ft' => $exp40,
+            'exported_45ft' => $exp45,
+            'exported_teu' => $calculatedExpTeu, // محسوب تلقائياً
 
             // 4. البضائع العامة والمتنوعة
-            'general_cargo_weight_tons'        => $this->dec($row, 'general_cargo_weight_tons'),
+            'general_cargo_weight_tons' => $this->dec($row, 'general_cargo_weight_tons'),
 
             // 5. النفط والمشتقات النفطية
-            'oil_exported_tons'                => $oilExported,
-            'oil_imported_tons'                => $oilImported,
-            'oil_total_tons'                   => $calculatedOilTotal, // محسوب تلقائياً
+            'oil_exported_tons' => $oilExported,
+            'oil_imported_tons' => $oilImported,
+            'oil_total_tons' => $calculatedOilTotal, // محسوب تلقائياً
 
             // 6. الإيراد المالي
-            'total_revenue'                    => $revenue,
-            'status'                           => 'approved',
-            'created_by'                       => Auth::id() ?? 1,
+            'total_revenue' => $revenue,
+            'status' => 'approved',
+            'created_by' => Auth::id() ?? 1,
         ];
 
         if ($existing) {
@@ -125,15 +124,24 @@ class PortRecordImport implements
             $existing->fill($data);
             $existing->save();
             $this->updatedCount++;
+
             return null;
         }
 
         $this->importedCount++;
+
         return new MonthlyPortRecord($data);
     }
 
-    public function batchSize(): int { return 100; }
-    public function chunkSize(): int { return 100; }
+    public function batchSize(): int
+    {
+        return 100;
+    }
+
+    public function chunkSize(): int
+    {
+        return 100;
+    }
 
     private function extract(array $row, string $key): mixed
     {
@@ -143,9 +151,11 @@ class PortRecordImport implements
                 if (is_string($val)) {
                     $val = str_replace([',', ' '], '', trim($val));
                 }
+
                 return $val;
             }
         }
+
         return null;
     }
 

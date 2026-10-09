@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Enums\NavigationGroup;
-use App\Filament\Resources\PortResource\Pages;
 use App\Filament\Resources\PortResource\Pages\CreatePort;
 use App\Filament\Resources\PortResource\Pages\EditPort;
 use App\Filament\Resources\PortResource\Pages\ListPorts;
@@ -36,17 +35,25 @@ use Illuminate\Support\Facades\Auth;
 class PortResource extends Resource
 {
     protected static ?string $model = Port::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice;
+
     protected static ?string $navigationLabel = 'الموانئ';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::MasterData;
+
     protected static ?string $modelLabel = 'ميناء';
+
     protected static ?string $pluralModelLabel = 'الموانئ';
+
     protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return $user->hasRole(['المدير العام', 'general_manager', 'مسؤول المتابعة المركزية والعمليات', 'operations_manager'])
             || in_array($user->user_type, ['general_manager', 'operations_manager']);
@@ -74,9 +81,9 @@ class PortResource extends Resource
                         ->label('نوع الميناء')
                         ->options([
                             'container' => 'حاويات',
-                            'general'   => 'بضائع عامة',
-                            'oil'       => 'نفطي',
-                            'mixed'     => 'متنوع',
+                            'general' => 'بضائع عامة',
+                            'oil' => 'نفطي',
+                            'mixed' => 'متنوع',
                         ])
                         ->required(),
 
@@ -152,12 +159,12 @@ class PortResource extends Resource
 
                 TextColumn::make('type')
                     ->label('النوع')
-                    ->formatStateUsing(fn($state) => match($state) {
+                    ->formatStateUsing(fn ($state) => match ($state) {
                         'container' => 'حاويات',
-                        'general'   => 'بضائع عامة',
-                        'oil'       => 'نفطي',
-                        'mixed'     => 'متنوع',
-                        default     => $state,
+                        'general' => 'بضائع عامة',
+                        'oil' => 'نفطي',
+                        'mixed' => 'متنوع',
+                        default => $state,
                     }),
 
                 IconColumn::make('has_monthly_records')
@@ -222,8 +229,8 @@ class PortResource extends Resource
                         ->label('حذف نهائي')
                         ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -238,6 +245,7 @@ class PortResource extends Resource
                                         ->danger()
                                         ->send();
                                     $action->cancel();
+
                                     return;
                                 }
                             }
@@ -258,10 +266,10 @@ class PortResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => ListPorts::route('/'),
+            'index' => ListPorts::route('/'),
             'create' => CreatePort::route('/create'),
-            'view'   => ViewPort::route('/{record}'),
-            'edit'   => EditPort::route('/{record}/edit'),
+            'view' => ViewPort::route('/{record}'),
+            'edit' => EditPort::route('/{record}/edit'),
         ];
     }
 }

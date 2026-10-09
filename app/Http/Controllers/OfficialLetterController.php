@@ -2,12 +2,9 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\FiscalYear;
-use App\Models\Month;
 use App\Services\ActivityLogger;
 use App\Services\OfficialLettersService;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\Response;
 
 class OfficialLetterController extends Controller
 {
@@ -17,9 +14,9 @@ class OfficialLetterController extends Controller
     public function preview(Request $request, string $type)
     {
         $fiscalYearId = $request->integer('fiscal_year_id') ?: null;
-        $monthId      = $request->integer('month_id') ?: null;
-        $memoNumber   = $request->filled('memo_number') ? $request->input('memo_number') : null;
-        $memoDate     = $request->filled('memo_date') ? $request->input('memo_date') : null;
+        $monthId = $request->integer('month_id') ?: null;
+        $memoNumber = $request->filled('memo_number') ? $request->input('memo_number') : null;
+        $memoDate = $request->filled('memo_date') ? $request->input('memo_date') : null;
 
         $types = OfficialLettersService::getLetterTypes();
         if (! isset($types[$type])) {
@@ -33,11 +30,11 @@ class OfficialLetterController extends Controller
         ActivityLogger::log('viewed_letter', "معاينة طباعة: {$types[$type]['title']} لشهر {$data['month_name']} {$data['year']}");
 
         $viewName = match ($type) {
-            'revenue_memo'      => 'letters.revenue_memo',
-            'capacity_memo'     => 'letters.capacity_memo',
+            'revenue_memo' => 'letters.revenue_memo',
+            'capacity_memo' => 'letters.capacity_memo',
             'containers_letter' => 'letters.containers_letter',
-            'cargo_letter'      => 'letters.cargo_letter',
-            default             => 'letters.revenue_memo',
+            'cargo_letter' => 'letters.cargo_letter',
+            default => 'letters.revenue_memo',
         };
 
         return view($viewName, $data);
@@ -49,9 +46,9 @@ class OfficialLetterController extends Controller
     public function downloadDocx(Request $request, string $type)
     {
         $fiscalYearId = $request->integer('fiscal_year_id') ?: null;
-        $monthId      = $request->integer('month_id') ?: null;
-        $memoNumber   = $request->filled('memo_number') ? $request->input('memo_number') : null;
-        $memoDate     = $request->filled('memo_date') ? $request->input('memo_date') : null;
+        $monthId = $request->integer('month_id') ?: null;
+        $memoNumber = $request->filled('memo_number') ? $request->input('memo_number') : null;
+        $memoDate = $request->filled('memo_date') ? $request->input('memo_date') : null;
 
         $types = OfficialLettersService::getLetterTypes();
         if (! isset($types[$type])) {

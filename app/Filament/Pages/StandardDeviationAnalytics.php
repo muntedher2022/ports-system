@@ -13,15 +13,21 @@ use Illuminate\Support\Facades\Auth;
 class StandardDeviationAnalytics extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedCalculator;
+
     protected static ?string $navigationLabel = 'تحليل الانحراف المعياري والاستقرار';
+
     protected static ?string $title = 'تحليل الانحراف المعياري واستقرار الأداء التشغيلي والمالي';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Analytics;
+
     protected static ?int $navigationSort = 6;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         if ($user->hasRole(['super_admin', 'المدير العام', 'general_manager']) || $user->user_type === 'general_manager') {
             return true;
@@ -35,7 +41,9 @@ class StandardDeviationAnalytics extends Page
     protected string $view = 'filament.pages.standard-deviation-analytics';
 
     public ?int $selectedFiscalYearId = null;
+
     public ?int $selectedPortId = null; // null = عموم الموانئ
+
     public string $selectedMetric = 'tonnage'; // 'tonnage', 'revenue', 'ships', 'teu'
 
     public function mount(): void
@@ -75,18 +83,18 @@ class StandardDeviationAnalytics extends Page
                 $dev = $val - $mean;
                 $zScore = $stdDev > 0 ? ($dev / $stdDev) : 0;
 
-                $assessment = match(true) {
-                    $zScore >= 1.5  => 'طفرة إنتاجية استثنائية (أعلى من المعدل بشدة)',
-                    $zScore >= 0.5  => 'نشاط مرتفع (فوق المتوسط)',
+                $assessment = match (true) {
+                    $zScore >= 1.5 => 'طفرة إنتاجية استثنائية (أعلى من المعدل بشدة)',
+                    $zScore >= 0.5 => 'نشاط مرتفع (فوق المتوسط)',
                     $zScore >= -0.5 => 'ضمن النطاق الطبيعي المستقر (المثالي)',
                     $zScore >= -1.5 => 'نشاط منخفض (تحت المتوسط)',
-                    default         => 'انخفاض حاد غير معتاد (تراجع استثنائي)',
+                    default => 'انخفاض حاد غير معتاد (تراجع استثنائي)',
                 };
 
-                $assessmentType = match(true) {
-                    $zScore >= 0.5  => 'high',
+                $assessmentType = match (true) {
+                    $zScore >= 0.5 => 'high',
                     $zScore >= -0.5 => 'normal',
-                    default         => 'low',
+                    default => 'low',
                 };
             } else {
                 $dev = 0;
@@ -96,22 +104,22 @@ class StandardDeviationAnalytics extends Page
             }
 
             $monthlyRows[] = [
-                'month_name'      => $mData['month_name'],
-                'val'             => $val,
-                'deviation'       => $dev,
-                'z_score'         => round($zScore, 2),
-                'assessment'      => $assessment,
+                'month_name' => $mData['month_name'],
+                'val' => $val,
+                'deviation' => $dev,
+                'z_score' => round($zScore, 2),
+                'assessment' => $assessment,
                 'assessment_type' => $assessmentType,
             ];
         }
 
         return [
-            'fiscalYears'      => $fiscalYears,
-            'ports'            => $ports,
+            'fiscalYears' => $fiscalYears,
+            'ports' => $ports,
             'currentYearStats' => $currentYearStats,
-            'activeStat'       => $activeStat,
-            'monthlyRows'      => $monthlyRows,
-            'multiYearStats'   => $multiYearStats,
+            'activeStat' => $activeStat,
+            'monthlyRows' => $monthlyRows,
+            'multiYearStats' => $multiYearStats,
         ];
     }
 }

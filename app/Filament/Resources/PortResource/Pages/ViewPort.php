@@ -9,6 +9,7 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewPort extends ViewRecord
 {
     protected static string $resource = PortResource::class;
+
     protected ?string $heading = 'بيانات الميناء';
 
     protected function getHeaderActions(): array

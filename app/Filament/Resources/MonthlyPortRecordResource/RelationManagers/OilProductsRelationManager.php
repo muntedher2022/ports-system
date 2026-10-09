@@ -15,8 +15,11 @@ use Filament\Tables\Table;
 class OilProductsRelationManager extends RelationManager
 {
     protected static string $relationship = 'oilProducts';
+
     protected static ?string $title = 'المشتقات النفطية والنفط الخام';
+
     protected static ?string $modelLabel = 'حركة مشتقات نفطية';
+
     protected static ?string $pluralModelLabel = 'حركات المشتقات النفطية';
 
     public function form(Schema $schema): Schema
@@ -48,7 +51,7 @@ class OilProductsRelationManager extends RelationManager
                     ->formatStateUsing(fn ($state) => match ($state) {
                         'import' => 'استيراد',
                         'export' => 'تصدير',
-                        default  => $state,
+                        default => $state,
                     })
                     ->badge()
                     ->color(fn ($state) => $state === 'import' ? 'info' : 'warning'),

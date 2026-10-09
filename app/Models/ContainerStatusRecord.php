@@ -3,15 +3,15 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class ContainerStatusRecord extends Model implements Auditable
 {
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
 
     protected $fillable = [
         'port_id',
@@ -42,12 +42,12 @@ class ContainerStatusRecord extends Model implements Auditable
                 ContainerItem::withTrashed()
                     ->where(function ($q) use ($record) {
                         $q->where('container_status_record_id', $record->id)
-                          ->orWhere(function ($q2) use ($record) {
-                              $q2->where('port_id', $record->port_id)
-                                 ->where('fiscal_year_id', $record->fiscal_year_id)
-                                 ->where('month_id', $record->month_id)
-                                 ->where('container_type', $record->container_type);
-                          });
+                            ->orWhere(function ($q2) use ($record) {
+                                $q2->where('port_id', $record->port_id)
+                                    ->where('fiscal_year_id', $record->fiscal_year_id)
+                                    ->where('month_id', $record->month_id)
+                                    ->where('container_type', $record->container_type);
+                            });
                     })
                     ->forceDelete();
             } else {
@@ -56,12 +56,12 @@ class ContainerStatusRecord extends Model implements Auditable
 
                 ContainerItem::where(function ($q) use ($record) {
                     $q->where('container_status_record_id', $record->id)
-                      ->orWhere(function ($q2) use ($record) {
-                          $q2->where('port_id', $record->port_id)
-                             ->where('fiscal_year_id', $record->fiscal_year_id)
-                             ->where('month_id', $record->month_id)
-                             ->where('container_type', $record->container_type);
-                      });
+                        ->orWhere(function ($q2) use ($record) {
+                            $q2->where('port_id', $record->port_id)
+                                ->where('fiscal_year_id', $record->fiscal_year_id)
+                                ->where('month_id', $record->month_id)
+                                ->where('container_type', $record->container_type);
+                        });
                 })->delete();
             }
 
@@ -71,10 +71,10 @@ class ContainerStatusRecord extends Model implements Auditable
                 ->where('port_id', $record->port_id)
                 ->where('container_type', $record->container_type)
                 ->update([
-                    'status'                   => 'in_port',
+                    'status' => 'in_port',
                     'discharge_fiscal_year_id' => null,
-                    'discharge_month_id'       => null,
-                    'discharge_date'           => null,
+                    'discharge_month_id' => null,
+                    'discharge_date' => null,
                 ]);
         });
 
@@ -126,10 +126,10 @@ class ContainerStatusRecord extends Model implements Auditable
 
     public function getContainerTypeLabelAttribute(): string
     {
-        return match($this->container_type) {
+        return match ($this->container_type) {
             'abandoned' => 'حاويات متخلفة',
             'dangerous' => 'حاويات خطرة',
-            default     => $this->container_type,
+            default => $this->container_type,
         };
     }
 
@@ -153,7 +153,7 @@ class ContainerStatusRecord extends Model implements Auditable
     public function getGovernmentTotalAttribute(): int
     {
         return $this->details()
-            ->whereHas('entity', fn($q) => $q->where('entity_type', 'government'))
+            ->whereHas('entity', fn ($q) => $q->where('entity_type', 'government'))
             ->sum('count');
     }
 
@@ -161,7 +161,7 @@ class ContainerStatusRecord extends Model implements Auditable
     public function getPrivateTotalAttribute(): int
     {
         return $this->details()
-            ->whereHas('entity', fn($q) => $q->where('entity_type', 'private'))
+            ->whereHas('entity', fn ($q) => $q->where('entity_type', 'private'))
             ->sum('count');
     }
 }

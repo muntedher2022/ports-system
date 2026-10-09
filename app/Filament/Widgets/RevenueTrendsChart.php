@@ -10,13 +10,16 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 class RevenueTrendsChart extends ApexChartWidget
 {
     protected static ?string $chartId = 'revenueTrendsChart';
+
     protected static ?string $heading = '💰 حركة الإيرادات المالية الشهرية (الإيراد الكلي مقابل الصافي)';
+
     protected static ?int $sort = 4;
 
     public static function canView(): bool
     {
         // يظهر للإدارة العامة والمالية والمتابعة فقط
         $user = Auth::user();
+
         return ! ($user?->isPortRestricted() && $user?->port_id);
     }
 

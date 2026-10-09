@@ -52,15 +52,15 @@ class EditContainerItem extends EditRecord
             ->where('container_type', $cType)
             ->first();
 
-        if (!$record) {
+        if (! $record) {
             $record = ContainerStatusRecord::create([
-                'port_id'        => $portId,
+                'port_id' => $portId,
                 'fiscal_year_id' => $fiscalYearId,
-                'month_id'       => $monthId,
+                'month_id' => $monthId,
                 'container_type' => $cType,
-                'report_date'    => $data['arrival_date'] ?? now()->toDateString(),
-                'created_by'     => Auth::id() ?? 1,
-                'total_count'    => 0,
+                'report_date' => $data['arrival_date'] ?? now()->toDateString(),
+                'created_by' => Auth::id() ?? 1,
+                'total_count' => 0,
             ]);
         } elseif ($record->trashed()) {
             $record->restore();

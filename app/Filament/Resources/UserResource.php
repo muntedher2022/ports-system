@@ -3,7 +3,6 @@
 namespace App\Filament\Resources;
 
 use App\Enums\NavigationGroup;
-use App\Filament\Resources\UserResource\Pages;
 use App\Filament\Resources\UserResource\Pages\CreateUser;
 use App\Filament\Resources\UserResource\Pages\EditUser;
 use App\Filament\Resources\UserResource\Pages\ListUsers;
@@ -38,16 +37,23 @@ use Spatie\Permission\Models\Role;
 class UserResource extends Resource
 {
     protected static ?string $model = User::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+
     protected static ?string $navigationLabel = 'المستخدمون';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::SystemAdmin;
+
     protected static ?string $modelLabel = 'مستخدم';
+
     protected static ?string $pluralModelLabel = 'المستخدمون';
+
     protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
+
         return (bool) ($user && ($user->hasRole(['المدير العام', 'general_manager']) || $user->user_type === 'general_manager'));
     }
 
@@ -80,19 +86,19 @@ class UserResource extends Resource
                     TextInput::make('password')
                         ->label('كلمة المرور')
                         ->password()
-                        ->required(fn($livewire) => $livewire instanceof CreateUser)
-                        ->dehydrated(fn($state) => filled($state))
-                        ->dehydrateStateUsing(fn($state) => Hash::make($state))
+                        ->required(fn ($livewire) => $livewire instanceof CreateUser)
+                        ->dehydrated(fn ($state) => filled($state))
+                        ->dehydrateStateUsing(fn ($state) => Hash::make($state))
                         ->maxLength(255),
 
                     Select::make('user_type')
                         ->label('نوع المستخدم')
                         ->options([
-                            'general_manager'    => 'المدير العام',
+                            'general_manager' => 'المدير العام',
                             'operations_manager' => 'مسؤول المتابعة المركزية والعمليات',
-                            'port_data_entry'    => 'مدخل بيانات الميناء',
-                            'finance_manager'    => 'مسؤول الإيراد المالي',
-                            'reviewer'           => 'مدقق / مراجع',
+                            'port_data_entry' => 'مدخل بيانات الميناء',
+                            'finance_manager' => 'مسؤول الإيراد المالي',
+                            'reviewer' => 'مدقق / مراجع',
                         ])
                         ->required()
                         ->live(),
@@ -103,7 +109,7 @@ class UserResource extends Resource
                 ->schema([
                     Select::make('roles')
                         ->label('الدور في النظام')
-                        ->options(fn() => Role::all()->pluck('name', 'id'))
+                        ->options(fn () => Role::all()->pluck('name', 'id'))
                         ->multiple()
                         ->preload()
                         ->searchable()
@@ -111,11 +117,11 @@ class UserResource extends Resource
 
                     Select::make('port_id')
                         ->label('الميناء المخصص')
-                        ->options(fn() => Port::where('is_active', true)->pluck('name_ar', 'id'))
+                        ->options(fn () => Port::where('is_active', true)->pluck('name_ar', 'id'))
                         ->nullable()
                         ->searchable()
                         ->helperText('مطلوب لمدخلي بيانات الموانئ فقط')
-                        ->visible(fn($get) => $get('user_type') === 'port_data_entry'),
+                        ->visible(fn ($get) => $get('user_type') === 'port_data_entry'),
                 ]),
 
             Section::make('أمان الحساب والمصادقة الثنائية')
@@ -150,22 +156,22 @@ class UserResource extends Resource
 
                 TextColumn::make('user_type')
                     ->label('النوع والوظيفة')
-                    ->formatStateUsing(fn($state) => match($state) {
-                        'general_manager'    => 'المدير العام',
+                    ->formatStateUsing(fn ($state) => match ($state) {
+                        'general_manager' => 'المدير العام',
                         'operations_manager' => 'المتابعة المركزية والعمليات',
-                        'port_data_entry'    => 'مدخل بيانات ميناء',
-                        'finance_manager'    => 'مسؤول الإيراد المالي',
-                        'reviewer'           => 'مدقق / مراجع',
-                        default              => $state ?? '—',
+                        'port_data_entry' => 'مدخل بيانات ميناء',
+                        'finance_manager' => 'مسؤول الإيراد المالي',
+                        'reviewer' => 'مدقق / مراجع',
+                        default => $state ?? '—',
                     })
                     ->badge()
-                    ->color(fn($state) => match($state) {
-                        'general_manager'    => 'danger',
+                    ->color(fn ($state) => match ($state) {
+                        'general_manager' => 'danger',
                         'operations_manager' => 'primary',
-                        'finance_manager'    => 'warning',
-                        'port_data_entry'    => 'info',
-                        'reviewer'           => 'success',
-                        default              => 'gray',
+                        'finance_manager' => 'warning',
+                        'port_data_entry' => 'info',
+                        'reviewer' => 'success',
+                        default => 'gray',
                     }),
 
                 TextColumn::make('port.name_ar')
@@ -173,7 +179,7 @@ class UserResource extends Resource
                     ->searchable(isIndividual: true)
                     ->default('كافة الموانئ / الإدارة العامة')
                     ->badge()
-                    ->color(fn($record) => $record->port_id ? 'info' : 'gray'),
+                    ->color(fn ($record) => $record->port_id ? 'info' : 'gray'),
 
                 TextColumn::make('roles.name')
                     ->label('الأدوار الممنوحة')
@@ -185,11 +191,11 @@ class UserResource extends Resource
                 SelectFilter::make('user_type')
                     ->label('نوع المستخدم')
                     ->options([
-                        'general_manager'    => 'المدير العام',
+                        'general_manager' => 'المدير العام',
                         'operations_manager' => 'مسؤول المتابعة المركزية والعمليات',
-                        'port_data_entry'    => 'مدخل بيانات الميناء',
-                        'finance_manager'    => 'مسؤول الإيراد المالي',
-                        'reviewer'           => 'مدقق / مراجع',
+                        'port_data_entry' => 'مدخل بيانات الميناء',
+                        'finance_manager' => 'مسؤول الإيراد المالي',
+                        'reviewer' => 'مدقق / مراجع',
                     ]),
 
                 TrashedFilter::make()->label('سلة المحذوفات / المستخدمون المعطلون'),
@@ -222,8 +228,8 @@ class UserResource extends Resource
                         ->label('حذف نهائي')
                         ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -250,9 +256,9 @@ class UserResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => ListUsers::route('/'),
+            'index' => ListUsers::route('/'),
             'create' => CreateUser::route('/create'),
-            'edit'   => EditUser::route('/{record}/edit'),
+            'edit' => EditUser::route('/{record}/edit'),
         ];
     }
 }

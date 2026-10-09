@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Audit;
+use App\Models\Report;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Request;
 
@@ -22,17 +23,17 @@ class ActivityLogger
         $user = Auth::user();
 
         return Audit::create([
-            'user_type'      => $user ? get_class($user) : null,
-            'user_id'        => $user?->id,
-            'event'          => $event,
-            'auditable_type' => $auditableType ?? \App\Models\Report::class,
-            'auditable_id'   => $auditableId ?? 0,
-            'old_values'     => !empty($oldValues) ? json_encode($oldValues, JSON_UNESCAPED_UNICODE) : null,
-            'new_values'     => !empty($newValues) ? json_encode($newValues, JSON_UNESCAPED_UNICODE) : null,
-            'url'            => Request::fullUrl(),
-            'ip_address'     => Request::ip(),
-            'user_agent'     => Request::userAgent(),
-            'tags'           => $description,
+            'user_type' => $user ? get_class($user) : null,
+            'user_id' => $user?->id,
+            'event' => $event,
+            'auditable_type' => $auditableType ?? Report::class,
+            'auditable_id' => $auditableId ?? 0,
+            'old_values' => ! empty($oldValues) ? json_encode($oldValues, JSON_UNESCAPED_UNICODE) : null,
+            'new_values' => ! empty($newValues) ? json_encode($newValues, JSON_UNESCAPED_UNICODE) : null,
+            'url' => Request::fullUrl(),
+            'ip_address' => Request::ip(),
+            'user_agent' => Request::userAgent(),
+            'tags' => $description,
         ]);
     }
 }

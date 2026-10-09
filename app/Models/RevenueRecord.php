@@ -9,8 +9,8 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class RevenueRecord extends Model implements Auditable
 {
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
 
     protected $fillable = [
         'revenue_center_id', 'fiscal_year_id', 'month_id',
@@ -22,9 +22,9 @@ class RevenueRecord extends Model implements Auditable
 
     protected $casts = [
         'gross_revenue' => 'decimal:3',
-        'net_revenue'   => 'decimal:3',
-        'submitted_at'  => 'datetime',
-        'approved_at'   => 'datetime',
+        'net_revenue' => 'decimal:3',
+        'submitted_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
     protected $auditInclude = [

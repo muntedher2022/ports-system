@@ -10,9 +10,12 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 class MonthlyPerformanceChart extends ApexChartWidget
 {
     protected static ?string $chartId = 'monthlyPerformanceChart';
+
     protected static ?string $heading = '📈 مقارنة الأداء التشغيلي للبضائع والنفطية (طن) شهرياً بين عامين';
+
     protected static ?int $sort = 2;
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
 
     protected function getOptions(): array
     {

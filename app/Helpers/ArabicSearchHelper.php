@@ -17,8 +17,8 @@ class ArabicSearchHelper
 
         $patterns = [
             '/[أإآٱ]/u' => 'ا',
-            '/[ة]/u'     => 'ه',
-            '/[ى]/u'     => 'ي',
+            '/[ة]/u' => 'ه',
+            '/[ى]/u' => 'ي',
             '/[\x{064B}-\x{065F}]/u' => '', // Tashkeel / Harakat
         ];
 

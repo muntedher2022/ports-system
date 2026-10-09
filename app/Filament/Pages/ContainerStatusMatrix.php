@@ -3,28 +3,33 @@
 namespace App\Filament\Pages;
 
 use App\Enums\NavigationGroup;
-use App\Models\ContainerEntity;
-use App\Models\ContainerStatusDetail;
 use App\Models\ContainerStatusRecord;
 use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\Port;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Auth;
 
 class ContainerStatusMatrix extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedTableCells;
+
     protected static ?string $navigationLabel = 'مصفوفة الحاويات الشاملة';
+
     protected static ?string $title = 'موقف الحاويات المتخلفة والخطرة';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Containers;
+
     protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return true;
     }
@@ -33,8 +38,11 @@ class ContainerStatusMatrix extends Page
 
     // Livewire properties
     public string $selectedContainerType = 'abandoned';
+
     public ?int $selectedPortId = null;
+
     public ?int $selectedFiscalYearId = null;
+
     public ?int $selectedMonthId = null;
 
     public function mount(): void
@@ -46,20 +54,20 @@ class ContainerStatusMatrix extends Page
             ?? Month::first()?->id;
     }
 
-    public function getPortsProperty(): \Illuminate\Database\Eloquent\Collection
+    public function getPortsProperty(): Collection
     {
         return Port::where('is_active', true)
-            ->where(fn($q) => $q->where('has_container_status', true)->orWhereHas('containerStatusRecords'))
+            ->where(fn ($q) => $q->where('has_container_status', true)->orWhereHas('containerStatusRecords'))
             ->orderBy('sort_order')
             ->get();
     }
 
-    public function getFiscalYearsProperty(): \Illuminate\Database\Eloquent\Collection
+    public function getFiscalYearsProperty(): Collection
     {
         return FiscalYear::orderBy('year', 'desc')->get();
     }
 
-    public function getMonthsProperty(): \Illuminate\Database\Eloquent\Collection
+    public function getMonthsProperty(): Collection
     {
         return Month::orderBy('month_number')->get();
     }
@@ -76,45 +84,45 @@ class ContainerStatusMatrix extends Page
         $recordsQuery = ContainerStatusRecord::where('container_type', $this->selectedContainerType)
             ->where('fiscal_year_id', $this->selectedFiscalYearId)
             ->where('month_id', $this->selectedMonthId)
-            ->when($this->selectedPortId, fn($q) => $q->where('port_id', $this->selectedPortId));
+            ->when($this->selectedPortId, fn ($q) => $q->where('port_id', $this->selectedPortId));
 
         $records = $recordsQuery->with(['port', 'fiscalYear', 'month', 'details.entity'])->get();
 
-        $matrix        = [];
-        $totalByYear   = array_fill_keys($years, 0);
-        $grandTotal    = 0;
-        $govTotal      = 0;
-        $privateTotal  = 0;
+        $matrix = [];
+        $totalByYear = array_fill_keys($years, 0);
+        $grandTotal = 0;
+        $govTotal = 0;
+        $privateTotal = 0;
 
         foreach ($records as $record) {
-            $sortedDetails = $record->details->sortBy(fn($d) => [$d->sort_order ?: 999, $d->id]);
+            $sortedDetails = $record->details->sortBy(fn ($d) => [$d->sort_order ?: 999, $d->id]);
 
             foreach ($sortedDetails as $detail) {
-                $eid     = $detail->container_entity_id;
+                $eid = $detail->container_entity_id;
                 $rawYear = trim((string) $detail->year_label);
-                $entity  = $detail->entity;
+                $entity = $detail->entity;
 
-                if (!$entity || $detail->count <= 0) {
+                if (! $entity || $detail->count <= 0) {
                     continue;
                 }
 
                 // Map any year <= 2015 to '2015'
                 $year = (empty($rawYear) || (is_numeric($rawYear) && (int) $rawYear <= 2015)) ? '2015' : $rawYear;
 
-                if (!isset($matrix[$eid])) {
+                if (! isset($matrix[$eid])) {
                     $matrix[$eid] = [
-                        'entity'     => $entity,
-                        'years'      => array_fill_keys($years, 0),
-                        'row_total'  => 0,
+                        'entity' => $entity,
+                        'years' => array_fill_keys($years, 0),
+                        'row_total' => 0,
                         'sort_order' => $detail->sort_order ?: ($entity->sort_order ?: 999),
                     ];
                 }
 
                 if (in_array($year, $years)) {
                     $matrix[$eid]['years'][$year] = ($matrix[$eid]['years'][$year] ?? 0) + $detail->count;
-                    $matrix[$eid]['row_total']    += $detail->count;
-                    $totalByYear[$year]           = ($totalByYear[$year] ?? 0) + $detail->count;
-                    $grandTotal                   += $detail->count;
+                    $matrix[$eid]['row_total'] += $detail->count;
+                    $totalByYear[$year] = ($totalByYear[$year] ?? 0) + $detail->count;
+                    $grandTotal += $detail->count;
 
                     if ($entity->entity_type === 'government') {
                         $govTotal += $detail->count;
@@ -126,7 +134,7 @@ class ContainerStatusMatrix extends Page
         }
 
         // إبقاء فقط الجهات التي لديها رصيد حاويات فعلي (row_total > 0)
-        $activeEntities = array_filter($matrix, fn($row) => $row['row_total'] > 0);
+        $activeEntities = array_filter($matrix, fn ($row) => $row['row_total'] > 0);
 
         // ترتيب الجهات: القطاع الحكومي أولاً بالتسلسل المحدد، ثم القطاع الخاص
         uasort($activeEntities, function ($a, $b) {
@@ -141,20 +149,20 @@ class ContainerStatusMatrix extends Page
         });
 
         // Remove years with no data across all entities (for display)
-        $activeYears = array_filter($years, fn($y) => ($totalByYear[$y] ?? 0) > 0);
+        $activeYears = array_filter($years, fn ($y) => ($totalByYear[$y] ?? 0) > 0);
         if (empty($activeYears)) {
             $activeYears = [(string) ((int) date('Y') - 1), (string) date('Y')];
         }
         $activeYears = array_values($activeYears);
 
         return [
-            'entities'     => $activeEntities,
-            'years'        => $activeYears,
-            'totalByYear'  => $totalByYear,
-            'grandTotal'   => $grandTotal,
-            'govTotal'     => $govTotal,
+            'entities' => $activeEntities,
+            'years' => $activeYears,
+            'totalByYear' => $totalByYear,
+            'grandTotal' => $grandTotal,
+            'govTotal' => $govTotal,
             'privateTotal' => $privateTotal,
-            'records'      => $records,
+            'records' => $records,
         ];
     }
 }

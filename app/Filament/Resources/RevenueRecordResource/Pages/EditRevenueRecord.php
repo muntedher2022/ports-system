@@ -8,11 +8,11 @@ use App\Models\RevenueRecord;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
 
 class EditRevenueRecord extends EditRecord
 {
     protected static string $resource = RevenueRecordResource::class;
+
     protected ?string $heading = 'تعديل إيرادات المراكز السبعة للشهر';
 
     protected function mutateFormDataBeforeFill(array $data): array
@@ -68,8 +68,8 @@ class EditRevenueRecord extends EditRecord
 
             $existing = RevenueRecord::withTrashed()->where([
                 'revenue_center_id' => $center->id,
-                'fiscal_year_id'    => $fiscalYearId,
-                'month_id'          => $monthId,
+                'fiscal_year_id' => $fiscalYearId,
+                'month_id' => $monthId,
             ])->first();
 
             if ($existing) {
@@ -78,19 +78,19 @@ class EditRevenueRecord extends EditRecord
                 }
                 $existing->update([
                     'gross_revenue' => $gross,
-                    'net_revenue'   => $net,
-                    'status'        => $status,
+                    'net_revenue' => $net,
+                    'status' => $status,
                     'reopen_reason' => $reopenReason,
                 ]);
             } else {
                 RevenueRecord::create([
                     'revenue_center_id' => $center->id,
-                    'fiscal_year_id'    => $fiscalYearId,
-                    'month_id'          => $monthId,
-                    'gross_revenue'     => $gross,
-                    'net_revenue'       => $net,
-                    'status'            => $status,
-                    'reopen_reason'     => $reopenReason,
+                    'fiscal_year_id' => $fiscalYearId,
+                    'month_id' => $monthId,
+                    'gross_revenue' => $gross,
+                    'net_revenue' => $net,
+                    'status' => $status,
+                    'reopen_reason' => $reopenReason,
                 ]);
             }
         }
@@ -110,4 +110,3 @@ class EditRevenueRecord extends EditRecord
         return $this->getResource()::getUrl('index');
     }
 }
-

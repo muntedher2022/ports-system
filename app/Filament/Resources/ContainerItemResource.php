@@ -4,12 +4,9 @@ namespace App\Filament\Resources;
 
 use App\Enums\NavigationGroup;
 use App\Filament\Resources\ContainerItemResource\Pages;
-use App\Models\ContainerEntity;
 use App\Models\ContainerItem;
-use App\Models\ContainerStatusRecord;
 use App\Models\FiscalYear;
 use App\Models\Month;
-use App\Models\Port;
 use App\Services\ContainerExcelImportService;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
@@ -24,14 +21,11 @@ use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
-use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\Width;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -44,17 +38,25 @@ use Illuminate\Support\Facades\Auth;
 class ContainerItemResource extends Resource
 {
     protected static ?string $model = ContainerItem::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+
     protected static ?string $navigationLabel = 'تفاصيل الحاويات (الأرقام والبيانات)';
+
     protected static ?string $modelLabel = 'حاوية';
+
     protected static ?string $pluralModelLabel = 'قائمة الحاويات المتخلفة والخطرة';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Containers;
+
     protected static ?int $navigationSort = 3;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return true;
     }
@@ -82,36 +84,54 @@ class ContainerItemResource extends Resource
                             ->extraInputAttributes(['style' => 'text-transform: uppercase; font-family: monospace; font-weight: bold; font-size: 1.05rem;'])
                             ->live(onBlur: true)
                             ->afterStateUpdated(function ($state, $set, $get, $record) {
-                                if (!empty($state)) {
-                                    $cNo = strtoupper(trim((string)$state));
+                                if (! empty($state)) {
+                                    $cNo = strtoupper(trim((string) $state));
                                     $prev = ContainerItem::where('container_number', $cNo)
-                                        ->when($record, fn($q) => $q->where('id', '!=', $record->id))
+                                        ->when($record, fn ($q) => $q->where('id', '!=', $record->id))
                                         ->latest('id')
                                         ->first();
                                     if ($prev) {
-                                        if (empty($get('size')) && !empty($prev->size)) $set('size', $prev->size);
-                                        if (empty($get('ship_name')) && !empty($prev->ship_name)) $set('ship_name', $prev->ship_name);
-                                        if (empty($get('goods_type')) && !empty($prev->goods_type)) $set('goods_type', $prev->goods_type);
-                                        if (empty($get('consignee')) && !empty($prev->consignee)) $set('consignee', $prev->consignee);
-                                        if (empty($get('port_id')) && !empty($prev->port_id)) $set('port_id', $prev->port_id);
-                                        if (empty($get('container_entity_id')) && !empty($prev->container_entity_id)) $set('container_entity_id', $prev->container_entity_id);
-                                        if (empty($get('arrival_date')) && !empty($prev->arrival_date)) $set('arrival_date', $prev->arrival_date->format('Y-m-d'));
-                                        if (empty($get('arrival_year')) && !empty($prev->arrival_year)) $set('arrival_year', $prev->arrival_year);
+                                        if (empty($get('size')) && ! empty($prev->size)) {
+                                            $set('size', $prev->size);
+                                        }
+                                        if (empty($get('ship_name')) && ! empty($prev->ship_name)) {
+                                            $set('ship_name', $prev->ship_name);
+                                        }
+                                        if (empty($get('goods_type')) && ! empty($prev->goods_type)) {
+                                            $set('goods_type', $prev->goods_type);
+                                        }
+                                        if (empty($get('consignee')) && ! empty($prev->consignee)) {
+                                            $set('consignee', $prev->consignee);
+                                        }
+                                        if (empty($get('port_id')) && ! empty($prev->port_id)) {
+                                            $set('port_id', $prev->port_id);
+                                        }
+                                        if (empty($get('container_entity_id')) && ! empty($prev->container_entity_id)) {
+                                            $set('container_entity_id', $prev->container_entity_id);
+                                        }
+                                        if (empty($get('arrival_date')) && ! empty($prev->arrival_date)) {
+                                            $set('arrival_date', $prev->arrival_date->format('Y-m-d'));
+                                        }
+                                        if (empty($get('arrival_year')) && ! empty($prev->arrival_year)) {
+                                            $set('arrival_year', $prev->arrival_year);
+                                        }
                                     }
                                 }
                             })
                             ->helperText(function ($get, $record) {
-                                $cNo = strtoupper(trim((string)$get('container_number')));
+                                $cNo = strtoupper(trim((string) $get('container_number')));
                                 if (strlen($cNo) >= 4) {
                                     $prev = ContainerItem::where('container_number', $cNo)
-                                        ->when($record, fn($q) => $q->where('id', '!=', $record->id))
+                                        ->when($record, fn ($q) => $q->where('id', '!=', $record->id))
                                         ->latest('id')
                                         ->first();
                                     if ($prev) {
                                         $prevDateStr = $prev->arrival_date ? $prev->arrival_date->format('d/m/Y') : ($prev->arrival_year ?: 'غير محدد');
+
                                         return "ℹ️ الحاوية مسجلة سابقاً بتاريخ وصول ({$prevDateStr}) بميناء ({$prev->port?->name_ar}).";
                                     }
                                 }
+
                                 return 'مثال: MSKU1234567';
                             }),
 
@@ -175,11 +195,11 @@ class ContainerItemResource extends Resource
                             ->closeOnDateSelection()
                             ->live(onBlur: true)
                             ->helperText(function ($get, $record) {
-                                $cNo = strtoupper(trim((string)$get('container_number')));
+                                $cNo = strtoupper(trim((string) $get('container_number')));
                                 $currDate = $get('arrival_date');
-                                if (strlen($cNo) >= 4 && !empty($currDate)) {
+                                if (strlen($cNo) >= 4 && ! empty($currDate)) {
                                     $prev = ContainerItem::where('container_number', $cNo)
-                                        ->when($record, fn($q) => $q->where('id', '!=', $record->id))
+                                        ->when($record, fn ($q) => $q->where('id', '!=', $record->id))
                                         ->whereNotNull('arrival_date')
                                         ->latest('id')
                                         ->first();
@@ -187,24 +207,26 @@ class ContainerItemResource extends Resource
                                         return "⚠️ تنبيه رقابي: تاريخ الوصول المدخل ({$currDate}) يختلف عن التاريخ المسجل سابقاً ({$prev->arrival_date->format('d/m/Y')})!";
                                     }
                                 }
+
                                 return null;
                             }),
 
                         TextInput::make('arrival_year')
                             ->label('سنة الوصول')
                             ->helperText(function ($get, $record) {
-                                $cNo = strtoupper(trim((string)$get('container_number')));
-                                $currYear = trim((string)$get('arrival_year'));
-                                if (strlen($cNo) >= 4 && !empty($currYear)) {
+                                $cNo = strtoupper(trim((string) $get('container_number')));
+                                $currYear = trim((string) $get('arrival_year'));
+                                if (strlen($cNo) >= 4 && ! empty($currYear)) {
                                     $prev = ContainerItem::where('container_number', $cNo)
-                                        ->when($record, fn($q) => $q->where('id', '!=', $record->id))
+                                        ->when($record, fn ($q) => $q->where('id', '!=', $record->id))
                                         ->whereNotNull('arrival_year')
                                         ->latest('id')
                                         ->first();
-                                    if ($prev && !empty($prev->arrival_year) && trim((string)$prev->arrival_year) !== $currYear && $currYear !== '2015' && trim((string)$prev->arrival_year) !== '2015') {
+                                    if ($prev && ! empty($prev->arrival_year) && trim((string) $prev->arrival_year) !== $currYear && $currYear !== '2015' && trim((string) $prev->arrival_year) !== '2015') {
                                         return "⚠️ تنبيه رقابي: سنة الوصول المدخلة ({$currYear}) تختلف عن السنة المسجلة سابقاً ({$prev->arrival_year})!";
                                     }
                                 }
+
                                 return 'مثال: 2026 أو (تواريخ متعددة) أو (غير محدد التاريخ)';
                             })
                             ->default((string) date('Y'))
@@ -219,7 +241,7 @@ class ContainerItemResource extends Resource
                             ->label('حالة الحاوية')
                             ->required()
                             ->options([
-                                'in_port'    => 'موجودة في الميناء',
+                                'in_port' => 'موجودة في الميناء',
                                 'discharged' => 'تم اخراجها',
                             ])
                             ->default('in_port')
@@ -280,6 +302,7 @@ class ContainerItemResource extends Resource
                         if (str_contains($search, 'تخلف') || str_contains($search, 'متخلف') || str_contains($search, 'abandoned')) {
                             return $query->where('container_type', 'abandoned');
                         }
+
                         return $query->where('container_type', 'like', "%{$search}%");
                     })
                     ->toggleable(),
@@ -338,7 +361,7 @@ class ContainerItemResource extends Resource
                             $statuses[] = 'discharged';
                         }
 
-                        if (!empty($statuses)) {
+                        if (! empty($statuses)) {
                             return $query->whereIn('status', $statuses);
                         }
 
@@ -359,11 +382,14 @@ class ContainerItemResource extends Resource
                     ->sortable()
                     ->searchable(isIndividual: true, query: function (Builder $query, string $search): Builder {
                         $search = trim($search);
-                        if (empty($search)) return $query;
+                        if (empty($search)) {
+                            return $query;
+                        }
+
                         return $query->whereHas('month', function ($q) use ($search) {
                             $q->where('month_number', $search)
-                              ->orWhere('id', $search)
-                              ->orWhere('name_ar', 'like', "%{$search}%");
+                                ->orWhere('id', $search)
+                                ->orWhere('name_ar', 'like', "%{$search}%");
                         });
                     })
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -373,7 +399,10 @@ class ContainerItemResource extends Resource
                     ->sortable()
                     ->searchable(isIndividual: true, query: function (Builder $query, string $search): Builder {
                         $search = trim($search);
-                        if (empty($search)) return $query;
+                        if (empty($search)) {
+                            return $query;
+                        }
+
                         return $query->whereHas('fiscalYear', fn ($q) => $q->where('year', $search)->orWhere('id', $search));
                     })
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -411,7 +440,7 @@ class ContainerItemResource extends Resource
                 SelectFilter::make('status')
                     ->label('حالة الحاوية')
                     ->options([
-                        'in_port'    => 'موجودة في الميناء',
+                        'in_port' => 'موجودة في الميناء',
                         'discharged' => 'تم اخراجها',
                     ]),
 
@@ -474,9 +503,9 @@ class ContainerItemResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListContainerItems::route('/'),
+            'index' => Pages\ListContainerItems::route('/'),
             'create' => Pages\CreateContainerItem::route('/create'),
-            'edit'   => Pages\EditContainerItem::route('/{record}/edit'),
+            'edit' => Pages\EditContainerItem::route('/{record}/edit'),
         ];
     }
 

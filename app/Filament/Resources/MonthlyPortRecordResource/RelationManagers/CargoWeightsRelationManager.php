@@ -15,8 +15,11 @@ use Filament\Tables\Table;
 class CargoWeightsRelationManager extends RelationManager
 {
     protected static string $relationship = 'cargoWeights';
+
     protected static ?string $title = 'أوزان البضائع العامة والمتنوعة';
+
     protected static ?string $modelLabel = 'وزن بضاعة';
+
     protected static ?string $pluralModelLabel = 'أوزان البضائع';
 
     public function form(Schema $schema): Schema
@@ -48,7 +51,7 @@ class CargoWeightsRelationManager extends RelationManager
                     ->formatStateUsing(fn ($state) => match ($state) {
                         'general' => 'بضائع عامة',
                         'diverse' => 'بضائع متنوعة',
-                        default   => $state,
+                        default => $state,
                     })
                     ->badge()
                     ->color('info'),

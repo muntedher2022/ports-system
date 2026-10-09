@@ -2,12 +2,13 @@
 
 namespace App\Filament\Pages;
 
-use Filament\Pages\Page;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
-use Filament\Forms\Components\TextInput;
+use Filament\Pages\Page;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Log;
 use PragmaRX\Google2FA\Google2FA;
 
 class VerifyTotp extends Page implements HasForms
@@ -15,7 +16,9 @@ class VerifyTotp extends Page implements HasForms
     use InteractsWithForms;
 
     protected static ?string $title = 'التحقق الثنائي';
+
     protected static ?string $navigationLabel = 'التحقق الثنائي';
+
     protected static bool $shouldRegisterNavigation = false;
 
     public static function getNavigationIcon(): string|\BackedEnum|null
@@ -24,6 +27,7 @@ class VerifyTotp extends Page implements HasForms
     }
 
     protected string $view = 'filament.pages.verify-totp';
+
     protected static string $layout = 'filament-panels::components.layout.simple';
 
     public ?string $code = '';
@@ -47,29 +51,33 @@ class VerifyTotp extends Page implements HasForms
 
     public function mount(): void
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             redirect()->to(filament()->getPanel('admin')->getLoginUrl());
+
             return;
         }
 
         $user = auth()->user();
 
         // إذا لم يكن المستخدم ملزماً بـ TOTP، نمرره للوحة مباشرة
-        if (!$user->isTotpRequired()) {
+        if (! $user->isTotpRequired()) {
             session(['totp_verified' => true]);
             redirect()->to(filament()->getPanel('admin')->getUrl());
+
             return;
         }
 
         // إذا كان ملزماً لكن لم يربط جهازه بعد، نرسله لشاشة الإعداد
-        if (!$user->hasTotpSetup()) {
+        if (! $user->hasTotpSetup()) {
             redirect()->route('filament.admin.pages.setup-totp');
+
             return;
         }
 
         // إذا تم التحقق مسبقاً في هذه الجلسة
         if (session('totp_verified') === true) {
             redirect()->to(filament()->getPanel('admin')->getUrl());
+
             return;
         }
     }
@@ -84,24 +92,25 @@ class VerifyTotp extends Page implements HasForms
         } catch (\Exception $e) {
             //
         }
-        $code = trim((string)($formData['code'] ?? $this->code));
+        $code = trim((string) ($formData['code'] ?? $this->code));
 
         if (empty($code)) {
             $this->validate(['code' => 'required|digits:6']);
-            $code = trim((string)$this->code);
+            $code = trim((string) $this->code);
         }
 
-        if (!$user->hasTotpSetup()) {
+        if (! $user->hasTotpSetup()) {
             session(['totp_verified' => true]);
             redirect()->to(filament()->getPanel('admin')->getUrl());
+
             return;
         }
 
-        $google2fa = new Google2FA();
+        $google2fa = new Google2FA;
         $secret = decrypt($user->two_factor_secret);
         $expectedOtp = $google2fa->getCurrentOtp($secret);
 
-        \Illuminate\Support\Facades\Log::info("VerifyTotp Login attempt for {$user->email}: input={$code}, expected_now={$expectedOtp}");
+        Log::info("VerifyTotp Login attempt for {$user->email}: input={$code}, expected_now={$expectedOtp}");
 
         // نافذة 8 خطوات = ±4 دقائق تسامح
         $valid = $google2fa->verifyKey($secret, $code, 8);
@@ -118,7 +127,7 @@ class VerifyTotp extends Page implements HasForms
             redirect()->to(filament()->getPanel('admin')->getUrl());
         } else {
             $this->code = '';
-            \Illuminate\Support\Facades\Log::warning("VerifyTotp failed for {$user->email}: input={$code}, expected_now={$expectedOtp}");
+            Log::warning("VerifyTotp failed for {$user->email}: input={$code}, expected_now={$expectedOtp}");
 
             Notification::make()
                 ->title('رمز غير صحيح')

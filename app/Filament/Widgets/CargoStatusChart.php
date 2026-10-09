@@ -11,14 +11,19 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 class CargoStatusChart extends ApexChartWidget
 {
     protected static ?string $chartId = 'cargoStatusChart';
+
     protected static ?string $heading = '📦 موقف المواد والبضائع المتخلفة والخطرة حسب الموانئ';
+
     protected static ?int $sort = 8;
-    protected int | string | array $columnSpan = 1;
+
+    protected int|string|array $columnSpan = 1;
 
     public static function canView(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return $user->hasRole(['super_admin', 'المدير العام', 'general_manager', 'reviewer', 'مدقق / مراجع', 'operations_manager', 'مسؤول المتابعة المركزية والعمليات'])
             || $user->can('view_any_cargo::status::record')
@@ -41,14 +46,14 @@ class CargoStatusChart extends ApexChartWidget
 
             $abandoned = CargoStatusDetail::whereHas('record', function ($q) use ($port, $currentYear) {
                 $q->where('port_id', $port->id)
-                  ->where('cargo_type', 'abandoned')
-                  ->when($currentYear, fn ($sq) => $sq->where('fiscal_year_id', $currentYear->id));
+                    ->where('cargo_type', 'abandoned')
+                    ->when($currentYear, fn ($sq) => $sq->where('fiscal_year_id', $currentYear->id));
             })->sum('count');
 
             $dangerous = CargoStatusDetail::whereHas('record', function ($q) use ($port, $currentYear) {
                 $q->where('port_id', $port->id)
-                  ->where('cargo_type', 'dangerous')
-                  ->when($currentYear, fn ($sq) => $sq->where('fiscal_year_id', $currentYear->id));
+                    ->where('cargo_type', 'dangerous')
+                    ->when($currentYear, fn ($sq) => $sq->where('fiscal_year_id', $currentYear->id));
             })->sum('count');
 
             $abandonedData[] = (int) $abandoned;

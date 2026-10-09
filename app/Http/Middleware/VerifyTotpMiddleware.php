@@ -2,6 +2,7 @@
 
 namespace App\Http\Middleware;
 
+use App\Licensing\LicensingService;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -10,14 +11,14 @@ class VerifyTotpMiddleware
 {
     public function handle(Request $request, Closure $next): Response
     {
-        if (!auth()->check()) {
+        if (! auth()->check()) {
             return $next($request);
         }
 
         $user = auth()->user();
 
         // فحص ترخيص النظام إن كان يحدد قناة التحقق
-        $check = \App\Licensing\LicensingService::check();
+        $check = LicensingService::check();
         $adminOtpEnabled = $check['valid'] && ($check['license']['admin_otp_enabled'] ?? false);
         $licenseChannel = $check['license']['admin_otp_channel'] ?? 'both';
 
@@ -34,7 +35,7 @@ class VerifyTotpMiddleware
         // هل المستخدم ملزم بـ TOTP
         $mustVerifyTotp = $isUserEnforcedTotp || $isLicenseEnforcedTotp;
 
-        if (!$mustVerifyTotp) {
+        if (! $mustVerifyTotp) {
             return $next($request);
         }
 
@@ -48,7 +49,7 @@ class VerifyTotpMiddleware
         ];
 
         $isLivewireUpdate = str_contains($request->path(), 'livewire/update');
-        $isExcludedRoute  = in_array($routeName, $excludedRoutes);
+        $isExcludedRoute = in_array($routeName, $excludedRoutes);
 
         if ($isExcludedRoute || $isLivewireUpdate) {
             return $next($request);
@@ -65,7 +66,7 @@ class VerifyTotpMiddleware
         }
 
         // الحالة 1: المستخدم ملزم بتطبيق المصادقة ولكن لم يقم بالربط بعد -> يُوجّه لإعداد التطبيق
-        if (!$user->hasTotpSetup()) {
+        if (! $user->hasTotpSetup()) {
             return redirect()->route('filament.admin.pages.setup-totp');
         }
 

@@ -4,12 +4,14 @@ namespace App\Filament\Resources;
 
 use App\Enums\NavigationGroup;
 use App\Filament\Resources\ContainerStatusRecordResource\Pages;
+use App\Filament\Resources\ContainerStatusRecordResource\RelationManagers\ContainerItemsRelationManager;
 use App\Models\ContainerEntity;
+use App\Models\ContainerItem;
+use App\Models\ContainerStatusDetail;
 use App\Models\ContainerStatusRecord;
 use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\Port;
-use App\Models\ContainerStatusDetail;
 use App\Services\ActivityLogger;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -45,17 +47,25 @@ use Illuminate\Support\Facades\DB;
 class ContainerStatusRecordResource extends Resource
 {
     protected static ?string $model = ContainerStatusRecord::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedInboxStack;
+
     protected static ?string $navigationLabel = 'سجلات الحاويات';
+
     protected static ?string $modelLabel = 'سجل حاويات';
+
     protected static ?string $pluralModelLabel = 'سجلات الحاويات';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Containers;
+
     protected static ?int $navigationSort = 2;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return true;
     }
@@ -69,6 +79,7 @@ class ContainerStatusRecordResource extends Resource
         }
         $years['تواريخ متعددة'] = 'تواريخ متعددة';
         $years['غير محدد التاريخ'] = 'غير محدد التاريخ';
+
         return $years;
     }
 
@@ -173,16 +184,18 @@ class ContainerStatusRecordResource extends Resource
                             ->collapsible()
                             ->cloneable()
                             ->itemLabel(function (array $state): ?string {
-                                if (!empty($state['container_entity_id'])) {
+                                if (! empty($state['container_entity_id'])) {
                                     $entity = ContainerEntity::find($state['container_entity_id']);
                                     $total = 0;
-                                    if (!empty($state['years']) && is_array($state['years'])) {
+                                    if (! empty($state['years']) && is_array($state['years'])) {
                                         foreach ($state['years'] as $y) {
                                             $total += (int) ($y['count'] ?? 0);
                                         }
                                     }
-                                    return $entity ? "🏛️ [{$entity->entity_type_label}] {$entity->name_ar} — (الإجمالي: " . number_format($total) . " حاوية)" : null;
+
+                                    return $entity ? "🏛️ [{$entity->entity_type_label}] {$entity->name_ar} — (الإجمالي: ".number_format($total).' حاوية)' : null;
                                 }
+
                                 return '➕ جهة جديدة';
                             })
                             ->schema([
@@ -194,8 +207,8 @@ class ContainerStatusRecordResource extends Resource
                                             ->orderBy('entity_type')
                                             ->orderBy('sort_order')
                                             ->get()
-                                            ->mapWithKeys(fn($e) => [
-                                                $e->id => "[{$e->entity_type_label}] {$e->name_ar}"
+                                            ->mapWithKeys(fn ($e) => [
+                                                $e->id => "[{$e->entity_type_label}] {$e->name_ar}",
                                             ])
                                     )
                                     ->searchable()
@@ -291,26 +304,29 @@ class ContainerStatusRecordResource extends Resource
                 TextColumn::make('container_type')
                     ->label('نوع الحاوية')
                     ->badge()
-                    ->formatStateUsing(fn($state) => match($state) {
+                    ->formatStateUsing(fn ($state) => match ($state) {
                         'abandoned' => 'متخلفة',
                         'dangerous' => 'خطرة',
-                        default     => $state,
+                        default => $state,
                     })
-                    ->color(fn($state) => match($state) {
+                    ->color(fn ($state) => match ($state) {
                         'abandoned' => 'warning',
                         'dangerous' => 'danger',
-                        default     => 'gray',
+                        default => 'gray',
                     })
                     ->sortable()
                     ->searchable(isIndividual: true, query: function (Builder $query, string $search): Builder {
                         $search = trim($search);
-                        if (empty($search)) return $query;
+                        if (empty($search)) {
+                            return $query;
+                        }
                         if ($search === 'dangerous' || str_contains($search, 'خطر')) {
                             return $query->where('container_type', 'dangerous');
                         }
                         if ($search === 'abandoned' || str_contains($search, 'متخلف') || str_contains($search, 'تخلف')) {
                             return $query->where('container_type', 'abandoned');
                         }
+
                         return $query->where('container_type', $search);
                     })
                     ->toggleable(),
@@ -320,7 +336,10 @@ class ContainerStatusRecordResource extends Resource
                     ->sortable()
                     ->searchable(isIndividual: true, query: function (Builder $query, string $search): Builder {
                         $search = trim($search);
-                        if (empty($search)) return $query;
+                        if (empty($search)) {
+                            return $query;
+                        }
+
                         return $query->whereHas('fiscalYear', fn ($q) => $q->where('year', $search)->orWhere('id', $search));
                     })
                     ->toggleable(),
@@ -331,11 +350,14 @@ class ContainerStatusRecordResource extends Resource
                     ->sortable()
                     ->searchable(isIndividual: true, query: function (Builder $query, string $search): Builder {
                         $search = trim($search);
-                        if (empty($search)) return $query;
+                        if (empty($search)) {
+                            return $query;
+                        }
+
                         return $query->whereHas('month', function ($q) use ($search) {
                             $q->where('month_number', $search)
-                              ->orWhere('id', $search)
-                              ->orWhere('name_ar', 'like', "%{$search}%");
+                                ->orWhere('id', $search)
+                                ->orWhere('name_ar', 'like', "%{$search}%");
                         });
                     })
                     ->toggleable(),
@@ -355,7 +377,7 @@ class ContainerStatusRecordResource extends Resource
 
                 TextColumn::make('total_count')
                     ->label('إجمالي الحاويات')
-                    ->getStateUsing(fn($record) => number_format($record->total_count))
+                    ->getStateUsing(fn ($record) => number_format($record->total_count))
                     ->badge()
                     ->color('success')
                     ->toggleable(),
@@ -366,7 +388,7 @@ class ContainerStatusRecordResource extends Resource
                     ->formatStateUsing(fn ($record) => $record->excel_file_name ?: ($record->excel_file_path ? 'تحميل الملف 📥' : '—'))
                     ->badge()
                     ->color(fn ($record) => $record->excel_file_path ? 'success' : 'gray')
-                    ->url(fn ($record) => $record->excel_file_path ? asset('storage/' . $record->excel_file_path) : null, shouldOpenInNewTab: true)
+                    ->url(fn ($record) => $record->excel_file_path ? asset('storage/'.$record->excel_file_path) : null, shouldOpenInNewTab: true)
                     ->tooltip(fn ($record) => $record->excel_file_path ? 'انقر لتحميل ملف الإكسل المرفق' : 'لا يوجد ملف مرفق')
                     ->toggleable(),
 
@@ -379,7 +401,7 @@ class ContainerStatusRecordResource extends Resource
             ->filters([
                 SelectFilter::make('port_id')
                     ->label('الميناء')
-                    ->options(fn () => Port::where('is_active', true)->where(fn($q) => $q->where('has_container_status', true)->orWhereHas('containerStatusRecords'))->orderBy('sort_order')->pluck('name_ar', 'id'))
+                    ->options(fn () => Port::where('is_active', true)->where(fn ($q) => $q->where('has_container_status', true)->orWhereHas('containerStatusRecords'))->orderBy('sort_order')->pluck('name_ar', 'id'))
                     ->searchable(),
 
                 SelectFilter::make('container_type')
@@ -411,13 +433,13 @@ class ContainerStatusRecordResource extends Resource
                         ->label('تحميل Excel')
                         ->icon('heroicon-o-arrow-down-tray')
                         ->color('success')
-                        ->visible(fn (ContainerStatusRecord $record) => !empty($record->excel_file_path))
-                        ->url(fn (ContainerStatusRecord $record) => asset('storage/' . $record->excel_file_path), shouldOpenInNewTab: true),
+                        ->visible(fn (ContainerStatusRecord $record) => ! empty($record->excel_file_path))
+                        ->url(fn (ContainerStatusRecord $record) => asset('storage/'.$record->excel_file_path), shouldOpenInNewTab: true),
                     Action::make('clone_record')
                         ->label('نسخ إلى شهر آخر')
                         ->icon('heroicon-o-document-duplicate')
                         ->color('success')
-                        ->modalHeading(fn (ContainerStatusRecord $record) => "نسخ بيانات موقف الحاويات ({$record->port?->name_ar} - " . ($record->container_type === 'abandoned' ? 'متخلفة' : 'خطرة') . ")")
+                        ->modalHeading(fn (ContainerStatusRecord $record) => "نسخ بيانات موقف الحاويات ({$record->port?->name_ar} - ".($record->container_type === 'abandoned' ? 'متخلفة' : 'خطرة').')')
                         ->modalDescription('اختر السنة المالية والشهر المستهدف لنسخ وتكرار كافة بيانات القيود والجهات والأعداد إليه مباشرة.')
                         ->modalSubmitActionLabel('بدء النسخ والإنشاء')
                         ->modalIcon('heroicon-o-document-duplicate')
@@ -433,6 +455,7 @@ class ContainerStatusRecordResource extends Resource
                                 ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
                                 ->default(function (ContainerStatusRecord $record) {
                                     $nextMonthNum = ($record->month?->month_number % 12) + 1;
+
                                     return Month::where('month_number', $nextMonthNum)->first()?->id ?? $record->month_id;
                                 })
                                 ->required(),
@@ -461,28 +484,29 @@ class ContainerStatusRecordResource extends Resource
                                     ->body("يوجد قيد مسجل مسبقاً لميناء ({$record->port?->name_ar}) في الشهر والسنة المحددين!")
                                     ->danger()
                                     ->send();
+
                                 return;
                             }
 
                             DB::transaction(function () use ($record, $targetYearId, $targetMonthId, $targetReportDate) {
                                 $newRecord = ContainerStatusRecord::create([
-                                    'port_id'         => $record->port_id,
-                                    'container_type'  => $record->container_type,
-                                    'fiscal_year_id'  => $targetYearId,
-                                    'month_id'        => $targetMonthId,
-                                    'report_date'     => $targetReportDate,
-                                    'notes'           => $record->notes,
-                                    'created_by'      => Auth::id() ?? 1,
-                                    'total_count'     => 0,
+                                    'port_id' => $record->port_id,
+                                    'container_type' => $record->container_type,
+                                    'fiscal_year_id' => $targetYearId,
+                                    'month_id' => $targetMonthId,
+                                    'report_date' => $targetReportDate,
+                                    'notes' => $record->notes,
+                                    'created_by' => Auth::id() ?? 1,
+                                    'total_count' => 0,
                                 ]);
 
                                 foreach ($record->details as $detail) {
                                     ContainerStatusDetail::create([
                                         'container_status_record_id' => $newRecord->id,
-                                        'container_entity_id'        => $detail->container_entity_id,
-                                        'year_label'                 => $detail->year_label,
-                                        'count'                      => $detail->count,
-                                        'sort_order'                 => $detail->sort_order,
+                                        'container_entity_id' => $detail->container_entity_id,
+                                        'year_label' => $detail->year_label,
+                                        'count' => $detail->count,
+                                        'sort_order' => $detail->sort_order,
                                     ]);
                                 }
 
@@ -513,7 +537,7 @@ class ContainerStatusRecordResource extends Resource
                         ->modalDescription('سيقوم النظام بقراءة كافة الحاويات الفردية المسجلة لهذا السجل واحتساب أعدادها تلقائياً بحسب كل جهة وسنة وصول وتحديث الإجمالي والمصفوفة.')
                         ->modalSubmitActionLabel('بدء الاحتساب')
                         ->action(function (ContainerStatusRecord $record) {
-                            \App\Models\ContainerItem::syncRecordDetails($record->id);
+                            ContainerItem::syncRecordDetails($record->id);
                             $newTotal = $record->fresh()->total_count;
 
                             Notification::make()
@@ -535,8 +559,8 @@ class ContainerStatusRecordResource extends Resource
                         ->modalHeading('⚠️ حذف نهائي لا رجعة فيه!')
                         ->successNotificationTitle('تم الحذف النهائي'),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make()->label('حذف مؤقت للمحدد'),
@@ -554,7 +578,7 @@ class ContainerStatusRecordResource extends Resource
     public static function getRelations(): array
     {
         return [
-            \App\Filament\Resources\ContainerStatusRecordResource\RelationManagers\ContainerItemsRelationManager::class,
+            ContainerItemsRelationManager::class,
         ];
     }
 
@@ -567,7 +591,7 @@ class ContainerStatusRecordResource extends Resource
     {
         return [
             'index' => Pages\ListContainerStatusRecords::route('/'),
-            'edit'  => Pages\EditContainerStatusRecord::route('/{record}/edit'),
+            'edit' => Pages\EditContainerStatusRecord::route('/{record}/edit'),
         ];
     }
 }

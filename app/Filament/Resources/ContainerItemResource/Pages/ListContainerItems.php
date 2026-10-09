@@ -57,13 +57,13 @@ class ListContainerItems extends ListRecords
                 ])
                 ->action(function (array $data) {
                     $queryParams = http_build_query([
-                        'type'  => $data['container_type'],
-                        'year'  => $data['fiscal_year_id'],
-                        'month' => !empty($data['month_id']) ? $data['month_id'] : null,
-                        'port'  => $data['port_id'] ?? null,
+                        'type' => $data['container_type'],
+                        'year' => $data['fiscal_year_id'],
+                        'month' => ! empty($data['month_id']) ? $data['month_id'] : null,
+                        'port' => $data['port_id'] ?? null,
                     ]);
 
-                    return redirect()->away(route('admin.containers.export-detailed-excel') . '?' . $queryParams);
+                    return redirect()->away(route('admin.containers.export-detailed-excel').'?'.$queryParams);
                 }),
 
             Action::make('export_dangerous_excel')
@@ -104,13 +104,13 @@ class ListContainerItems extends ListRecords
                 ])
                 ->action(function (array $data) {
                     $queryParams = http_build_query([
-                        'type'  => $data['container_type'],
-                        'year'  => $data['fiscal_year_id'],
-                        'month' => !empty($data['month_id']) ? $data['month_id'] : null,
-                        'port'  => $data['port_id'] ?? null,
+                        'type' => $data['container_type'],
+                        'year' => $data['fiscal_year_id'],
+                        'month' => ! empty($data['month_id']) ? $data['month_id'] : null,
+                        'port' => $data['port_id'] ?? null,
                     ]);
 
-                    return redirect()->away(route('admin.containers.export-detailed-excel') . '?' . $queryParams);
+                    return redirect()->away(route('admin.containers.export-detailed-excel').'?'.$queryParams);
                 }),
 
             CreateAction::make()

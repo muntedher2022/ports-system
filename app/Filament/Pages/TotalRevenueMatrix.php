@@ -14,15 +14,21 @@ use Illuminate\Support\Facades\Auth;
 class TotalRevenueMatrix extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedTableCells;
+
     protected static ?string $navigationLabel = 'جدول الإيراد الكلي للمراكز السبعة';
+
     protected static ?string $title = 'الإيراد الكلي والصافي لمراكز الإيراد السبعة';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Analytics;
+
     protected static ?int $navigationSort = 4;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         if ($user->hasRole(['super_admin', 'المدير العام', 'general_manager']) || $user->user_type === 'general_manager') {
             return true;
@@ -61,7 +67,7 @@ class TotalRevenueMatrix extends Page
             $centers = $allCenters;
         }
 
-        $recordsGrouped = $records->groupBy(fn ($r) => $r->month_id . '_' . $r->revenue_center_id);
+        $recordsGrouped = $records->groupBy(fn ($r) => $r->month_id.'_'.$r->revenue_center_id);
 
         $matrix = [];
         $runningTotal = 0;
@@ -76,11 +82,11 @@ class TotalRevenueMatrix extends Page
             $hasData = false;
 
             foreach ($centers as $center) {
-                $key = $month->id . '_' . $center->id;
+                $key = $month->id.'_'.$center->id;
                 $record = $recordsGrouped->get($key)?->first();
 
                 $gross = $record ? (float) $record->gross_revenue : 0;
-                $net   = $record ? (float) $record->net_revenue : 0;
+                $net = $record ? (float) $record->net_revenue : 0;
 
                 if ($record && ($gross > 0 || $net > 0)) {
                     $hasData = true;
@@ -88,7 +94,7 @@ class TotalRevenueMatrix extends Page
 
                 $centersData[$center->id] = $gross;
                 $monthGross += $gross;
-                $monthNet   += $net;
+                $monthNet += $net;
                 $centerTotals[$center->id] += $gross;
             }
 
@@ -97,26 +103,26 @@ class TotalRevenueMatrix extends Page
             }
 
             $grandGrossTotal += $monthGross;
-            $grandNetTotal   += $monthNet;
+            $grandNetTotal += $monthNet;
 
             $matrix[] = [
-                'month_name'             => $month->name_ar,
-                'centers'                => $centersData,
-                'monthly_gross_total'    => $monthGross,
-                'monthly_net_total'      => $monthNet,
+                'month_name' => $month->name_ar,
+                'centers' => $centersData,
+                'monthly_gross_total' => $monthGross,
+                'monthly_net_total' => $monthNet,
                 'cumulative_gross_total' => $hasData ? $runningTotal : 0,
-                'has_data'               => $hasData,
+                'has_data' => $hasData,
             ];
         }
 
         return [
-            'fiscalYears'       => $fiscalYears,
-            'selectedYear'      => $selectedYear?->year ?? 2026,
-            'centers'           => $centers,
-            'matrix'            => $matrix,
-            'centerTotals'      => $centerTotals,
-            'grandGrossTotal'   => $grandGrossTotal,
-            'grandNetTotal'     => $grandNetTotal,
+            'fiscalYears' => $fiscalYears,
+            'selectedYear' => $selectedYear?->year ?? 2026,
+            'centers' => $centers,
+            'matrix' => $matrix,
+            'centerTotals' => $centerTotals,
+            'grandGrossTotal' => $grandGrossTotal,
+            'grandNetTotal' => $grandNetTotal,
         ];
     }
 }

@@ -9,8 +9,8 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class MonthlyPortRecord extends Model implements Auditable
 {
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
 
     protected $fillable = [
         // المعرّفات
@@ -60,35 +60,35 @@ class MonthlyPortRecord extends Model implements Auditable
     ];
 
     protected $casts = [
-        'total_container_ships'           => 'integer',
-        'general_cargo_ships'             => 'integer',
-        'oil_tankers_count'               => 'integer',
-        'car_carrier_ships'               => 'integer',
-        'imported_cars_count'             => 'integer',
-        'imported_containers_count'       => 'integer',
-        'imported_20ft'                   => 'integer',
-        'imported_40ft'                   => 'integer',
-        'imported_45ft'                   => 'integer',
-        'imported_teu'                    => 'integer',
-        'exported_empty_count'            => 'integer',
-        'exported_full_count'             => 'integer',
-        'exported_containers_count'       => 'integer',
-        'exported_20ft'                   => 'integer',
-        'exported_40ft'                   => 'integer',
-        'exported_45ft'                   => 'integer',
-        'exported_teu'                    => 'integer',
+        'total_container_ships' => 'integer',
+        'general_cargo_ships' => 'integer',
+        'oil_tankers_count' => 'integer',
+        'car_carrier_ships' => 'integer',
+        'imported_cars_count' => 'integer',
+        'imported_containers_count' => 'integer',
+        'imported_20ft' => 'integer',
+        'imported_40ft' => 'integer',
+        'imported_45ft' => 'integer',
+        'imported_teu' => 'integer',
+        'exported_empty_count' => 'integer',
+        'exported_full_count' => 'integer',
+        'exported_containers_count' => 'integer',
+        'exported_20ft' => 'integer',
+        'exported_40ft' => 'integer',
+        'exported_45ft' => 'integer',
+        'exported_teu' => 'integer',
 
-        'imported_cars_weight_tons'       => 'decimal:3',
+        'imported_cars_weight_tons' => 'decimal:3',
         'imported_containers_weight_tons' => 'decimal:3',
-        'exported_full_weight_tons'       => 'decimal:3',
-        'general_cargo_weight_tons'       => 'decimal:3',
-        'oil_exported_tons'               => 'decimal:3',
-        'oil_imported_tons'               => 'decimal:3',
-        'oil_total_tons'                  => 'decimal:3',
-        'total_revenue'                   => 'decimal:3',
+        'exported_full_weight_tons' => 'decimal:3',
+        'general_cargo_weight_tons' => 'decimal:3',
+        'oil_exported_tons' => 'decimal:3',
+        'oil_imported_tons' => 'decimal:3',
+        'oil_total_tons' => 'decimal:3',
+        'total_revenue' => 'decimal:3',
 
-        'submitted_at'                    => 'datetime',
-        'approved_at'                     => 'datetime',
+        'submitted_at' => 'datetime',
+        'approved_at' => 'datetime',
     ];
 
     protected $auditInclude = [

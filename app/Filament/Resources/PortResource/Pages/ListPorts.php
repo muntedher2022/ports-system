@@ -9,6 +9,7 @@ use Filament\Resources\Pages\ListRecords;
 class ListPorts extends ListRecords
 {
     protected static string $resource = PortResource::class;
+
     protected ?string $heading = 'الموانئ';
 
     protected function getHeaderActions(): array

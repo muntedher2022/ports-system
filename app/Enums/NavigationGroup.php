@@ -21,14 +21,14 @@ enum NavigationGroup implements HasLabel
 
     public function getLabel(): string
     {
-        return match($this) {
-            self::MasterData  => 'البيانات الرئيسية',
-            self::Operations  => 'البيانات التشغيلية والإيراد',
-            self::Revenue     => 'الإيراد',
-            self::Analytics   => 'التحليلات والمقارنات',
-            self::Reports     => 'التقارير',
-            self::Containers  => 'الحاويات المتخلفة والخطرة',
-            self::Cargo       => 'المواد والبضائع المتخلفة والخطرة',
+        return match ($this) {
+            self::MasterData => 'البيانات الرئيسية',
+            self::Operations => 'البيانات التشغيلية والإيراد',
+            self::Revenue => 'الإيراد',
+            self::Analytics => 'التحليلات والمقارنات',
+            self::Reports => 'التقارير',
+            self::Containers => 'الحاويات المتخلفة والخطرة',
+            self::Cargo => 'المواد والبضائع المتخلفة والخطرة',
             self::SystemAdmin => 'إدارة النظام',
         };
     }

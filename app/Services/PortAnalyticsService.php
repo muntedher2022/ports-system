@@ -5,7 +5,8 @@ namespace App\Services;
 use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\MonthlyPortRecord;
-use App\Models\Port;
+use App\Models\RevenueCenter;
+use App\Models\RevenueRecord;
 
 class PortAnalyticsService
 {
@@ -26,94 +27,94 @@ class PortAnalyticsService
         $records = $query->get();
 
         $totalContainerShips = $records->sum('total_container_ships');
-        $generalCargoShips   = $records->sum('general_cargo_ships');
-        $oilTankersCount     = $records->sum('oil_tankers_count');
-        $carCarrierShips     = $records->sum('car_carrier_ships');
-        $totalShips          = $totalContainerShips + $generalCargoShips + $oilTankersCount + $carCarrierShips;
+        $generalCargoShips = $records->sum('general_cargo_ships');
+        $oilTankersCount = $records->sum('oil_tankers_count');
+        $carCarrierShips = $records->sum('car_carrier_ships');
+        $totalShips = $totalContainerShips + $generalCargoShips + $oilTankersCount + $carCarrierShips;
 
-        $importedWeight      = (float) $records->sum('imported_containers_weight_tons');
-        $exportedWeight      = (float) $records->sum('exported_full_weight_tons');
-        $generalCargoWeight  = (float) $records->sum('general_cargo_weight_tons');
-        $carsWeight          = (float) $records->sum('imported_cars_weight_tons');
+        $importedWeight = (float) $records->sum('imported_containers_weight_tons');
+        $exportedWeight = (float) $records->sum('exported_full_weight_tons');
+        $generalCargoWeight = (float) $records->sum('general_cargo_weight_tons');
+        $carsWeight = (float) $records->sum('imported_cars_weight_tons');
 
         // مطابقة معادلات الإكسل الدقيقة لورقة total:
         // C80 = مجموع وزن الحاويات (المستوردة C16)
         $totalContainersWeight = $importedWeight;
 
         // C81 = مجموع وزن البضائع (المصدرة مليانة K16 + بضائع متنوعة R16 + سيارات X16)
-        $totalCargoWeight      = $exportedWeight + $generalCargoWeight + $carsWeight;
+        $totalCargoWeight = $exportedWeight + $generalCargoWeight + $carsWeight;
 
-        $oilExportedWeight   = (float) $records->sum('oil_exported_tons');
-        $oilImportedWeight   = (float) $records->sum('oil_imported_tons');
-        $oilTotalWeight      = (float) $records->sum('oil_total_tons');
+        $oilExportedWeight = (float) $records->sum('oil_exported_tons');
+        $oilImportedWeight = (float) $records->sum('oil_imported_tons');
+        $oilTotalWeight = (float) $records->sum('oil_total_tons');
 
         // الطاقة الإنتاجية الكلية بالطن
         $totalTonnage = $importedWeight + $exportedWeight + $generalCargoWeight + $oilTotalWeight + $carsWeight;
 
         $monthsCount = max(1, $endMonthNumber);
-        $daysCount   = $monthsCount * 30;
+        $daysCount = $monthsCount * 30;
 
         $monthlyAverageWeight = $totalTonnage / $monthsCount;
-        $dailyAverageWeight   = $monthlyAverageWeight / 30;
+        $dailyAverageWeight = $monthlyAverageWeight / 30;
 
         $importedContainersCount = $records->sum('imported_containers_count');
-        $importedTeu             = $records->sum('imported_teu');
+        $importedTeu = $records->sum('imported_teu');
         $exportedContainersCount = $records->sum('exported_containers_count');
-        $exportedTeu             = $records->sum('exported_teu');
-        $exportedFullCount       = $records->sum('exported_full_count');
-        $exportedEmptyCount      = $records->sum('exported_empty_count');
+        $exportedTeu = $records->sum('exported_teu');
+        $exportedFullCount = $records->sum('exported_full_count');
+        $exportedEmptyCount = $records->sum('exported_empty_count');
 
         $totalTeu = $importedTeu + $exportedTeu;
         $totalRevenue = (float) $records->sum('total_revenue');
 
         // المعدلات الشهرية واليومية العامة للشركة (Rows 85-92 في الإكسل)
-        $monthlyAvgShips    = $totalShips / $monthsCount;
-        $dailyAvgShips      = $totalShips / $daysCount;
+        $monthlyAvgShips = $totalShips / $monthsCount;
+        $dailyAvgShips = $totalShips / $daysCount;
 
-        $monthlyAvgTeu      = $totalTeu / $monthsCount;
-        $dailyAvgTeu        = $totalTeu / $daysCount;
+        $monthlyAvgTeu = $totalTeu / $monthsCount;
+        $dailyAvgTeu = $totalTeu / $daysCount;
 
         $monthlyAvgOilExport = $oilExportedWeight / $monthsCount;
-        $dailyAvgOilExport   = $oilExportedWeight / $daysCount;
+        $dailyAvgOilExport = $oilExportedWeight / $daysCount;
 
         $monthlyAvgOilImport = $oilImportedWeight / $monthsCount;
-        $dailyAvgOilImport   = $oilImportedWeight / $daysCount;
+        $dailyAvgOilImport = $oilImportedWeight / $daysCount;
 
         return [
-            'total_ships'               => $totalShips,
-            'total_container_ships'     => $totalContainerShips,
-            'general_cargo_ships'       => $generalCargoShips,
-            'oil_tankers_count'         => $oilTankersCount,
-            'car_carrier_ships'         => $carCarrierShips,
-            'total_tonnage'             => $totalTonnage,
-            'monthly_average_weight'    => $monthlyAverageWeight,
-            'daily_average_weight'      => $dailyAverageWeight,
-            'oil_exported_tons'         => $oilExportedWeight,
-            'oil_imported_tons'         => $oilImportedWeight,
-            'oil_total_tons'            => $oilTotalWeight,
+            'total_ships' => $totalShips,
+            'total_container_ships' => $totalContainerShips,
+            'general_cargo_ships' => $generalCargoShips,
+            'oil_tankers_count' => $oilTankersCount,
+            'car_carrier_ships' => $carCarrierShips,
+            'total_tonnage' => $totalTonnage,
+            'monthly_average_weight' => $monthlyAverageWeight,
+            'daily_average_weight' => $dailyAverageWeight,
+            'oil_exported_tons' => $oilExportedWeight,
+            'oil_imported_tons' => $oilImportedWeight,
+            'oil_total_tons' => $oilTotalWeight,
             'imported_containers_count' => $importedContainersCount,
-            'imported_teu'              => $importedTeu,
+            'imported_teu' => $importedTeu,
             'exported_containers_count' => $exportedContainersCount,
-            'exported_teu'              => $exportedTeu,
-            'exported_full_count'       => $exportedFullCount,
-            'exported_empty_count'      => $exportedEmptyCount,
-            'total_teu'                 => $totalTeu,
-            'total_containers_weight'   => $totalContainersWeight,
-            'total_cargo_weight'        => $totalCargoWeight,
+            'exported_teu' => $exportedTeu,
+            'exported_full_count' => $exportedFullCount,
+            'exported_empty_count' => $exportedEmptyCount,
+            'total_teu' => $totalTeu,
+            'total_containers_weight' => $totalContainersWeight,
+            'total_cargo_weight' => $totalCargoWeight,
             'general_cargo_weight_tons' => $generalCargoWeight,
             'imported_cars_weight_tons' => $carsWeight,
-            'total_revenue'             => $totalRevenue,
-            'months_count'              => $monthsCount,
-            'days_count'                => $daysCount,
+            'total_revenue' => $totalRevenue,
+            'months_count' => $monthsCount,
+            'days_count' => $daysCount,
             // المعدلات
-            'monthly_avg_ships'         => $monthlyAvgShips,
-            'daily_avg_ships'           => $dailyAvgShips,
-            'monthly_avg_teu'           => $monthlyAvgTeu,
-            'daily_avg_teu'             => $dailyAvgTeu,
-            'monthly_avg_oil_export'    => $monthlyAvgOilExport,
-            'daily_avg_oil_export'      => $dailyAvgOilExport,
-            'monthly_avg_oil_import'    => $monthlyAvgOilImport,
-            'daily_avg_oil_import'      => $dailyAvgOilImport,
+            'monthly_avg_ships' => $monthlyAvgShips,
+            'daily_avg_ships' => $dailyAvgShips,
+            'monthly_avg_teu' => $monthlyAvgTeu,
+            'daily_avg_teu' => $dailyAvgTeu,
+            'monthly_avg_oil_export' => $monthlyAvgOilExport,
+            'daily_avg_oil_export' => $dailyAvgOilExport,
+            'monthly_avg_oil_import' => $monthlyAvgOilImport,
+            'daily_avg_oil_import' => $dailyAvgOilImport,
         ];
     }
 
@@ -147,23 +148,23 @@ class PortAnalyticsService
         foreach ($metricsConfig as $cfg) {
             $prevVal = $prevData[$cfg['key']] ?? 0;
             $currVal = $currData[$cfg['key']] ?? 0;
-            $diff    = $currVal - $prevVal;
+            $diff = $currVal - $prevVal;
             $percent = $prevVal > 0 ? (($diff / $prevVal) * 100) : 0;
 
             $comparison[] = [
-                'label'      => $cfg['label'],
-                'unit'       => $cfg['unit'],
-                'prev_val'   => $prevVal,
-                'curr_val'   => $currVal,
-                'diff'       => $diff,
-                'percent'    => round($percent, 2),
+                'label' => $cfg['label'],
+                'unit' => $cfg['unit'],
+                'prev_val' => $prevVal,
+                'curr_val' => $currVal,
+                'diff' => $diff,
+                'percent' => round($percent, 2),
             ];
         }
 
         return [
-            'prevYear'   => FiscalYear::find($prevYearId)?->year,
-            'currYear'   => FiscalYear::find($currYearId)?->year,
-            'endMonth'   => Month::where('month_number', $endMonthNumber)->first()?->name_ar,
+            'prevYear' => FiscalYear::find($prevYearId)?->year,
+            'currYear' => FiscalYear::find($currYearId)?->year,
+            'endMonth' => Month::where('month_number', $endMonthNumber)->first()?->name_ar,
             'comparison' => $comparison,
         ];
     }
@@ -183,24 +184,24 @@ class PortAnalyticsService
             }
             $portRecs = $qPort->get();
 
-            $qRev = \App\Models\RevenueRecord::where('fiscal_year_id', $fiscalYearId)->where('month_id', $m->id);
+            $qRev = RevenueRecord::where('fiscal_year_id', $fiscalYearId)->where('month_id', $m->id);
             if ($portId) {
-                $revCenter = \App\Models\RevenueCenter::where('port_id', $portId)->first();
+                $revCenter = RevenueCenter::where('port_id', $portId)->first();
                 if ($revCenter) {
                     $qRev->where('revenue_center_id', $revCenter->id);
                 }
             }
             $revRecs = $qRev->get();
 
-            $tonnage = (float) $portRecs->sum('imported_containers_weight_tons') + 
-                       (float) $portRecs->sum('exported_full_weight_tons') + 
-                       (float) $portRecs->sum('general_cargo_weight_tons') + 
-                       (float) $portRecs->sum('oil_total_tons') + 
+            $tonnage = (float) $portRecs->sum('imported_containers_weight_tons') +
+                       (float) $portRecs->sum('exported_full_weight_tons') +
+                       (float) $portRecs->sum('general_cargo_weight_tons') +
+                       (float) $portRecs->sum('oil_total_tons') +
                        (float) $portRecs->sum('imported_cars_weight_tons');
 
-            $ships = (int) $portRecs->sum('total_container_ships') + 
-                     (int) $portRecs->sum('general_cargo_ships') + 
-                     (int) $portRecs->sum('oil_tankers_count') + 
+            $ships = (int) $portRecs->sum('total_container_ships') +
+                     (int) $portRecs->sum('general_cargo_ships') +
+                     (int) $portRecs->sum('oil_tankers_count') +
                      (int) $portRecs->sum('car_carrier_ships');
 
             $teu = (int) $portRecs->sum('imported_teu') + (int) $portRecs->sum('exported_teu');
@@ -208,24 +209,24 @@ class PortAnalyticsService
             $netRev = (float) $revRecs->sum('net_revenue');
 
             $monthlyData[$m->month_number] = [
-                'month_id'   => $m->id,
+                'month_id' => $m->id,
                 'month_name' => $m->name_ar,
-                'tonnage'    => $tonnage,
-                'ships'      => $ships,
-                'teu'        => $teu,
-                'revenue'    => $grossRev,
-                'net_revenue'=> $netRev,
+                'tonnage' => $tonnage,
+                'ships' => $ships,
+                'teu' => $teu,
+                'revenue' => $grossRev,
+                'net_revenue' => $netRev,
             ];
         }
 
         return [
             'fiscal_year' => FiscalYear::find($fiscalYearId),
-            'tonnage'     => $this->computeStats(array_column($monthlyData, 'tonnage')),
-            'ships'       => $this->computeStats(array_column($monthlyData, 'ships')),
-            'teu'         => $this->computeStats(array_column($monthlyData, 'teu')),
-            'revenue'     => $this->computeStats(array_column($monthlyData, 'revenue')),
+            'tonnage' => $this->computeStats(array_column($monthlyData, 'tonnage')),
+            'ships' => $this->computeStats(array_column($monthlyData, 'ships')),
+            'teu' => $this->computeStats(array_column($monthlyData, 'teu')),
+            'revenue' => $this->computeStats(array_column($monthlyData, 'revenue')),
             'net_revenue' => $this->computeStats(array_column($monthlyData, 'net_revenue')),
-            'monthly'     => $monthlyData,
+            'monthly' => $monthlyData,
         ];
     }
 
@@ -235,18 +236,18 @@ class PortAnalyticsService
     public function computeStats(array $values): array
     {
         // استبعاد القيم الصفرية إذا كانت غير مدخلة بعد، أو الاحتفاظ بها
-        $filtered = array_filter($values, fn($v) => $v > 0);
+        $filtered = array_filter($values, fn ($v) => $v > 0);
         $count = count($filtered);
 
         if ($count === 0) {
             return [
-                'count'     => 0,
-                'mean'      => 0,
-                'variance'  => 0,
-                'std_dev'   => 0,
-                'cv'        => 0,
-                'min'       => 0,
-                'max'       => 0,
+                'count' => 0,
+                'mean' => 0,
+                'variance' => 0,
+                'std_dev' => 0,
+                'cv' => 0,
+                'min' => 0,
+                'max' => 0,
                 'stability' => 'لا تتوفر بيانات',
             ];
         }
@@ -260,20 +261,20 @@ class PortAnalyticsService
         $stdDev = sqrt($variance);
         $cv = $mean > 0 ? (($stdDev / $mean) * 100) : 0;
 
-        $stability = match(true) {
+        $stability = match (true) {
             $cv <= 15 => 'عالي الاستقرار (ممتاز)',
             $cv <= 30 => 'استقرار متوسط (طبيعي)',
-            default   => 'تذبذب وتقلب مرتفع',
+            default => 'تذبذب وتقلب مرتفع',
         };
 
         return [
-            'count'     => $count,
-            'mean'      => round($mean, 2),
-            'variance'  => round($variance, 2),
-            'std_dev'   => round($stdDev, 2),
-            'cv'        => round($cv, 1),
-            'min'       => min($filtered),
-            'max'       => max($filtered),
+            'count' => $count,
+            'mean' => round($mean, 2),
+            'variance' => round($variance, 2),
+            'std_dev' => round($stdDev, 2),
+            'cv' => round($cv, 1),
+            'min' => min($filtered),
+            'max' => max($filtered),
             'stability' => $stability,
         ];
     }

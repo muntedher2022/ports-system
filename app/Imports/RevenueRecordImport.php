@@ -4,46 +4,43 @@ namespace App\Imports;
 
 use App\Models\RevenueRecord;
 use Illuminate\Support\Facades\Auth;
-use Maatwebsite\Excel\Concerns\ToModel;
-use Maatwebsite\Excel\Concerns\WithHeadingRow;
 use Maatwebsite\Excel\Concerns\SkipsEmptyRows;
+use Maatwebsite\Excel\Concerns\ToModel;
 use Maatwebsite\Excel\Concerns\WithBatchInserts;
 use Maatwebsite\Excel\Concerns\WithChunkReading;
+use Maatwebsite\Excel\Concerns\WithHeadingRow;
 
-class RevenueRecordImport implements
-    ToModel,
-    WithHeadingRow,
-    SkipsEmptyRows,
-    WithBatchInserts,
-    WithChunkReading
+class RevenueRecordImport implements SkipsEmptyRows, ToModel, WithBatchInserts, WithChunkReading, WithHeadingRow
 {
     public int $importedCount = 0;
+
     public int $updatedCount = 0;
+
     public array $failures = [];
 
     public function model(array $row): ?RevenueRecord
     {
-        $centerId     = (int) $this->extract($row, 'revenue_center_id');
+        $centerId = (int) $this->extract($row, 'revenue_center_id');
         $fiscalYearId = (int) $this->extract($row, 'fiscal_year_id');
-        $monthId      = (int) $this->extract($row, 'month_id');
+        $monthId = (int) $this->extract($row, 'month_id');
 
         // إذا كان الصف فارغاً
-        if (!$centerId || !$fiscalYearId || !$monthId) {
+        if (! $centerId || ! $fiscalYearId || ! $monthId) {
             return null;
         }
 
         $gross = (float) ($this->extract($row, 'gross_revenue') ?? 0);
-        $net   = (float) ($this->extract($row, 'net_revenue') ?? 0);
+        $net = (float) ($this->extract($row, 'net_revenue') ?? 0);
 
         $existing = RevenueRecord::withTrashed()->where([
             'revenue_center_id' => $centerId,
-            'fiscal_year_id'    => $fiscalYearId,
-            'month_id'          => $monthId,
+            'fiscal_year_id' => $fiscalYearId,
+            'month_id' => $monthId,
         ])->first();
 
         // منع تكرار الصافي: إذا تم وضع نفس الصافي الكلي في كل صفوف الشهر، نحفظه لمركز واحد فقط (مركز 1) والبقية 0
         static $seenNetMonths = [];
-        $monthKey = $fiscalYearId . '_' . $monthId;
+        $monthKey = $fiscalYearId.'_'.$monthId;
         $assignedNet = $net;
         if ($net > 0) {
             if (isset($seenNetMonths[$monthKey])) {
@@ -55,12 +52,12 @@ class RevenueRecordImport implements
 
         $data = [
             'revenue_center_id' => $centerId,
-            'fiscal_year_id'    => $fiscalYearId,
-            'month_id'          => $monthId,
-            'gross_revenue'     => $gross,
-            'net_revenue'       => $assignedNet,
-            'status'            => 'approved',
-            'created_by'        => Auth::id() ?? 1,
+            'fiscal_year_id' => $fiscalYearId,
+            'month_id' => $monthId,
+            'gross_revenue' => $gross,
+            'net_revenue' => $assignedNet,
+            'status' => 'approved',
+            'created_by' => Auth::id() ?? 1,
         ];
 
         if ($existing) {
@@ -68,10 +65,12 @@ class RevenueRecordImport implements
             $existing->fill($data);
             $existing->save();
             $this->updatedCount++;
+
             return null;
         }
 
         $this->importedCount++;
+
         return new RevenueRecord($data);
     }
 
@@ -93,9 +92,11 @@ class RevenueRecordImport implements
                 if (is_string($val)) {
                     $val = str_replace([',', ' '], '', trim($val));
                 }
+
                 return $val;
             }
         }
+
         return null;
     }
 }

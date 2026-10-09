@@ -2,11 +2,17 @@
 
 namespace App\Filament\Resources\MonthlyPortRecordResource\Pages;
 
+use App\Exports\PortRecordTemplateExport;
 use App\Filament\Resources\MonthlyPortRecordResource;
 use App\Imports\PortRecordImport;
+use App\Models\FiscalYear;
+use App\Models\Month;
+use App\Models\Port;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 use Maatwebsite\Excel\Facades\Excel;
@@ -14,6 +20,7 @@ use Maatwebsite\Excel\Facades\Excel;
 class ListMonthlyPortRecords extends ListRecords
 {
     protected static string $resource = MonthlyPortRecordResource::class;
+
     protected ?string $heading = 'السجلات التشغيلية للموانئ';
 
     protected function getHeaderActions(): array
@@ -25,22 +32,22 @@ class ListMonthlyPortRecords extends ListRecords
                 ->icon('heroicon-o-document-text')
                 ->color('warning')
                 ->form([
-                    \Filament\Forms\Components\Select::make('fiscal_year_id')
+                    Select::make('fiscal_year_id')
                         ->label('السنة المالية')
-                        ->options(\App\Models\FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
-                        ->default(\App\Models\FiscalYear::where('is_current', true)->first()?->id),
-                    \Filament\Forms\Components\Select::make('month_id')
+                        ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                        ->default(FiscalYear::where('is_current', true)->first()?->id),
+                    Select::make('month_id')
                         ->label('الشهر')
-                        ->options(\App\Models\Month::orderBy('month_number')->pluck('name_ar', 'id'))
-                        ->default(\App\Models\Month::where('month_number', 8)->first()?->id),
-                    \Filament\Forms\Components\TextInput::make('memo_number')
+                        ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                        ->default(Month::where('month_number', 8)->first()?->id),
+                    TextInput::make('memo_number')
                         ->label('رقم المذكرة (مطلوب)')
                         ->required()
                         ->default('88'),
-                    \Filament\Forms\Components\TextInput::make('memo_date')
+                    TextInput::make('memo_date')
                         ->label('تاريخ المذكرة (مطلوب)')
                         ->required()
-                        ->default('9 / 9 / ' . (\App\Models\FiscalYear::where('is_current', true)->first()?->year ?? date('Y'))),
+                        ->default('9 / 9 / '.(FiscalYear::where('is_current', true)->first()?->year ?? date('Y'))),
                 ])
                 ->modalHeading('إصدار مذكرة الطاقة الإنتاجية للموانئ (نموذج م.ت 88)')
                 ->modalDescription('المذكرة موجهة للسيد المدير العام وتتضمن الطاقة الإنتاجية للموانئ الأربعة والشركة ومقارنة بالسنة السابقة.')
@@ -48,11 +55,12 @@ class ListMonthlyPortRecords extends ListRecords
                 ->action(function (array $data) {
                     $params = http_build_query([
                         'fiscal_year_id' => $data['fiscal_year_id'],
-                        'month_id'       => $data['month_id'],
-                        'memo_number'    => $data['memo_number'],
-                        'memo_date'      => $data['memo_date'],
+                        'month_id' => $data['month_id'],
+                        'memo_number' => $data['memo_number'],
+                        'memo_date' => $data['memo_date'],
                     ]);
-                    return redirect()->away(route('admin.official-letters.preview', ['type' => 'capacity_memo']) . '?' . $params);
+
+                    return redirect()->away(route('admin.official-letters.preview', ['type' => 'capacity_memo']).'?'.$params);
                 }),
 
             // ─── زر تصدير البيانات إلى Excel ───
@@ -61,22 +69,22 @@ class ListMonthlyPortRecords extends ListRecords
                 ->icon('heroicon-o-table-cells')
                 ->color('success')
                 ->form([
-                    \Filament\Forms\Components\Select::make('port_id')
+                    Select::make('port_id')
                         ->label('الميناء')
                         ->placeholder('كافة الموانئ')
-                        ->options(\App\Models\Port::where('is_active', true)->where(fn($q) => $q->where('has_monthly_records', true)->orWhereHas('monthlyPortRecords'))->orderBy('sort_order')->pluck('name_ar', 'id')),
+                        ->options(Port::where('is_active', true)->where(fn ($q) => $q->where('has_monthly_records', true)->orWhereHas('monthlyPortRecords'))->orderBy('sort_order')->pluck('name_ar', 'id')),
 
-                    \Filament\Forms\Components\Select::make('fiscal_year_id')
+                    Select::make('fiscal_year_id')
                         ->label('السنة المالية')
                         ->placeholder('كافة السنوات')
-                        ->options(\App\Models\FiscalYear::orderBy('year', 'desc')->pluck('year', 'id')),
+                        ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id')),
                 ])
                 ->modalHeading('تصدير السجلات التشغيلية إلى ملف Excel')
                 ->modalDescription('سيتم إنشاء ملف Excel مطابق للقالب التشغيلي الرسمي لشركة الموانئ العراقية.')
                 ->modalSubmitActionLabel('بدء التصدير والتحميل')
                 ->action(function (array $data) {
                     $params = http_build_query(array_filter([
-                        'port_id'        => $data['port_id'] ?? null,
+                        'port_id' => $data['port_id'] ?? null,
                         'fiscal_year_id' => $data['fiscal_year_id'] ?? null,
                     ]));
 
@@ -89,7 +97,7 @@ class ListMonthlyPortRecords extends ListRecords
                 ->icon('heroicon-o-document-text')
                 ->color('info')
                 ->action(function () {
-                    return Excel::download(new \App\Exports\PortRecordTemplateExport(), 'قالب_البيانات_التشغيلية.xlsx');
+                    return Excel::download(new PortRecordTemplateExport, 'قالب_البيانات_التشغيلية.xlsx');
                 }),
 
             // ─── زر رفع ملف البيانات ───
@@ -118,9 +126,9 @@ class ListMonthlyPortRecords extends ListRecords
                 ->modalIcon('heroicon-o-cloud-arrow-up')
                 ->modalWidth('lg')
                 ->action(function (array $data) {
-                    $path = storage_path('app/private/' . $data['excel_file']);
+                    $path = storage_path('app/private/'.$data['excel_file']);
 
-                    $import = new PortRecordImport();
+                    $import = new PortRecordImport;
 
                     try {
                         Excel::import($import, $path);
@@ -131,12 +139,13 @@ class ListMonthlyPortRecords extends ListRecords
                             ->body($e->getMessage())
                             ->persistent()
                             ->send();
+
                         return;
                     }
 
                     $total = $import->importedCount + $import->updatedCount;
 
-                    if (!empty($import->failures)) {
+                    if (! empty($import->failures)) {
                         $errList = implode("\n", array_slice($import->failures, 0, 5));
                         Notification::make()
                             ->warning()

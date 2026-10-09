@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Exports\CargoStatusExport;
+use App\Exports\ContainerItemsDetailedExport;
 use App\Exports\ContainerStatusExport;
 use App\Exports\MonthlyPortRecordExport;
 use App\Exports\RevenueRecordExport;
 use App\Models\CargoStatusRecord;
+use App\Models\ContainerItem;
 use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\MonthlyPortRecord;
@@ -37,7 +39,7 @@ class ReportExcelController extends Controller
             ['port_id' => $portId, 'fiscal_year_id' => $fiscalYearId]
         );
 
-        $fileName = 'البيانات_التشغيلية_' . str_replace(' ', '_', $portName) . '_' . $yearName . '_' . date('Ymd_His') . '.xlsx';
+        $fileName = 'البيانات_التشغيلية_'.str_replace(' ', '_', $portName).'_'.$yearName.'_'.date('Ymd_His').'.xlsx';
 
         return Excel::download(
             new MonthlyPortRecordExport($portId, $fiscalYearId),
@@ -62,7 +64,7 @@ class ReportExcelController extends Controller
             ['revenue_center_id' => $centerId, 'fiscal_year_id' => $fiscalYearId]
         );
 
-        $fileName = 'سجلات_الإيراد_' . str_replace(' ', '_', $centerName) . '_' . $yearName . '_' . date('Ymd_His') . '.xlsx';
+        $fileName = 'سجلات_الإيراد_'.str_replace(' ', '_', $centerName).'_'.$yearName.'_'.date('Ymd_His').'.xlsx';
 
         return Excel::download(
             new RevenueRecordExport($centerId, $fiscalYearId),
@@ -72,24 +74,24 @@ class ReportExcelController extends Controller
 
     public function exportContainerStatus(Request $request): BinaryFileResponse
     {
-        $type         = $request->input('type', 'abandoned');
+        $type = $request->input('type', 'abandoned');
         $fiscalYearId = $request->input('year') ? (int) $request->input('year') : ($request->input('fiscal_year_id') ? (int) $request->input('fiscal_year_id') : null);
-        $monthId      = $request->input('month') ? (int) $request->input('month') : ($request->input('month_id') ? (int) $request->input('month_id') : null);
-        $portId       = $request->input('port') ? (int) $request->input('port') : null;
+        $monthId = $request->input('month') ? (int) $request->input('month') : ($request->input('month_id') ? (int) $request->input('month_id') : null);
+        $portId = $request->input('port') ? (int) $request->input('port') : null;
 
         $typeLabel = $type === 'abandoned' ? 'متخلفة' : 'خطرة';
-        $monthObj  = $monthId ? Month::find($monthId) : Month::first();
-        $yearObj   = $fiscalYearId ? FiscalYear::find($fiscalYearId) : FiscalYear::where('is_current', true)->first();
+        $monthObj = $monthId ? Month::find($monthId) : Month::first();
+        $yearObj = $fiscalYearId ? FiscalYear::find($fiscalYearId) : FiscalYear::where('is_current', true)->first();
 
         $monthName = $monthObj ? "شهر_{$monthObj->month_number}" : 'شهر';
-        $yearName  = $yearObj ? $yearObj->year : date('Y');
+        $yearName = $yearObj ? $yearObj->year : date('Y');
 
         ActivityLogger::log(
             'exported_excel',
             "تصدير موقف الحاويات {$typeLabel} إلى Excel ({$yearName} - {$monthName})",
         );
 
-        $fileName  = "موقف_الحاويات_{$typeLabel}_{$monthName}_{$yearName}.xlsx";
+        $fileName = "موقف_الحاويات_{$typeLabel}_{$monthName}_{$yearName}.xlsx";
 
         return Excel::download(
             new ContainerStatusExport($type, $fiscalYearId, $monthId, $portId),
@@ -99,17 +101,17 @@ class ReportExcelController extends Controller
 
     public function exportCargoStatus(Request $request): BinaryFileResponse
     {
-        $type         = $request->input('type', 'abandoned');
+        $type = $request->input('type', 'abandoned');
         $fiscalYearId = $request->input('year') ? (int) $request->input('year') : ($request->input('fiscal_year_id') ? (int) $request->input('fiscal_year_id') : null);
-        $monthId      = $request->input('month') ? (int) $request->input('month') : ($request->input('month_id') ? (int) $request->input('month_id') : null);
-        $portId       = $request->input('port') ? (int) $request->input('port') : null;
+        $monthId = $request->input('month') ? (int) $request->input('month') : ($request->input('month_id') ? (int) $request->input('month_id') : null);
+        $portId = $request->input('port') ? (int) $request->input('port') : null;
 
         $typeLabel = $type === 'abandoned' ? 'متخلفة' : 'خطرة';
-        $monthObj  = $monthId ? Month::find($monthId) : Month::first();
-        $yearObj   = $fiscalYearId ? FiscalYear::find($fiscalYearId) : FiscalYear::where('is_current', true)->first();
+        $monthObj = $monthId ? Month::find($monthId) : Month::first();
+        $yearObj = $fiscalYearId ? FiscalYear::find($fiscalYearId) : FiscalYear::where('is_current', true)->first();
 
         $monthName = $monthObj ? "شهر_{$monthObj->month_number}" : 'شهر';
-        $yearName  = $yearObj ? $yearObj->year : date('Y');
+        $yearName = $yearObj ? $yearObj->year : date('Y');
 
         ActivityLogger::log(
             'exported_excel',
@@ -117,7 +119,7 @@ class ReportExcelController extends Controller
             CargoStatusRecord::class
         );
 
-        $fileName  = "موقف_المواد_والبضائع_{$typeLabel}_{$monthName}_{$yearName}.xlsx";
+        $fileName = "موقف_المواد_والبضائع_{$typeLabel}_{$monthName}_{$yearName}.xlsx";
 
         return Excel::download(
             new CargoStatusExport($type, $fiscalYearId, $monthId, $portId),
@@ -130,24 +132,24 @@ class ReportExcelController extends Controller
      */
     public function exportContainerItemsDetailed(Request $request): BinaryFileResponse
     {
-        $type         = $request->input('type', 'abandoned');
+        $type = $request->input('type', 'abandoned');
         $fiscalYearId = $request->input('year') ? (int) $request->input('year') : ($request->input('fiscal_year_id') ? (int) $request->input('fiscal_year_id') : null);
-        $monthId      = $request->input('month') ? (int) $request->input('month') : ($request->input('month_id') ? (int) $request->input('month_id') : null);
-        $portId       = $request->input('port') ? (int) $request->input('port') : ($request->input('port_id') ? (int) $request->input('port_id') : null);
+        $monthId = $request->input('month') ? (int) $request->input('month') : ($request->input('month_id') ? (int) $request->input('month_id') : null);
+        $portId = $request->input('port') ? (int) $request->input('port') : ($request->input('port_id') ? (int) $request->input('port_id') : null);
 
         $typeLabel = $type === 'dangerous' ? 'الخطرة' : 'المتخلفة';
-        $monthObj  = $monthId ? Month::find($monthId) : null;
-        $yearObj   = $fiscalYearId ? FiscalYear::find($fiscalYearId) : FiscalYear::where('is_current', true)->first();
-        $portObj   = $portId ? Port::find($portId) : null;
+        $monthObj = $monthId ? Month::find($monthId) : null;
+        $yearObj = $fiscalYearId ? FiscalYear::find($fiscalYearId) : FiscalYear::where('is_current', true)->first();
+        $portObj = $portId ? Port::find($portId) : null;
 
         $monthName = $monthObj ? "شهر_{$monthObj->name_ar}" : 'كافة_الأشهر';
-        $yearName  = $yearObj ? $yearObj->year : date('Y');
-        $portName  = $portObj ? "_{$portObj->name_ar}" : '';
+        $yearName = $yearObj ? $yearObj->year : date('Y');
+        $portName = $portObj ? "_{$portObj->name_ar}" : '';
 
         ActivityLogger::log(
             'exported_excel',
             "تصدير كشف الحاويات {$typeLabel} الفردية التفصيلية بحسب الجهات ({$yearName} - {$monthName})",
-            \App\Models\ContainerItem::class,
+            ContainerItem::class,
             null,
             ['type' => $type, 'fiscal_year_id' => $fiscalYearId, 'month_id' => $monthId, 'port_id' => $portId]
         );
@@ -155,7 +157,7 @@ class ReportExcelController extends Controller
         $fileName = "كشف_الحاويات_{$typeLabel}{$portName}_{$monthName}_{$yearName}.xlsx";
 
         return Excel::download(
-            new \App\Exports\ContainerItemsDetailedExport($type, $fiscalYearId, $monthId, $portId),
+            new ContainerItemsDetailedExport($type, $fiscalYearId, $monthId, $portId),
             $fileName
         );
     }

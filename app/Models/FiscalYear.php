@@ -9,13 +9,14 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class FiscalYear extends Model implements Auditable
 {
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
+
     protected $fillable = ['year', 'is_current'];
 
     protected $casts = [
         'is_current' => 'boolean',
-        'year'       => 'integer',
+        'year' => 'integer',
     ];
 
     public function monthlyPortRecords(): HasMany

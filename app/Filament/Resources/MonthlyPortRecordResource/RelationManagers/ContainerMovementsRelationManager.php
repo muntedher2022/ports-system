@@ -15,8 +15,11 @@ use Filament\Tables\Table;
 class ContainerMovementsRelationManager extends RelationManager
 {
     protected static string $relationship = 'containerMovements';
+
     protected static ?string $title = 'حركة الحاويات (TEU)';
+
     protected static ?string $modelLabel = 'حركة حاويات';
+
     protected static ?string $pluralModelLabel = 'حركات الحاويات';
 
     public function form(Schema $schema): Schema
@@ -34,7 +37,7 @@ class ContainerMovementsRelationManager extends RelationManager
             Select::make('full_or_empty')
                 ->label('الحالة (مملوء / فارغ)')
                 ->options([
-                    'full'  => 'مملوء (Full)',
+                    'full' => 'مملوء (Full)',
                     'empty' => 'فارغ (Empty)',
                 ])
                 ->required()
@@ -95,7 +98,7 @@ class ContainerMovementsRelationManager extends RelationManager
                     ->formatStateUsing(fn ($state) => match ($state) {
                         'import' => 'استيراد',
                         'export' => 'تصدير',
-                        default  => $state,
+                        default => $state,
                     })
                     ->badge()
                     ->color(fn ($state) => $state === 'import' ? 'info' : 'success'),
@@ -103,7 +106,7 @@ class ContainerMovementsRelationManager extends RelationManager
                 TextColumn::make('full_or_empty')
                     ->label('الحالة')
                     ->formatStateUsing(fn ($state) => match ($state) {
-                        'full'  => 'مملوء',
+                        'full' => 'مملوء',
                         'empty' => 'فارغ',
                         default => $state,
                     })

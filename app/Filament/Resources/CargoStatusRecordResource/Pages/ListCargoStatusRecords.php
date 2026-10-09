@@ -3,7 +3,6 @@
 namespace App\Filament\Resources\CargoStatusRecordResource\Pages;
 
 use App\Filament\Resources\CargoStatusRecordResource;
-use App\Models\CargoEntity;
 use App\Models\CargoStatusDetail;
 use App\Models\CargoStatusRecord;
 use App\Models\FiscalYear;
@@ -119,6 +118,7 @@ class ListCargoStatusRecords extends ListRecords
                                 ->body('لا توجد بيانات مسجلة للميناء المحدد في سنة وشهر المصدر لنقلها.')
                                 ->danger()
                                 ->send();
+
                             return;
                         }
 
@@ -136,27 +136,28 @@ class ListCargoStatusRecords extends ListRecords
                                 ->body('يوجد بالفعل سجل محفوظ لهذا الميناء في الشهر والسنة المستهدفين.')
                                 ->warning()
                                 ->send();
+
                             return;
                         }
 
-                        DB::transaction(function () use ($sourceRecord, $portId, $cargoType, $targetYearId, $targetMonthId, $targetReportDate, $srcYearId, $srcMonthId) {
+                        DB::transaction(function () use ($sourceRecord, $portId, $cargoType, $targetYearId, $targetMonthId, $targetReportDate) {
                             $newRecord = CargoStatusRecord::create([
-                                'port_id'         => $portId,
-                                'cargo_type'      => $cargoType,
-                                'fiscal_year_id'  => $targetYearId,
-                                'month_id'        => $targetMonthId,
-                                'report_date'     => $targetReportDate,
-                                'notes'           => $sourceRecord->notes,
-                                'created_by'      => Auth::id() ?? 1,
+                                'port_id' => $portId,
+                                'cargo_type' => $cargoType,
+                                'fiscal_year_id' => $targetYearId,
+                                'month_id' => $targetMonthId,
+                                'report_date' => $targetReportDate,
+                                'notes' => $sourceRecord->notes,
+                                'created_by' => Auth::id() ?? 1,
                             ]);
 
                             foreach ($sourceRecord->details as $detail) {
                                 CargoStatusDetail::create([
                                     'cargo_status_record_id' => $newRecord->id,
-                                    'cargo_entity_id'        => $detail->cargo_entity_id,
-                                    'year_label'             => $detail->year_label,
-                                    'count'                  => $detail->count,
-                                    'sort_order'             => $detail->sort_order,
+                                    'cargo_entity_id' => $detail->cargo_entity_id,
+                                    'year_label' => $detail->year_label,
+                                    'count' => $detail->count,
+                                    'sort_order' => $detail->sort_order,
                                 ]);
                             }
 
@@ -201,17 +202,18 @@ class ListCargoStatusRecords extends ListRecords
                     ->action(function (array $data) {
                         $params = http_build_query([
                             'fiscal_year_id' => $data['fiscal_year_id'],
-                            'month_id'       => $data['month_id'],
+                            'month_id' => $data['month_id'],
                         ]);
-                        return redirect()->away(route('admin.official-letters.preview', ['type' => 'cargo_letter']) . '?' . $params);
+
+                        return redirect()->away(route('admin.official-letters.preview', ['type' => 'cargo_letter']).'?'.$params);
                     }),
             ])
-            ->label('خيارات وإجراءات المواد والبضائع')
-            ->icon('heroicon-o-chevron-down')
-            ->iconPosition(IconPosition::After)
-            ->dropdownWidth(Width::Medium)
-            ->button()
-            ->color('primary'),
+                ->label('خيارات وإجراءات المواد والبضائع')
+                ->icon('heroicon-o-chevron-down')
+                ->iconPosition(IconPosition::After)
+                ->dropdownWidth(Width::Medium)
+                ->button()
+                ->color('primary'),
         ];
     }
 }

@@ -3,14 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use OwenIt\Auditing\Contracts\Auditable;
 
 class CargoEntity extends Model implements Auditable
 {
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
 
     protected $fillable = [
         'name_ar',
@@ -30,10 +30,10 @@ class CargoEntity extends Model implements Auditable
 
     public function getEntityTypeLabelAttribute(): string
     {
-        return match($this->entity_type) {
+        return match ($this->entity_type) {
             'government' => 'قطاع حكومي',
-            'private'    => 'قطاع خاص',
-            default      => $this->entity_type,
+            'private' => 'قطاع خاص',
+            default => $this->entity_type,
         };
     }
 

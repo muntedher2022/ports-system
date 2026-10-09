@@ -9,20 +9,18 @@ use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
-use Filament\Actions\ForceDeleteAction;
 use Filament\Actions\ForceDeleteBulkAction;
 use Filament\Actions\RestoreAction;
 use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\BadgeColumn;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -36,17 +34,25 @@ use Illuminate\Support\Facades\Auth;
 class ContainerEntityResource extends Resource
 {
     protected static ?string $model = ContainerEntity::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice;
+
     protected static ?string $navigationLabel = 'إدارة الجهات';
+
     protected static ?string $modelLabel = 'جهة';
+
     protected static ?string $pluralModelLabel = 'الجهات (وزارات وقطاعات)';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Containers;
+
     protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return true;
     }
@@ -65,7 +71,7 @@ class ContainerEntityResource extends Resource
                     ->required()
                     ->options([
                         'government' => 'قطاع حكومي',
-                        'private'    => 'قطاع خاص',
+                        'private' => 'قطاع خاص',
                     ])
                     ->default('government')
                     ->live()
@@ -87,9 +93,11 @@ class ContainerEntityResource extends Resource
                         $type = $get('entity_type') ?? 'government';
                         if ($type === 'private') {
                             $max = ContainerEntity::where('entity_type', 'private')->max('sort_order');
+
                             return $max ? $max + 1 : 100;
                         }
                         $max = ContainerEntity::where('entity_type', 'government')->max('sort_order');
+
                         return $max ? $max + 1 : 1;
                     }),
 
@@ -123,15 +131,15 @@ class ContainerEntityResource extends Resource
                 TextColumn::make('entity_type')
                     ->label('القطاع')
                     ->badge()
-                    ->formatStateUsing(fn($state) => match($state) {
+                    ->formatStateUsing(fn ($state) => match ($state) {
                         'government' => 'حكومي',
-                        'private'    => 'خاص',
-                        default      => $state,
+                        'private' => 'خاص',
+                        default => $state,
                     })
-                    ->color(fn($state) => match($state) {
+                    ->color(fn ($state) => match ($state) {
                         'government' => 'info',
-                        'private'    => 'warning',
-                        default      => 'gray',
+                        'private' => 'warning',
+                        default => 'gray',
                     }),
 
                 IconColumn::make('is_active')
@@ -149,7 +157,7 @@ class ContainerEntityResource extends Resource
                     ->label('نوع القطاع')
                     ->options([
                         'government' => 'قطاع حكومي',
-                        'private'    => 'قطاع خاص',
+                        'private' => 'قطاع خاص',
                     ]),
                 TernaryFilter::make('is_active')
                     ->label('الحالة'),
@@ -163,8 +171,8 @@ class ContainerEntityResource extends Resource
                         ->successNotificationTitle('تم إرسال الجهة إلى سلة المحذوفات'),
                     RestoreAction::make()->color('success'),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make(),
@@ -183,9 +191,9 @@ class ContainerEntityResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListContainerEntities::route('/'),
+            'index' => Pages\ListContainerEntities::route('/'),
             'create' => Pages\CreateContainerEntity::route('/create'),
-            'edit'   => Pages\EditContainerEntity::route('/{record}/edit'),
+            'edit' => Pages\EditContainerEntity::route('/{record}/edit'),
         ];
     }
 }

@@ -9,34 +9,35 @@ use App\Models\Port;
 use App\Models\RevenueCenter;
 use App\Models\RevenueRecord;
 use Illuminate\Console\Command;
-use PhpOffice\PhpSpreadsheet\IOFactory;
 use Illuminate\Support\Facades\DB;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 class ImportPortExcelData extends Command
 {
     protected $signature = 'ports:import-excel {path2026?} {path2025?} {--fresh : احذف البيانات القديمة قبل الاستيراد}';
+
     protected $description = 'استيراد البيانات الحقيقية من ملفي الإكسل لعامي 2025 و 2026';
 
     private array $monthsMap = [
         'كانون الثاني' => 1,
-        'شباط'         => 2,
-        'شباط '        => 2,
-        'اذار'         => 3,
-        'أذار'         => 3,
-        'نيسان'        => 4,
-        'ايار'         => 5,
-        'أيار'         => 5,
-        'حزيران'       => 6,
-        'تموز'         => 7,
-        'اب'           => 8,
-        'آب'           => 8,
-        'ايلول'        => 9,
-        'أيلول'        => 9,
-        'تشرين الاول'  => 10,
-        'تشرين الأول'  => 10,
+        'شباط' => 2,
+        'شباط ' => 2,
+        'اذار' => 3,
+        'أذار' => 3,
+        'نيسان' => 4,
+        'ايار' => 5,
+        'أيار' => 5,
+        'حزيران' => 6,
+        'تموز' => 7,
+        'اب' => 8,
+        'آب' => 8,
+        'ايلول' => 9,
+        'أيلول' => 9,
+        'تشرين الاول' => 10,
+        'تشرين الأول' => 10,
         'تشرين الثاني' => 11,
-        'كانون الاول'  => 12,
-        'كانون الأول'  => 12,
+        'كانون الاول' => 12,
+        'كانون الأول' => 12,
     ];
 
     public function handle(): int
@@ -73,7 +74,7 @@ class ImportPortExcelData extends Command
 
         $this->newLine();
         $this->info('🎉 اكتمل استيراد بيانات 2025 و 2026 بالكامل بنجاح!');
-        
+
         $this->table(
             ['المؤشر / الجدول', '2025', '2026', 'الإجمالي'],
             [
@@ -94,7 +95,7 @@ class ImportPortExcelData extends Command
                     number_format(RevenueRecord::where('fiscal_year_id', $year2025->id)->sum('gross_revenue'), 0),
                     number_format(RevenueRecord::where('fiscal_year_id', $year2026->id)->sum('gross_revenue'), 0),
                     number_format(RevenueRecord::sum('gross_revenue'), 0),
-                ]
+                ],
             ]
         );
 
@@ -106,30 +107,40 @@ class ImportPortExcelData extends Command
         $spreadsheet = IOFactory::load($filePath);
 
         $portsSheets = [
-            'الجنوبي'    => 'SOUTH',
-            'الشمالي'    => 'NORTH',
-            'ابو فلوس'   => 'ABF',
+            'الجنوبي' => 'SOUTH',
+            'الشمالي' => 'NORTH',
+            'ابو فلوس' => 'ABF',
             'خور الزبير' => 'KHZ',
         ];
 
         // 1. الموانئ الأربعة
         foreach ($portsSheets as $sheetName => $portCode) {
             $port = Port::where('code', $portCode)->first();
-            if (!$port) continue;
+            if (! $port) {
+                continue;
+            }
 
             $sheet = $spreadsheet->getSheetByName($sheetName);
-            if (!$sheet) continue;
+            if (! $sheet) {
+                continue;
+            }
 
             $count = 0;
             for ($row = 4; $row <= 15; $row++) {
                 $monthNameRaw = trim((string) $sheet->getCell("A{$row}")->getCalculatedValue());
-                if (empty($monthNameRaw) || $monthNameRaw === 'المجموع') continue;
+                if (empty($monthNameRaw) || $monthNameRaw === 'المجموع') {
+                    continue;
+                }
 
                 $monthNum = $this->monthsMap[$monthNameRaw] ?? null;
-                if (!$monthNum) continue;
+                if (! $monthNum) {
+                    continue;
+                }
 
                 $month = Month::where('month_number', $monthNum)->first();
-                if (!$month) continue;
+                if (! $month) {
+                    continue;
+                }
 
                 $f = fn ($col) => (float) ($sheet->getCell("{$col}{$row}")->getCalculatedValue() ?? 0);
                 $fi = fn ($col) => (int) ($sheet->getCell("{$col}{$row}")->getCalculatedValue() ?? 0);
@@ -138,37 +149,37 @@ class ImportPortExcelData extends Command
 
                 MonthlyPortRecord::updateOrCreate(
                     [
-                        'port_id'        => $port->id,
+                        'port_id' => $port->id,
                         'fiscal_year_id' => $fiscalYear->id,
-                        'month_id'       => $month->id,
+                        'month_id' => $month->id,
                     ],
                     [
-                        'total_container_ships'           => $fi('B'),
+                        'total_container_ships' => $fi('B'),
                         'imported_containers_weight_tons' => $f('C'),
-                        'imported_containers_count'       => $fi('D'),
-                        'imported_20ft'                   => $fi('E'),
-                        'imported_40ft'                   => $fi('F'),
-                        'imported_45ft'                   => $fi('G'),
-                        'imported_teu'                    => $fi('H'),
-                        'exported_empty_count'            => $fi('I'),
-                        'exported_full_count'             => $fi('J'),
-                        'exported_full_weight_tons'       => $f('K'),
-                        'exported_containers_count'       => $fi('L'),
-                        'exported_20ft'                   => $fi('M'),
-                        'exported_40ft'                   => $fi('N'),
-                        'exported_45ft'                   => $fi('O'),
-                        'exported_teu'                    => $fi('P'),
-                        'general_cargo_ships'             => $fi('Q'),
-                        'general_cargo_weight_tons'       => $f('R'),
-                        'oil_tankers_count'               => $fi('S'),
-                        'oil_exported_tons'               => $f('T'),
-                        'oil_imported_tons'               => $f('U'),
-                        'oil_total_tons'                  => $f('V'),
-                        'imported_cars_count'             => $fi('W'),
-                        'imported_cars_weight_tons'       => $f('X'),
-                        'total_revenue'                   => $f('Y'),
-                        'car_carrier_ships'               => 0,
-                        'status'                          => $status,
+                        'imported_containers_count' => $fi('D'),
+                        'imported_20ft' => $fi('E'),
+                        'imported_40ft' => $fi('F'),
+                        'imported_45ft' => $fi('G'),
+                        'imported_teu' => $fi('H'),
+                        'exported_empty_count' => $fi('I'),
+                        'exported_full_count' => $fi('J'),
+                        'exported_full_weight_tons' => $f('K'),
+                        'exported_containers_count' => $fi('L'),
+                        'exported_20ft' => $fi('M'),
+                        'exported_40ft' => $fi('N'),
+                        'exported_45ft' => $fi('O'),
+                        'exported_teu' => $fi('P'),
+                        'general_cargo_ships' => $fi('Q'),
+                        'general_cargo_weight_tons' => $f('R'),
+                        'oil_tankers_count' => $fi('S'),
+                        'oil_exported_tons' => $f('T'),
+                        'oil_imported_tons' => $f('U'),
+                        'oil_total_tons' => $f('V'),
+                        'imported_cars_count' => $fi('W'),
+                        'imported_cars_weight_tons' => $f('X'),
+                        'total_revenue' => $f('Y'),
+                        'car_carrier_ships' => 0,
+                        'status' => $status,
                     ]
                 );
                 $count++;
@@ -192,37 +203,47 @@ class ImportPortExcelData extends Command
             $revCount = 0;
             for ($row = 4; $row <= 15; $row++) {
                 $monthNameRaw = trim((string) $revenueSheet->getCell("B{$row}")->getCalculatedValue());
-                if (empty($monthNameRaw) || $monthNameRaw === 'المجموع') continue;
+                if (empty($monthNameRaw) || $monthNameRaw === 'المجموع') {
+                    continue;
+                }
 
                 $monthNum = $this->monthsMap[$monthNameRaw] ?? null;
-                if (!$monthNum) continue;
+                if (! $monthNum) {
+                    continue;
+                }
 
                 $month = Month::where('month_number', $monthNum)->first();
-                if (!$month) continue;
+                if (! $month) {
+                    continue;
+                }
 
                 $grossTotal = (float) $revenueSheet->getCell("J{$row}")->getCalculatedValue();
-                $netTotal   = (float) $revenueSheet->getCell("K{$row}")->getCalculatedValue();
-                $netRatio   = ($grossTotal > 0 && $netTotal > 0) ? ($netTotal / $grossTotal) : 0.52;
+                $netTotal = (float) $revenueSheet->getCell("K{$row}")->getCalculatedValue();
+                $netRatio = ($grossTotal > 0 && $netTotal > 0) ? ($netTotal / $grossTotal) : 0.52;
 
                 foreach ($centerCols as $col => $centerCode) {
                     $center = RevenueCenter::where('code', $centerCode)->first();
-                    if (!$center) continue;
+                    if (! $center) {
+                        continue;
+                    }
 
                     $gross = (float) $revenueSheet->getCell("{$col}{$row}")->getCalculatedValue();
-                    if ($gross <= 0) continue;
+                    if ($gross <= 0) {
+                        continue;
+                    }
 
                     $net = round($gross * $netRatio, 3);
 
                     RevenueRecord::updateOrCreate(
                         [
                             'revenue_center_id' => $center->id,
-                            'fiscal_year_id'    => $fiscalYear->id,
-                            'month_id'          => $month->id,
+                            'fiscal_year_id' => $fiscalYear->id,
+                            'month_id' => $month->id,
                         ],
                         [
                             'gross_revenue' => $gross,
-                            'net_revenue'   => $net,
-                            'status'        => ($monthNum <= $activeMonthsLimit) ? 'approved' : 'draft',
+                            'net_revenue' => $net,
+                            'status' => ($monthNum <= $activeMonthsLimit) ? 'approved' : 'draft',
                         ]
                     );
                     $revCount++;

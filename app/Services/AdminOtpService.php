@@ -15,14 +15,14 @@ class AdminOtpService
      */
     public static function generateAndSend($user, ?string $ip = null, bool $force = false): array
     {
-        if (!$user) {
+        if (! $user) {
             return ['success' => false, 'reason' => 'no_user'];
         }
 
         $check = LicensingService::check();
         $adminOtpEnabled = $check['valid'] && ($check['license']['admin_otp_enabled'] ?? false);
 
-        if (!$adminOtpEnabled) {
+        if (! $adminOtpEnabled) {
             return ['success' => false, 'reason' => 'disabled'];
         }
 
@@ -37,15 +37,16 @@ class AdminOtpService
         $expires = session('admin_otp_expires');
 
         // إذا لم يكن الإرسال إجبارياً، وكان الرمز الحالي ما زال صالحاً وتم إرساله، نتجنب التكرار الزائد
-        if (!$force && $sessionOtp && $expires && now()->isBefore($expires) && session('admin_otp_dispatched_at')) {
+        if (! $force && $sessionOtp && $expires && now()->isBefore($expires) && session('admin_otp_dispatched_at')) {
             return ['success' => true, 'cached' => true, 'channels' => []];
         }
 
-        $hasPhone = !empty($user->phone);
-        $hasEmail = !empty($user->email);
+        $hasPhone = ! empty($user->phone);
+        $hasEmail = ! empty($user->email);
 
-        if (!$hasPhone && !$hasEmail) {
+        if (! $hasPhone && ! $hasEmail) {
             Log::warning("AdminOtpService: User {$user->id} has neither phone nor email.");
+
             return ['success' => false, 'reason' => 'no_contact_info'];
         }
 
@@ -62,6 +63,7 @@ class AdminOtpService
 
         if ($channel === 'none') {
             Log::warning("AdminOtpService: License requires {$licenseChannel}, but user missing required phone/email.");
+
             return ['success' => false, 'reason' => 'channel_mismatch'];
         }
 
@@ -76,7 +78,7 @@ class AdminOtpService
             'admin_otp_dispatched_at' => now()->timestamp,
         ]);
 
-        Log::info("AdminOtpService: Generated OTP for user={$user->email}, phone={$user->phone}, channel={$channel}, force=" . ($force ? 'yes' : 'no'));
+        Log::info("AdminOtpService: Generated OTP for user={$user->email}, phone={$user->phone}, channel={$channel}, force=".($force ? 'yes' : 'no'));
 
         $sentChannels = [];
         $clientIp = $ip ?: request()->ip();
@@ -85,8 +87,8 @@ class AdminOtpService
         if (in_array($channel, ['whatsapp', 'both']) && $hasPhone) {
             try {
                 $response = Http::timeout(12)->post('http://127.0.0.1:3333/send-otp', [
-                    'phone'   => $user->phone,
-                    'otp'     => $otp,
+                    'phone' => $user->phone,
+                    'otp' => $otp,
                     'project' => 'نظام إدارة الطاقة والإيراد',
                 ]);
 
@@ -94,10 +96,10 @@ class AdminOtpService
                     $sentChannels[] = 'الواتساب';
                     Log::info("AdminOtpService: WhatsApp OTP sent successfully to {$user->phone}");
                 } else {
-                    Log::warning('AdminOtpService: WhatsApp response: ' . $response->body());
+                    Log::warning('AdminOtpService: WhatsApp response: '.$response->body());
                 }
             } catch (\Exception $e) {
-                Log::error('AdminOtpService: WhatsApp send failed: ' . $e->getMessage());
+                Log::error('AdminOtpService: WhatsApp send failed: '.$e->getMessage());
             }
         }
 
@@ -115,12 +117,12 @@ class AdminOtpService
                 $sentChannels[] = 'البريد الإلكتروني';
                 Log::info("AdminOtpService: Email OTP sent successfully to {$user->email}");
             } catch (\Exception $e) {
-                Log::error('AdminOtpService: Email send failed: ' . $e->getMessage());
+                Log::error('AdminOtpService: Email send failed: '.$e->getMessage());
             }
         }
 
         return [
-            'success' => !empty($sentChannels),
+            'success' => ! empty($sentChannels),
             'channels' => $sentChannels,
             'otp' => $otp,
         ];

@@ -9,6 +9,7 @@ use Filament\Resources\Pages\ViewRecord;
 class ViewMonthlyPortRecord extends ViewRecord
 {
     protected static string $resource = MonthlyPortRecordResource::class;
+
     protected ?string $heading = 'عرض السجل التشغيلي الشهري';
 
     protected function getHeaderActions(): array

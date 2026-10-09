@@ -14,15 +14,21 @@ use Illuminate\Support\Facades\Auth;
 class CapacityComparison extends Page
 {
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
+
     protected static ?string $navigationLabel = 'مقارنة الطاقة الإنتاجية';
+
     protected static ?string $title = 'مقارنة الأداء للطاقة الإنتاجية للموانئ الأربعة بين عامين';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Analytics;
+
     protected static ?int $navigationSort = 2;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         if ($user->hasRole(['super_admin', 'المدير العام', 'general_manager']) || $user->user_type === 'general_manager') {
             return true;
@@ -36,7 +42,9 @@ class CapacityComparison extends Page
     protected string $view = 'filament.pages.capacity-comparison';
 
     public ?int $prevFiscalYearId = null;
+
     public ?int $currFiscalYearId = null;
+
     public ?int $selectedMonthNumber = 7; // تموز افتراضياً
 
     public function mount(): void
@@ -52,8 +60,8 @@ class CapacityComparison extends Page
         $service = app(PortAnalyticsService::class);
 
         $fiscalYears = FiscalYear::orderBy('year', 'desc')->get();
-        $ports       = Port::where('is_active', true)->whereHas('monthlyPortRecords')->orderBy('sort_order')->get();
-        $months      = Month::orderBy('month_number')->get();
+        $ports = Port::where('is_active', true)->whereHas('monthlyPortRecords')->orderBy('sort_order')->get();
+        $months = Month::orderBy('month_number')->get();
 
         $prevYear = FiscalYear::find($this->prevFiscalYearId)?->year ?? 2025;
         $currYear = FiscalYear::find($this->currFiscalYearId)?->year ?? 2026;
@@ -70,8 +78,8 @@ class CapacityComparison extends Page
             );
 
             $portTables[] = [
-                'port_name'   => $port->name_ar,
-                'comparison'  => $comparison['comparison'],
+                'port_name' => $port->name_ar,
+                'comparison' => $comparison['comparison'],
             ];
         }
 
@@ -84,12 +92,12 @@ class CapacityComparison extends Page
         );
 
         return [
-            'fiscalYears'       => $fiscalYears,
-            'months'            => $months,
-            'prevYear'          => $prevYear,
-            'currYear'          => $currYear,
-            'monthName'         => $monthName,
-            'portTables'        => $portTables,
+            'fiscalYears' => $fiscalYears,
+            'months' => $months,
+            'prevYear' => $prevYear,
+            'currYear' => $currYear,
+            'monthName' => $monthName,
+            'portTables' => $portTables,
             'companyComparison' => $companyComparison['comparison'],
         ];
     }

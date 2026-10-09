@@ -2,6 +2,10 @@
 
 namespace App\Providers;
 
+use App\Licensing\HardwareFingerprint;
+use App\Licensing\LicensingService;
+use App\Licensing\VerifyLicenseMiddleware;
+use App\Models\Report;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,9 +24,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         // ------------------ حماية التراخيص عند إقلاع الخدمات ------------------
-        if (!app()->runningInConsole()) {
-            $check = \App\Licensing\LicensingService::check();
-            if (!$check['valid']) {
+        if (! app()->runningInConsole()) {
+            $check = LicensingService::check();
+            if (! $check['valid']) {
                 $currentPath = trim(request()->path(), '/');
                 $excludedPaths = [
                     'api/license',
@@ -43,30 +47,30 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
 
-                if (!$isExcluded) {
+                if (! $isExcluded) {
                     if (request()->is('api/*') || request()->is('*/api/*') || request()->expectsJson()) {
                         abort(response()->json([
                             'status' => 'license_error',
                             'reason' => $check['reason'],
-                            'hwid' => $check['hwid'] ?? \App\Licensing\HardwareFingerprint::get(),
+                            'hwid' => $check['hwid'] ?? HardwareFingerprint::get(),
                             'message' => $check['message'],
-                            'activation_url' => url('/activate')
+                            'activation_url' => url('/activate'),
                         ], 402));
                     }
 
-                    $hwid = $check['hwid'] ?? \App\Licensing\HardwareFingerprint::get();
+                    $hwid = $check['hwid'] ?? HardwareFingerprint::get();
                     $message = $check['message'];
                     $activateUrl = url('api/license/activate');
 
-                    $html = \App\Licensing\VerifyLicenseMiddleware::getActivationPageHtml($hwid, $message, $activateUrl);
+                    $html = VerifyLicenseMiddleware::getActivationPageHtml($hwid, $message, $activateUrl);
                     abort(response($html, 402)->header('Content-Type', 'text/html; charset=utf-8'));
                 }
             }
         }
         // ---------------------------------------------------------------------
 
-        if (!class_exists('Report')) {
-            class_alias(\App\Models\Report::class, 'Report');
+        if (! class_exists('Report')) {
+            class_alias(Report::class, 'Report');
         }
     }
 }

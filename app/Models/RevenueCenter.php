@@ -10,8 +10,9 @@ use OwenIt\Auditing\Contracts\Auditable;
 
 class RevenueCenter extends Model implements Auditable
 {
-    use SoftDeletes;
     use \OwenIt\Auditing\Auditable;
+    use SoftDeletes;
+
     protected $fillable = [
         'name_ar', 'code', 'port_id',
         'is_operational', 'is_active', 'sort_order',
@@ -19,7 +20,7 @@ class RevenueCenter extends Model implements Auditable
 
     protected $casts = [
         'is_operational' => 'boolean',
-        'is_active'      => 'boolean',
+        'is_active' => 'boolean',
     ];
 
     public function port(): BelongsTo

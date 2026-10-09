@@ -2,7 +2,6 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\ContainerEntity;
 use App\Models\ContainerStatusDetail;
 use App\Models\FiscalYear;
 use Illuminate\Support\Facades\Auth;
@@ -12,14 +11,19 @@ use Leandrocfe\FilamentApexCharts\Widgets\ApexChartWidget;
 class TopHoldingEntitiesChart extends ApexChartWidget
 {
     protected static ?string $chartId = 'topHoldingEntitiesChart';
+
     protected static ?string $heading = '🏛️ أعلى 8 جهات ووزارات متراكمة لديها الحاويات في الموانئ';
+
     protected static ?int $sort = 15;
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
 
     public static function canView(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return $user->hasRole(['super_admin', 'المدير العام', 'general_manager', 'reviewer', 'مدقق / مراجع', 'operations_manager', 'مسؤول المتابعة المركزية والعمليات'])
             || ! ($user->isPortRestricted() && $user->port_id);
@@ -47,7 +51,7 @@ class TopHoldingEntitiesChart extends ApexChartWidget
         foreach ($topEntities as $row) {
             $name = $row->entity?->name_ar ?? 'جهة غير محددة';
             // تقصير الاسم إذا كان طويلاً
-            $categories[] = mb_strlen($name) > 35 ? mb_substr($name, 0, 35) . '...' : $name;
+            $categories[] = mb_strlen($name) > 35 ? mb_substr($name, 0, 35).'...' : $name;
             $data[] = (int) $row->total_count;
         }
 

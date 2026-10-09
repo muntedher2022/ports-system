@@ -3,6 +3,9 @@
 namespace App\Providers\Filament;
 
 use App\Enums\NavigationGroup;
+use App\Filament\Pages\Auth\Login;
+use App\Http\Middleware\VerifyAdminOtp;
+use App\Http\Middleware\VerifyTotpMiddleware;
 use BezhanSalleh\FilamentShield\FilamentShieldPlugin;
 use Filament\FontProviders\GoogleFontProvider;
 use Filament\Http\Middleware\Authenticate;
@@ -13,13 +16,13 @@ use Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
-use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 use Leandrocfe\FilamentApexCharts\FilamentApexChartsPlugin;
 
@@ -31,15 +34,15 @@ class AdminPanelProvider extends PanelProvider
             ->default()
             ->id('admin')
             ->path('admin')
-            ->login(\App\Filament\Pages\Auth\Login::class)
+            ->login(Login::class)
             // الألوان: أزرق داكن للشعور المؤسسي
             ->colors([
-                'primary'  => Color::Blue,
-                'gray'     => Color::Slate,
-                'info'     => Color::Cyan,
-                'success'  => Color::Emerald,
-                'warning'  => Color::Amber,
-                'danger'   => Color::Red,
+                'primary' => Color::Blue,
+                'gray' => Color::Slate,
+                'info' => Color::Cyan,
+                'success' => Color::Emerald,
+                'warning' => Color::Amber,
+                'danger' => Color::Red,
             ])
             ->brandName('نظام إدارة الطاقة الإنتاجية')
             ->brandLogo(null)
@@ -57,12 +60,12 @@ class AdminPanelProvider extends PanelProvider
                     ->navigationGroup(NavigationGroup::SystemAdmin)
                     ->navigationLabel('الأدوار')
                     ->navigationSort(2)
-                    ->registerNavigation(fn () => Auth::user()?->hasRole(['المدير العام', 'general_manager']) || \Illuminate\Support\Facades\Auth::user()?->user_type === 'general_manager'),
+                    ->registerNavigation(fn () => Auth::user()?->hasRole(['المدير العام', 'general_manager']) || Auth::user()?->user_type === 'general_manager'),
                 FilamentApexChartsPlugin::make(),
             ])
             ->renderHook(
                 'panels::head.end',
-                fn () => new \Illuminate\Support\HtmlString('
+                fn () => new HtmlString('
                     <style>
                         .years-repeater-grid-4 .fi-fo-repeater-items,
                         .years-repeater-grid-4 [data-sortable-container],
@@ -121,8 +124,8 @@ class AdminPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-                \App\Http\Middleware\VerifyAdminOtp::class,
-                \App\Http\Middleware\VerifyTotpMiddleware::class,
+                VerifyAdminOtp::class,
+                VerifyTotpMiddleware::class,
             ]);
     }
 }

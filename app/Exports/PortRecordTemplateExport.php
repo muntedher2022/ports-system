@@ -6,29 +6,29 @@ use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\Port;
 use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithHeadings;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
+use Maatwebsite\Excel\Concerns\WithHeadings;
 use Maatwebsite\Excel\Concerns\WithMultipleSheets;
 use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithTitle;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
 class PortRecordTemplateExport implements WithMultipleSheets
 {
     public function sheets(): array
     {
         return [
-            new PortRecordDataSheet(),
-            new PortRecordInstructionsSheet(),
+            new PortRecordDataSheet,
+            new PortRecordInstructionsSheet,
         ];
     }
 }
 
-class PortRecordDataSheet implements FromArray, WithHeadings, WithTitle, WithStyles, WithColumnWidths, WithStrictNullComparison
+class PortRecordDataSheet implements FromArray, WithColumnWidths, WithHeadings, WithStrictNullComparison, WithStyles, WithTitle
 {
     public function title(): string
     {
@@ -131,7 +131,7 @@ class PortRecordDataSheet implements FromArray, WithHeadings, WithTitle, WithSty
     }
 }
 
-class PortRecordInstructionsSheet implements FromArray, WithTitle, WithStyles, WithColumnWidths
+class PortRecordInstructionsSheet implements FromArray, WithColumnWidths, WithStyles, WithTitle
 {
     public function title(): string
     {
@@ -140,9 +140,9 @@ class PortRecordInstructionsSheet implements FromArray, WithTitle, WithStyles, W
 
     public function array(): array
     {
-        $ports = Port::orderBy('id')->get()->map(fn($p) => "  {$p->id} = {$p->name_ar}")->implode("\n");
-        $years = FiscalYear::orderBy('id')->get()->map(fn($y) => "  {$y->id} = {$y->year}")->implode("\n");
-        $months = Month::orderBy('id')->get()->map(fn($m) => "  {$m->id} = {$m->name_ar}")->implode("\n");
+        $ports = Port::orderBy('id')->get()->map(fn ($p) => "  {$p->id} = {$p->name_ar}")->implode("\n");
+        $years = FiscalYear::orderBy('id')->get()->map(fn ($y) => "  {$y->id} = {$y->year}")->implode("\n");
+        $months = Month::orderBy('id')->get()->map(fn ($m) => "  {$m->id} = {$m->name_ar}")->implode("\n");
 
         return [
             ['تعليمات رفع قالب البيانات التشغيلية للموانئ'],

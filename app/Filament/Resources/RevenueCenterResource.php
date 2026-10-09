@@ -34,17 +34,25 @@ use Illuminate\Support\Facades\Auth;
 class RevenueCenterResource extends Resource
 {
     protected static ?string $model = RevenueCenter::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+
     protected static ?string $navigationLabel = 'مراكز الإيراد';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::MasterData;
+
     protected static ?string $modelLabel = 'مركز إيراد';
+
     protected static ?string $pluralModelLabel = 'مراكز الإيراد';
+
     protected static ?int $navigationSort = 2;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return $user->hasRole(['المدير العام', 'general_manager', 'مسؤول المتابعة المركزية والعمليات', 'operations_manager'])
             || in_array($user->user_type, ['general_manager', 'operations_manager']);
@@ -156,8 +164,8 @@ class RevenueCenterResource extends Resource
                         ->label('حذف نهائي')
                         ->visible(fn () => Auth::user()?->hasRole(['super_admin', 'المدير العام'])),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -172,6 +180,7 @@ class RevenueCenterResource extends Resource
                                         ->danger()
                                         ->send();
                                     $action->cancel();
+
                                     return;
                                 }
                             }
@@ -187,9 +196,9 @@ class RevenueCenterResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => ListRevenueCenters::route('/'),
+            'index' => ListRevenueCenters::route('/'),
             'create' => CreateRevenueCenter::route('/create'),
-            'edit'   => EditRevenueCenter::route('/{record}/edit'),
+            'edit' => EditRevenueCenter::route('/{record}/edit'),
         ];
     }
 }

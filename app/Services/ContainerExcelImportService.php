@@ -14,11 +14,10 @@ use Illuminate\Support\Facades\Log;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
-use App\Services\ActivityLogger;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
 
 class ContainerExcelImportService
 {
@@ -27,13 +26,16 @@ class ContainerExcelImportService
      */
     public static function normalizeArabic(?string $str): string
     {
-        if (empty($str)) return '';
-        $str = trim((string)$str);
+        if (empty($str)) {
+            return '';
+        }
+        $str = trim((string) $str);
         $str = preg_replace('/[أإآ]/u', 'ا', $str);
         $str = preg_replace('/ة/u', 'ه', $str);
         $str = preg_replace('/ى/u', 'ي', $str);
         $str = preg_replace('/[^\p{L}\p{N}\s]/u', '', $str);
         $str = preg_replace('/\s+/u', ' ', $str);
+
         return mb_strtolower(trim($str));
     }
 
@@ -48,69 +50,69 @@ class ContainerExcelImportService
      */
     public static array $knownOwners = [
         // الخطوط الكبرى
-        "MSK" => "Maersk Line", "MSF" => "Maersk Line", "MAE" => "Maersk Line", "MSW" => "Maersk Line", "MSM" => "Maersk Line", "MSD" => "Maersk Line", "MSN" => "Maersk Line", "MSB" => "Maersk Line", "MRK" => "Maersk Line",
-        "MSC" => "Mediterranean Shipping Co", "MED" => "Mediterranean Shipping Co",
-        "CMA" => "CMA CGM", "CMU" => "CMA CGM", "CGM" => "CMA CGM",
-        "COS" => "COSCO Shipping", "CCL" => "COSCO Shipping", "COA" => "COSCO Shipping",
-        "HLC" => "Hapag-Lloyd", "HAA" => "Hapag-Lloyd", "HLB" => "Hapag-Lloyd", "HLX" => "Hapag-Lloyd",
-        "ONE" => "Ocean Network Express", "EGH" => "Evergreen Line", "EGL" => "Evergreen Line", "EMC" => "Evergreen Line",
-        "YML" => "Yang Ming Marine Transport", "HMM" => "Hyundai Merchant Marine", "HDM" => "Hyundai Merchant Marine",
-        "PIL" => "Pacific International Lines", "ZIM" => "ZIM Integrated Shipping", "WHL" => "Wan Hai Lines",
-        "OOL" => "OOCL", "OOC" => "OOCL", "NYK" => "NYK Line", "SUD" => "Hamburg Süd", "UAC" => "UASC", "PON" => "P&O Nedlloyd",
-        
+        'MSK' => 'Maersk Line', 'MSF' => 'Maersk Line', 'MAE' => 'Maersk Line', 'MSW' => 'Maersk Line', 'MSM' => 'Maersk Line', 'MSD' => 'Maersk Line', 'MSN' => 'Maersk Line', 'MSB' => 'Maersk Line', 'MRK' => 'Maersk Line',
+        'MSC' => 'Mediterranean Shipping Co', 'MED' => 'Mediterranean Shipping Co',
+        'CMA' => 'CMA CGM', 'CMU' => 'CMA CGM', 'CGM' => 'CMA CGM',
+        'COS' => 'COSCO Shipping', 'CCL' => 'COSCO Shipping', 'COA' => 'COSCO Shipping',
+        'HLC' => 'Hapag-Lloyd', 'HAA' => 'Hapag-Lloyd', 'HLB' => 'Hapag-Lloyd', 'HLX' => 'Hapag-Lloyd',
+        'ONE' => 'Ocean Network Express', 'EGH' => 'Evergreen Line', 'EGL' => 'Evergreen Line', 'EMC' => 'Evergreen Line',
+        'YML' => 'Yang Ming Marine Transport', 'HMM' => 'Hyundai Merchant Marine', 'HDM' => 'Hyundai Merchant Marine',
+        'PIL' => 'Pacific International Lines', 'ZIM' => 'ZIM Integrated Shipping', 'WHL' => 'Wan Hai Lines',
+        'OOL' => 'OOCL', 'OOC' => 'OOCL', 'NYK' => 'NYK Line', 'SUD' => 'Hamburg Süd', 'UAC' => 'UASC', 'PON' => 'P&O Nedlloyd',
+
         // شركات التأجير الكبرى
-        "TRH" => "Triton Container Leasing", "TGH" => "Triton Container Leasing", "TLL" => "Triton Leasing", "TGB" => "Triton Leasing", "TII" => "Triton Leasing",
-        "TCN" => "Textainer Leasing", "TCL" => "Textainer Leasing", "TEM" => "Textainer Leasing", "TEX" => "Textainer Leasing",
-        "FSC" => "Florens Leasing", "FLK" => "Florens Leasing", "FCI" => "Florens Leasing",
-        "GAT" => "CAI International", "CAI" => "CAI International", "CAX" => "CAI International", "CAP" => "CAI International",
-        "SOU" => "Seaco Global", "GES" => "Seacube Containers", "BMO" => "Beacon Intermodal Leasing", "BMS" => "Beacon Intermodal",
-        "SJK" => "Seaco Global", "SEG" => "Seaco Global", "SEK" => "Seaco Global", "SEL" => "Seaco Global",
-        
+        'TRH' => 'Triton Container Leasing', 'TGH' => 'Triton Container Leasing', 'TLL' => 'Triton Leasing', 'TGB' => 'Triton Leasing', 'TII' => 'Triton Leasing',
+        'TCN' => 'Textainer Leasing', 'TCL' => 'Textainer Leasing', 'TEM' => 'Textainer Leasing', 'TEX' => 'Textainer Leasing',
+        'FSC' => 'Florens Leasing', 'FLK' => 'Florens Leasing', 'FCI' => 'Florens Leasing',
+        'GAT' => 'CAI International', 'CAI' => 'CAI International', 'CAX' => 'CAI International', 'CAP' => 'CAI International',
+        'SOU' => 'Seaco Global', 'GES' => 'Seacube Containers', 'BMO' => 'Beacon Intermodal Leasing', 'BMS' => 'Beacon Intermodal',
+        'SJK' => 'Seaco Global', 'SEG' => 'Seaco Global', 'SEK' => 'Seaco Global', 'SEL' => 'Seaco Global',
+
         // رموز إضافية مستخرجة من ملف الاكسل
-        "AAC" => "AACON Container", "AIC" => "AIA Logistics", "ALM" => "Al-Majdouie", "ALX" => "Alexandria Shipping", 
-        "AMC" => "Amcar Line", "AMF" => "Amficon", "APH" => "American President Lines", "APM" => "APM Terminals", 
-        "APR" => "APL Container", "APZ" => "APL Lines", "ASL" => "ASEAN Seas Line", "AXI" => "Axis Container", 
-        "BAX" => "Bax Global", "BEA" => "Beacon Leasing", "BFS" => "BNSF Railway", "BHC" => "Bridgehead Container", 
-        "BLJ" => "Baluja Shipping", "BSI" => "Blue Sky Intermodal", "BXB" => "Box Marine", "CAA" => "Container Applications Inc", 
-        "CAR" => "Caru Containers", "CBH" => "China Base", "CCU" => "Container Corporation", "CIC" => "Crest Container", 
-        "CIM" => "CIMC Containers", "CIN" => "Intermodal", "CIP" => "Capital Intermodal", "CKL" => "CK Line", 
-        "CLH" => "Clarendon Container", "COR" => "Cronos Container", "CPS" => "Compass Containers", "CRL" => "Cronos Leasing", 
-        "CRS" => "Cronos Group", "CRT" => "Crest Intermodal", "CRX" => "Cronos Containers", "CSD" => "China Shipping", 
-        "CSK" => "CSKB Container", "CSL" => "China Shipping Line", "CSM" => "China Shipping Container", "CSN" => "China Shipping", 
-        "CSY" => "Cosco Container", "CUL" => "China United Lines", "CXD" => "CAI Container", "CXS" => "CAI Shipping", 
-        "DFS" => "Dan Zas Express", "DOL" => "Dolphin Containers", "DPW" => "DP World", "DRY" => "Dry Logistics", 
-        "DVR" => "Dolphin Maritime", "EAS" => "EAS Datong", "ECM" => "Econship", "EGS" => "Evergreen Leasing", 
-        "EIS" => "Eimskip", "EIT" => "Eastern Express", "EMK" => "Emkay Lines", "EOL" => "Euroocean", 
-        "ESD" => "East Shine Lines", "ESH" => "Econocaribe", "ESP" => "Espartana", "FAL" => "Falcon Container", 
-        "FAN" => "Fesco Container", "FBI" => "FBL Logistics", "FBL" => "FBL Line", "FCG" => "Florens Group", 
-        "FDC" => "First Domestic", "FES" => "Far Eastern Shipping", "FFA" => "Florens Asset", "FML" => "Federal Marine", 
-        "FOR" => "Fortis Containers", "FTA" => "Freight Transport", "FTB" => "First Transport", "FWR" => "Forward Shipping", 
-        "FYC" => "Feiyi Container", "GAO" => "Gateway Containers", "GCX" => "Global Container Express", "GJS" => "Gold Star Line", 
-        "GLD" => "Gold Star Line", "GRM" => "Gramcar", "GVC" => "Global Village Container", "HAM" => "Hamburg Süd", 
-        "HAS" => "Hasco Line", "HDX" => "Hyundai Express", "HJC" => "Hanjin Shipping", "HMC" => "Hyundai Merchant Marine", 
-        "HNS" => "Hanseatic", "HPC" => "Hanjin Pacific", "HXI" => "Heung-A Shipping", "IEA" => "Intermodal Exchange", 
-        "IKM" => "Intermotive", "IMT" => "Intermodal Transport", "INA" => "Interasia Lines", "INB" => "Interasia", 
-        "INK" => "Interkong", "INL" => "Intermodal Lines", "IRS" => "IRISL Group", "JFS" => "Japan Freight", 
-        "JTM" => "JTM Shipping", "KMT" => "KMTC Line", "KOC" => "K-Line", "KWL" => "Kawai Shipping", 
-        "LCR" => "LCR Leasing", "LGE" => "LG Electronics", "LTI" => "Lojistik", "LYG" => "Lianyungang", 
-        "MAG" => "Magical Leasing", "MAX" => "Maxicon Container", "MCR" => "McGrath", "MCS" => "MSC Leasing", 
-        "MHC" => "Marine Transport", "MIE" => "Mitsubishi", "MLJ" => "Malaysian Line", "MMA" => "Maritime Marine", 
-        "MNB" => "Minos Marine", "MOA" => "MOL Lines", "MOE" => "MOL Enterprise", "MOT" => "MOL Transport", 
-        "MPT" => "Marine Pacific", "MRS" => "Maras Linhas", "MVI" => "Marine Express", "MZW" => "Mazu Shipping", 
-        "NEW" => "Newport Container", "NLL" => "Neptune Orient Lines", "NXT" => "Next Intermodal", "OTP" => "Orient Express", 
-        "PAL" => "Pan Asia Line", "PCI" => "Pacific Container", "PID" => "Pacific International", "PML" => "Pan Maritime", 
-        "PPD" => "Pacific Plane", "PRS" => "Persian Gulf Line", "QNL" => "Qatar Navigation", "REG" => "Regional Container", 
-        "RFC" => "Red Ferries", "RJC" => "Raj Logistics", "RWA" => "Rail World", "RXC" => "Roxbox", 
-        "SAN" => "Sanmarine", "SCZ" => "Suez Canal", "SGC" => "Sea Global", "SKI" => "Skintainer", 
-        "SMH" => "Samudera Shipping", "SNH" => "Sinokor Merchant Marine", "SSP" => "Sea Sky", "SSS" => "Sea Sky Shipping", 
-        "SUU" => "Sunmarine", "SVW" => "Seven Wings", "SZL" => "Sino Cargo", "TCK" => "Triton Container", 
-        "TDR" => "Triton Direct", "TDT" => "Triton Transport", "TEG" => "Textainer Group", "TGC" => "Triton Global", 
-        "TIG" => "Tiger Containers", "TKC" => "Taiko Containers", "TLH" => "Triton Heavy", "TOL" => "Trans Ocean", 
-        "TRD" => "Trident Container", "TRI" => "Triton Rental", "TRL" => "Triton International", "TRU" => "Triton Unit", 
-        "TTN" => "Triton Tank", "TXG" => "Textainer Express", "TYM" => "Toyo Express", "UAC" => "United Arab Shipping", 
-        "UES" => "UES International", "UET" => "UES Transit", "UNS" => "Uniship", "UNX" => "United Express", 
-        "VSB" => "Vanguard Shipping", "VST" => "Vosta Container", "WHS" => "Wan Hai Lines", "WOS" => "World Ocean", 
-        "WSC" => "World Shipping", "XHC" => "XH Container", "XIN" => "Xingang Shipping", "YMM" => "Yang Ming"
+        'AAC' => 'AACON Container', 'AIC' => 'AIA Logistics', 'ALM' => 'Al-Majdouie', 'ALX' => 'Alexandria Shipping',
+        'AMC' => 'Amcar Line', 'AMF' => 'Amficon', 'APH' => 'American President Lines', 'APM' => 'APM Terminals',
+        'APR' => 'APL Container', 'APZ' => 'APL Lines', 'ASL' => 'ASEAN Seas Line', 'AXI' => 'Axis Container',
+        'BAX' => 'Bax Global', 'BEA' => 'Beacon Leasing', 'BFS' => 'BNSF Railway', 'BHC' => 'Bridgehead Container',
+        'BLJ' => 'Baluja Shipping', 'BSI' => 'Blue Sky Intermodal', 'BXB' => 'Box Marine', 'CAA' => 'Container Applications Inc',
+        'CAR' => 'Caru Containers', 'CBH' => 'China Base', 'CCU' => 'Container Corporation', 'CIC' => 'Crest Container',
+        'CIM' => 'CIMC Containers', 'CIN' => 'Intermodal', 'CIP' => 'Capital Intermodal', 'CKL' => 'CK Line',
+        'CLH' => 'Clarendon Container', 'COR' => 'Cronos Container', 'CPS' => 'Compass Containers', 'CRL' => 'Cronos Leasing',
+        'CRS' => 'Cronos Group', 'CRT' => 'Crest Intermodal', 'CRX' => 'Cronos Containers', 'CSD' => 'China Shipping',
+        'CSK' => 'CSKB Container', 'CSL' => 'China Shipping Line', 'CSM' => 'China Shipping Container', 'CSN' => 'China Shipping',
+        'CSY' => 'Cosco Container', 'CUL' => 'China United Lines', 'CXD' => 'CAI Container', 'CXS' => 'CAI Shipping',
+        'DFS' => 'Dan Zas Express', 'DOL' => 'Dolphin Containers', 'DPW' => 'DP World', 'DRY' => 'Dry Logistics',
+        'DVR' => 'Dolphin Maritime', 'EAS' => 'EAS Datong', 'ECM' => 'Econship', 'EGS' => 'Evergreen Leasing',
+        'EIS' => 'Eimskip', 'EIT' => 'Eastern Express', 'EMK' => 'Emkay Lines', 'EOL' => 'Euroocean',
+        'ESD' => 'East Shine Lines', 'ESH' => 'Econocaribe', 'ESP' => 'Espartana', 'FAL' => 'Falcon Container',
+        'FAN' => 'Fesco Container', 'FBI' => 'FBL Logistics', 'FBL' => 'FBL Line', 'FCG' => 'Florens Group',
+        'FDC' => 'First Domestic', 'FES' => 'Far Eastern Shipping', 'FFA' => 'Florens Asset', 'FML' => 'Federal Marine',
+        'FOR' => 'Fortis Containers', 'FTA' => 'Freight Transport', 'FTB' => 'First Transport', 'FWR' => 'Forward Shipping',
+        'FYC' => 'Feiyi Container', 'GAO' => 'Gateway Containers', 'GCX' => 'Global Container Express', 'GJS' => 'Gold Star Line',
+        'GLD' => 'Gold Star Line', 'GRM' => 'Gramcar', 'GVC' => 'Global Village Container', 'HAM' => 'Hamburg Süd',
+        'HAS' => 'Hasco Line', 'HDX' => 'Hyundai Express', 'HJC' => 'Hanjin Shipping', 'HMC' => 'Hyundai Merchant Marine',
+        'HNS' => 'Hanseatic', 'HPC' => 'Hanjin Pacific', 'HXI' => 'Heung-A Shipping', 'IEA' => 'Intermodal Exchange',
+        'IKM' => 'Intermotive', 'IMT' => 'Intermodal Transport', 'INA' => 'Interasia Lines', 'INB' => 'Interasia',
+        'INK' => 'Interkong', 'INL' => 'Intermodal Lines', 'IRS' => 'IRISL Group', 'JFS' => 'Japan Freight',
+        'JTM' => 'JTM Shipping', 'KMT' => 'KMTC Line', 'KOC' => 'K-Line', 'KWL' => 'Kawai Shipping',
+        'LCR' => 'LCR Leasing', 'LGE' => 'LG Electronics', 'LTI' => 'Lojistik', 'LYG' => 'Lianyungang',
+        'MAG' => 'Magical Leasing', 'MAX' => 'Maxicon Container', 'MCR' => 'McGrath', 'MCS' => 'MSC Leasing',
+        'MHC' => 'Marine Transport', 'MIE' => 'Mitsubishi', 'MLJ' => 'Malaysian Line', 'MMA' => 'Maritime Marine',
+        'MNB' => 'Minos Marine', 'MOA' => 'MOL Lines', 'MOE' => 'MOL Enterprise', 'MOT' => 'MOL Transport',
+        'MPT' => 'Marine Pacific', 'MRS' => 'Maras Linhas', 'MVI' => 'Marine Express', 'MZW' => 'Mazu Shipping',
+        'NEW' => 'Newport Container', 'NLL' => 'Neptune Orient Lines', 'NXT' => 'Next Intermodal', 'OTP' => 'Orient Express',
+        'PAL' => 'Pan Asia Line', 'PCI' => 'Pacific Container', 'PID' => 'Pacific International', 'PML' => 'Pan Maritime',
+        'PPD' => 'Pacific Plane', 'PRS' => 'Persian Gulf Line', 'QNL' => 'Qatar Navigation', 'REG' => 'Regional Container',
+        'RFC' => 'Red Ferries', 'RJC' => 'Raj Logistics', 'RWA' => 'Rail World', 'RXC' => 'Roxbox',
+        'SAN' => 'Sanmarine', 'SCZ' => 'Suez Canal', 'SGC' => 'Sea Global', 'SKI' => 'Skintainer',
+        'SMH' => 'Samudera Shipping', 'SNH' => 'Sinokor Merchant Marine', 'SSP' => 'Sea Sky', 'SSS' => 'Sea Sky Shipping',
+        'SUU' => 'Sunmarine', 'SVW' => 'Seven Wings', 'SZL' => 'Sino Cargo', 'TCK' => 'Triton Container',
+        'TDR' => 'Triton Direct', 'TDT' => 'Triton Transport', 'TEG' => 'Textainer Group', 'TGC' => 'Triton Global',
+        'TIG' => 'Tiger Containers', 'TKC' => 'Taiko Containers', 'TLH' => 'Triton Heavy', 'TOL' => 'Trans Ocean',
+        'TRD' => 'Trident Container', 'TRI' => 'Triton Rental', 'TRL' => 'Triton International', 'TRU' => 'Triton Unit',
+        'TTN' => 'Triton Tank', 'TXG' => 'Textainer Express', 'TYM' => 'Toyo Express', 'UAC' => 'United Arab Shipping',
+        'UES' => 'UES International', 'UET' => 'UES Transit', 'UNS' => 'Uniship', 'UNX' => 'United Express',
+        'VSB' => 'Vanguard Shipping', 'VST' => 'Vosta Container', 'WHS' => 'Wan Hai Lines', 'WOS' => 'World Ocean',
+        'WSC' => 'World Shipping', 'XHC' => 'XH Container', 'XIN' => 'Xingang Shipping', 'YMM' => 'Yang Ming',
     ];
 
     /**
@@ -121,10 +123,11 @@ class ContainerExcelImportService
         $sum = 0;
         for ($i = 0; $i < 10; $i++) {
             $ch = $str10[$i] ?? '0';
-            $val = is_numeric($ch) ? (int)$ch : (static::$charMap[$ch] ?? 0);
+            $val = is_numeric($ch) ? (int) $ch : (static::$charMap[$ch] ?? 0);
             $sum += $val * (1 << $i);
         }
         $rem = $sum % 11;
+
         return ($rem === 10) ? 0 : $rem;
     }
 
@@ -140,19 +143,19 @@ class ContainerExcelImportService
         if ($len === 10 && preg_match('/^([A-Z]{4})([0-9]{6})$/', $clean, $matches)) {
             $prefix4 = $matches[1];
             $serial6 = $matches[2];
-            $calcCd = static::calculateCheckDigit($prefix4 . $serial6);
-            $inferred = $prefix4 . $serial6 . $calcCd;
+            $calcCd = static::calculateCheckDigit($prefix4.$serial6);
+            $inferred = $prefix4.$serial6.$calcCd;
             $owner = static::$knownOwners[substr($prefix4, 0, 3)] ?? null;
-            $ownerStr = $owner ? " ({$owner})" : "";
+            $ownerStr = $owner ? " ({$owner})" : '';
 
             return [
-                'is_valid'        => false,
-                'code'            => 'MISSING_CHECK_DIGIT',
-                'reason'          => "نقص رقم التحقق الأخير: المقترح {$inferred}{$ownerStr}",
+                'is_valid' => false,
+                'code' => 'MISSING_CHECK_DIGIT',
+                'reason' => "نقص رقم التحقق الأخير: المقترح {$inferred}{$ownerStr}",
                 'inferred_number' => $inferred,
-                'owner_name'      => $owner,
-                'expected'        => $calcCd,
-                'actual'          => $containerNo,
+                'owner_name' => $owner,
+                'expected' => $calcCd,
+                'actual' => $containerNo,
             ];
         }
 
@@ -165,14 +168,14 @@ class ContainerExcelImportService
             $candidateChars = ['U', 'J', 'Z'];
             $inferredChar = null;
             foreach ($candidateChars as $char) {
-                if (static::calculateCheckDigit($prefix3 . $char . $serial6) === $targetDigit) {
+                if (static::calculateCheckDigit($prefix3.$char.$serial6) === $targetDigit) {
                     $inferredChar = $char;
                     break;
                 }
             }
-            if (!$inferredChar) {
+            if (! $inferredChar) {
                 foreach (range('A', 'Z') as $char) {
-                    if (static::calculateCheckDigit($prefix3 . $char . $serial6) === $targetDigit) {
+                    if (static::calculateCheckDigit($prefix3.$char.$serial6) === $targetDigit) {
                         $inferredChar = $char;
                         break;
                     }
@@ -180,17 +183,18 @@ class ContainerExcelImportService
             }
 
             if ($inferredChar) {
-                $inferredNum = $prefix3 . $inferredChar . $serial6 . $targetDigit;
+                $inferredNum = $prefix3.$inferredChar.$serial6.$targetDigit;
                 $ownerName = static::$knownOwners[$prefix3] ?? null;
-                $ownerStr = $ownerName ? " ({$ownerName})" : "";
+                $ownerStr = $ownerName ? " ({$ownerName})" : '';
+
                 return [
-                    'is_valid'        => false,
-                    'code'            => 'MISSING_4TH_CHAR',
-                    'reason'          => "نقص الحرف الرابع: المقترح {$inferredNum}{$ownerStr}",
+                    'is_valid' => false,
+                    'code' => 'MISSING_4TH_CHAR',
+                    'reason' => "نقص الحرف الرابع: المقترح {$inferredNum}{$ownerStr}",
                     'inferred_number' => $inferredNum,
-                    'owner_name'      => $ownerName,
-                    'expected'        => $targetDigit,
-                    'actual'          => $containerNo,
+                    'owner_name' => $ownerName,
+                    'expected' => $targetDigit,
+                    'actual' => $containerNo,
                 ];
             }
         }
@@ -199,45 +203,45 @@ class ContainerExcelImportService
         if ($len === 9 && preg_match('/^([A-Z]{3})([0-9]{6})$/', $clean, $matches)) {
             $prefix3 = $matches[1];
             $serial6 = $matches[2];
-            $cd = static::calculateCheckDigit($prefix3 . 'U' . $serial6);
-            $inferredNum = $prefix3 . 'U' . $serial6 . $cd;
+            $cd = static::calculateCheckDigit($prefix3.'U'.$serial6);
+            $inferredNum = $prefix3.'U'.$serial6.$cd;
             $ownerName = static::$knownOwners[$prefix3] ?? null;
-            $ownerStr = $ownerName ? " ({$ownerName})" : "";
+            $ownerStr = $ownerName ? " ({$ownerName})" : '';
 
             return [
-                'is_valid'        => false,
-                'code'            => 'MISSING_4TH_CHAR',
-                'reason'          => "نقص الحرف الرابع ورقم التحقق: المقترح {$inferredNum}{$ownerStr}",
+                'is_valid' => false,
+                'code' => 'MISSING_4TH_CHAR',
+                'reason' => "نقص الحرف الرابع ورقم التحقق: المقترح {$inferredNum}{$ownerStr}",
                 'inferred_number' => $inferredNum,
-                'owner_name'      => $ownerName,
-                'expected'        => $cd,
-                'actual'          => $containerNo,
+                'owner_name' => $ownerName,
+                'expected' => $cd,
+                'actual' => $containerNo,
             ];
         }
 
         // ─── الحالة 4: الطول غير مطابق ───
         if ($len !== 11) {
             return [
-                'is_valid'        => false,
-                'code'            => 'INVALID_LENGTH',
-                'reason'          => "طول رقم الحاوية (يتطلب 11 رمزاً، والمدخل: {$len} رمز)",
+                'is_valid' => false,
+                'code' => 'INVALID_LENGTH',
+                'reason' => "طول رقم الحاوية (يتطلب 11 رمزاً، والمدخل: {$len} رمز)",
                 'inferred_number' => null,
-                'owner_name'      => null,
-                'expected'        => null,
-                'actual'          => $containerNo,
+                'owner_name' => null,
+                'expected' => null,
+                'actual' => $containerNo,
             ];
         }
 
         // ─── الحالة 5: التنسيق غير مطابق ───
-        if (!preg_match('/^[A-Z]{4}[0-9]{7}$/', $clean)) {
+        if (! preg_match('/^[A-Z]{4}[0-9]{7}$/', $clean)) {
             return [
-                'is_valid'        => false,
-                'code'            => 'INVALID_FORMAT',
-                'reason'          => "تنسيق رقم الحاوية (يتطلب 4 أحرف و7 أرقام)",
+                'is_valid' => false,
+                'code' => 'INVALID_FORMAT',
+                'reason' => 'تنسيق رقم الحاوية (يتطلب 4 أحرف و7 أرقام)',
                 'inferred_number' => null,
-                'owner_name'      => null,
-                'expected'        => null,
-                'actual'          => $containerNo,
+                'owner_name' => null,
+                'expected' => null,
+                'actual' => $containerNo,
             ];
         }
 
@@ -248,23 +252,23 @@ class ContainerExcelImportService
         $actualCheckDigit = (int) $clean[10];
 
         $standardCat = in_array($cat4, ['U', 'J', 'Z']) ? $cat4 : 'U';
-        $normalizedPrefix4 = $p3 . $standardCat;
-        $calcCheckDigit = static::calculateCheckDigit($normalizedPrefix4 . $serial6);
+        $normalizedPrefix4 = $p3.$standardCat;
+        $calcCheckDigit = static::calculateCheckDigit($normalizedPrefix4.$serial6);
 
         // إذا كان الحرف الرابع غير معياري (مثلاً M في INAM)
-        if (!in_array($cat4, ['U', 'J', 'Z'])) {
-            $inferredNum = $p3 . 'U' . $serial6 . $calcCheckDigit;
+        if (! in_array($cat4, ['U', 'J', 'Z'])) {
+            $inferredNum = $p3.'U'.$serial6.$calcCheckDigit;
             $ownerName = static::$knownOwners[$p3] ?? null;
-            $ownerStr = $ownerName ? " ({$ownerName})" : "";
+            $ownerStr = $ownerName ? " ({$ownerName})" : '';
 
             return [
-                'is_valid'        => false,
-                'code'            => 'INVALID_CATEGORY_CHAR',
-                'reason'          => "الحرف الرابع غير معياري (المدون: {$cat4}) - المقترح: {$inferredNum}{$ownerStr}",
+                'is_valid' => false,
+                'code' => 'INVALID_CATEGORY_CHAR',
+                'reason' => "الحرف الرابع غير معياري (المدون: {$cat4}) - المقترح: {$inferredNum}{$ownerStr}",
                 'inferred_number' => $inferredNum,
-                'owner_name'      => $ownerName,
-                'expected'        => $calcCheckDigit,
-                'actual'          => $actualCheckDigit,
+                'owner_name' => $ownerName,
+                'expected' => $calcCheckDigit,
+                'actual' => $actualCheckDigit,
             ];
         }
 
@@ -273,25 +277,28 @@ class ContainerExcelImportService
             $ownerName = static::$knownOwners[$p3] ?? null;
 
             // إذا كانت البادئة غير مسجلة في دليل المالكين، نبحث عن أقرب بادئة مسجلة تطابق رقم التحقق
-            if (!$ownerName) {
+            if (! $ownerName) {
                 for ($pos = 0; $pos < 3; $pos++) {
                     $origCh = $p3[$pos];
                     foreach (range('A', 'Z') as $subCh) {
-                        if ($subCh === $origCh) continue;
+                        if ($subCh === $origCh) {
+                            continue;
+                        }
                         $testP3 = $p3;
                         $testP3[$pos] = $subCh;
                         if (isset(static::$knownOwners[$testP3])) {
-                            if (static::calculateCheckDigit($testP3 . 'U' . $serial6) === $actualCheckDigit) {
-                                $bestInferred = $testP3 . 'U' . $serial6 . $actualCheckDigit;
+                            if (static::calculateCheckDigit($testP3.'U'.$serial6) === $actualCheckDigit) {
+                                $bestInferred = $testP3.'U'.$serial6.$actualCheckDigit;
                                 $bestOwner = static::$knownOwners[$testP3];
+
                                 return [
-                                    'is_valid'        => false,
-                                    'code'            => 'CHECKSUM_MISMATCH',
-                                    'reason'          => "رقم التحقق الأخير (المتوقع: {$calcCheckDigit}، المدون: {$actualCheckDigit}) - المقترح: {$bestInferred} ({$bestOwner})",
+                                    'is_valid' => false,
+                                    'code' => 'CHECKSUM_MISMATCH',
+                                    'reason' => "رقم التحقق الأخير (المتوقع: {$calcCheckDigit}، المدون: {$actualCheckDigit}) - المقترح: {$bestInferred} ({$bestOwner})",
                                     'inferred_number' => $bestInferred,
-                                    'owner_name'      => $bestOwner,
-                                    'expected'        => $calcCheckDigit,
-                                    'actual'          => $actualCheckDigit,
+                                    'owner_name' => $bestOwner,
+                                    'expected' => $calcCheckDigit,
+                                    'actual' => $actualCheckDigit,
                                 ];
                             }
                         }
@@ -300,28 +307,28 @@ class ContainerExcelImportService
             }
 
             // إذا كان المالك مسجلاً أو لم نجد بديلاً، فالرقم الصحيح هو نفس البادئة مع رقم التحقق المحسوب
-            $correctNumber = $p3 . $standardCat . $serial6 . $calcCheckDigit;
-            $ownerStr = $ownerName ? " ({$ownerName})" : "";
+            $correctNumber = $p3.$standardCat.$serial6.$calcCheckDigit;
+            $ownerStr = $ownerName ? " ({$ownerName})" : '';
 
             return [
-                'is_valid'        => false,
-                'code'            => 'CHECKSUM_MISMATCH',
-                'reason'          => "رقم التحقق الأخير (المتوقع: {$calcCheckDigit}، المدون: {$actualCheckDigit}) - المقترح: {$correctNumber}{$ownerStr}",
+                'is_valid' => false,
+                'code' => 'CHECKSUM_MISMATCH',
+                'reason' => "رقم التحقق الأخير (المتوقع: {$calcCheckDigit}، المدون: {$actualCheckDigit}) - المقترح: {$correctNumber}{$ownerStr}",
                 'inferred_number' => $correctNumber,
-                'owner_name'      => $ownerName,
-                'expected'        => $calcCheckDigit,
-                'actual'          => $actualCheckDigit,
+                'owner_name' => $ownerName,
+                'expected' => $calcCheckDigit,
+                'actual' => $actualCheckDigit,
             ];
         }
 
         return [
-            'is_valid'        => true,
-            'code'            => 'VALID',
-            'reason'          => null,
+            'is_valid' => true,
+            'code' => 'VALID',
+            'reason' => null,
             'inferred_number' => $clean,
-            'owner_name'      => static::$knownOwners[$p3] ?? null,
-            'expected'        => $calcCheckDigit,
-            'actual'          => $actualCheckDigit,
+            'owner_name' => static::$knownOwners[$p3] ?? null,
+            'expected' => $calcCheckDigit,
+            'actual' => $actualCheckDigit,
         ];
     }
 
@@ -411,7 +418,7 @@ class ContainerExcelImportService
             $pNorm = static::normalizeArabic($p->name_ar);
             $pWithoutMina = trim(preg_replace('/^ميناء\s+/u', '', $pNorm));
             $cleanWithoutMina = trim(preg_replace('/^ميناء\s+/u', '', $clean));
-            if (!empty($pWithoutMina) && ($pWithoutMina === $cleanWithoutMina || str_contains($clean, $pWithoutMina) || str_contains($pNorm, $cleanWithoutMina))) {
+            if (! empty($pWithoutMina) && ($pWithoutMina === $cleanWithoutMina || str_contains($clean, $pWithoutMina) || str_contains($pNorm, $cleanWithoutMina))) {
                 return $p;
             }
         }
@@ -435,7 +442,7 @@ class ContainerExcelImportService
         @set_time_limit(600);
         @ini_set('memory_limit', '1024M');
 
-        if (!file_exists($filePath)) {
+        if (! file_exists($filePath)) {
             throw new \Exception("الملف غير موجود في المسار المحدد: {$filePath}");
         }
 
@@ -455,10 +462,12 @@ class ContainerExcelImportService
 
         foreach ($sheetNames as $sheetName) {
             $sheet = $spreadsheet->getSheetByName($sheetName);
-            if (!$sheet) continue;
+            if (! $sheet) {
+                continue;
+            }
 
             $entity = static::resolveEntity($sheetName);
-            if (!$entity) {
+            if (! $entity) {
                 // If no matching entity found, fallback to private sector or first entity
                 $entity = ContainerEntity::where('entity_type', 'private')->first() ?? ContainerEntity::first();
             }
@@ -469,20 +478,20 @@ class ContainerExcelImportService
             $headerRow = 1;
             $colMap = [
                 'container_number' => 'B',
-                'size'             => 'C',
-                'ship_name'        => 'D',
-                'goods_type'       => 'E',
-                'consignee'        => 'F',
-                'arrival_date'     => 'G',
-                'berth'            => 'H',
-                'port'             => 'I',
-                'notes'            => 'J',
+                'size' => 'C',
+                'ship_name' => 'D',
+                'goods_type' => 'E',
+                'consignee' => 'F',
+                'arrival_date' => 'G',
+                'berth' => 'H',
+                'port' => 'I',
+                'notes' => 'J',
             ];
 
             $foundHeader = false;
             for ($r = 1; $r <= min(5, $highestRow); $r++) {
                 for ($col = 'A'; $col <= 'K'; $col++) {
-                    $val = static::normalizeArabic((string)$sheet->getCell($col . $r)->getValue());
+                    $val = static::normalizeArabic((string) $sheet->getCell($col.$r)->getValue());
                     if (str_contains($val, 'رقم الحاويه') || str_contains($val, 'رقم الحاويه') || str_contains($val, 'container no')) {
                         $headerRow = $r;
                         $foundHeader = true;
@@ -493,8 +502,10 @@ class ContainerExcelImportService
 
             if ($foundHeader) {
                 for ($col = 'A'; $col <= 'K'; $col++) {
-                    $val = static::normalizeArabic((string)$sheet->getCell($col . $headerRow)->getValue());
-                    if (empty($val)) continue;
+                    $val = static::normalizeArabic((string) $sheet->getCell($col.$headerRow)->getValue());
+                    if (empty($val)) {
+                        continue;
+                    }
 
                     if (str_contains($val, 'رقم الحاويه') || str_contains($val, 'رقم') || str_contains($val, 'container')) {
                         $colMap['container_number'] = $col;
@@ -520,30 +531,33 @@ class ContainerExcelImportService
 
             for ($row = $headerRow + 1; $row <= $highestRow; $row++) {
                 $cCol = $colMap['container_number'];
-                $containerNo = strtoupper(trim((string)$sheet->getCell($cCol . $row)->getValue()));
+                $containerNo = strtoupper(trim((string) $sheet->getCell($cCol.$row)->getValue()));
                 if (empty($containerNo) || strlen($containerNo) < 4 || in_array($containerNo, ['رقم الحاوية', 'رقم الحاويه', 'CONTAINER NO', 'NO'])) {
                     $skippedRows++;
+
                     continue;
                 }
 
-                $size = trim((string)$sheet->getCell(($colMap['size'] ?? 'C') . $row)->getValue());
-                $shipName = trim((string)$sheet->getCell(($colMap['ship_name'] ?? 'D') . $row)->getValue());
-                $goodsType = trim((string)$sheet->getCell(($colMap['goods_type'] ?? 'E') . $row)->getValue());
-                $consignee = trim((string)$sheet->getCell(($colMap['consignee'] ?? 'F') . $row)->getValue());
-                $rawDate = $sheet->getCell(($colMap['arrival_date'] ?? 'G') . $row)->getValue();
-                $berth = trim((string)$sheet->getCell(($colMap['berth'] ?? 'H') . $row)->getValue());
-                $portStr = isset($colMap['port']) ? trim((string)$sheet->getCell($colMap['port'] . $row)->getValue()) : '';
-                $notes = isset($colMap['notes']) ? trim((string)$sheet->getCell($colMap['notes'] . $row)->getValue()) : '';
+                $size = trim((string) $sheet->getCell(($colMap['size'] ?? 'C').$row)->getValue());
+                $shipName = trim((string) $sheet->getCell(($colMap['ship_name'] ?? 'D').$row)->getValue());
+                $goodsType = trim((string) $sheet->getCell(($colMap['goods_type'] ?? 'E').$row)->getValue());
+                $consignee = trim((string) $sheet->getCell(($colMap['consignee'] ?? 'F').$row)->getValue());
+                $rawDate = $sheet->getCell(($colMap['arrival_date'] ?? 'G').$row)->getValue();
+                $berth = trim((string) $sheet->getCell(($colMap['berth'] ?? 'H').$row)->getValue());
+                $portStr = isset($colMap['port']) ? trim((string) $sheet->getCell($colMap['port'].$row)->getValue()) : '';
+                $notes = isset($colMap['notes']) ? trim((string) $sheet->getCell($colMap['notes'].$row)->getValue()) : '';
 
                 // Resolve port
                 $port = static::resolvePort($portStr, $defaultPortId);
-                if (!$port) continue;
+                if (! $port) {
+                    continue;
+                }
 
                 // 1. تدقيق رقم الحاوية وفق المواصفة القياسية الدولية ISO 6346
                 $isoCheck = static::validateIsoContainerNumber($containerNo);
-                if (!$isoCheck['is_valid']) {
+                if (! $isoCheck['is_valid']) {
                     $warnIso = "[تنبيه رقابي: {$isoCheck['reason']}]";
-                    $notes = !empty($notes) ? ($notes . ' | ' . $warnIso) : $warnIso;
+                    $notes = ! empty($notes) ? ($notes.' | '.$warnIso) : $warnIso;
                 }
 
                 // 2. تدقيق تاريخ وسنة الوصول
@@ -559,7 +573,7 @@ class ContainerExcelImportService
                     } catch (\Throwable $e) {
                         $arrivalYear = '2015';
                     }
-                } elseif (is_string($rawDate) && !empty(trim($rawDate))) {
+                } elseif (is_string($rawDate) && ! empty(trim($rawDate))) {
                     $rawDateTrim = trim($rawDate);
                     if (str_contains($rawDateTrim, 'متعدد') || str_contains($rawDateTrim, 'تواريخ')) {
                         $arrivalYear = 'تواريخ متعددة';
@@ -572,7 +586,7 @@ class ContainerExcelImportService
                         $cleanDateStr = str_replace(['/', '.'], '-', $rawDateTrim);
                         if ($time = strtotime($cleanDateStr)) {
                             $arrivalDate = date('Y-m-d', $time);
-                            if (empty($arrivalYear) || $arrivalYear === (string)date('Y')) {
+                            if (empty($arrivalYear) || $arrivalYear === (string) date('Y')) {
                                 $arrivalYear = date('Y', $time);
                             }
                         }
@@ -580,34 +594,34 @@ class ContainerExcelImportService
                 } else {
                     $isMissingDate = true;
                     $arrivalYear = '2015';
-                    $warnMissingDate = "[تنبيه رقابي: تاريخ وسنة الوصول غير مدون في الشيت ومدرج افتراضياً ضمن 2015 فما دون]";
-                    $notes = !empty($notes) ? ($notes . ' | ' . $warnMissingDate) : $warnMissingDate;
+                    $warnMissingDate = '[تنبيه رقابي: تاريخ وسنة الوصول غير مدون في الشيت ومدرج افتراضياً ضمن 2015 فما دون]';
+                    $notes = ! empty($notes) ? ($notes.' | '.$warnMissingDate) : $warnMissingDate;
                 }
 
                 $itemData = [
-                    'port_id'             => $port->id,
+                    'port_id' => $port->id,
                     'container_entity_id' => $entity->id,
-                    'fiscal_year_id'      => $fiscalYearId,
-                    'month_id'            => $monthId,
-                    'container_type'      => $containerType,
-                    'container_number'    => $containerNo,
-                    'size'                => $size ?: null,
-                    'ship_name'           => $shipName ?: null,
-                    'goods_type'          => $goodsType ?: null,
-                    'consignee'           => $consignee ?: null,
-                    'arrival_date'        => $arrivalDate,
-                    'arrival_year'        => $arrivalYear,
-                    'berth'               => $berth ?: null,
-                    'notes'               => !empty($notes) ? $notes : null,
-                    'status'              => 'in_port',
-                    'created_by'          => $userId,
-                    'updated_by'          => $userId,
-                    '_raw_data'           => [
-                        'entity_name'     => $entity->name_ar,
-                        'port_name'       => $port->name_ar,
-                        'iso_check'       => $isoCheck,
+                    'fiscal_year_id' => $fiscalYearId,
+                    'month_id' => $monthId,
+                    'container_type' => $containerType,
+                    'container_number' => $containerNo,
+                    'size' => $size ?: null,
+                    'ship_name' => $shipName ?: null,
+                    'goods_type' => $goodsType ?: null,
+                    'consignee' => $consignee ?: null,
+                    'arrival_date' => $arrivalDate,
+                    'arrival_year' => $arrivalYear,
+                    'berth' => $berth ?: null,
+                    'notes' => ! empty($notes) ? $notes : null,
+                    'status' => 'in_port',
+                    'created_by' => $userId,
+                    'updated_by' => $userId,
+                    '_raw_data' => [
+                        'entity_name' => $entity->name_ar,
+                        'port_name' => $port->name_ar,
+                        'iso_check' => $isoCheck,
                         'is_missing_date' => $isMissingDate,
-                        'original_notes'  => isset($colMap['notes']) ? trim((string)$sheet->getCell($colMap['notes'] . $row)->getValue()) : '',
+                        'original_notes' => isset($colMap['notes']) ? trim((string) $sheet->getCell($colMap['notes'].$row)->getValue()) : '',
                     ],
                 ];
 
@@ -636,19 +650,19 @@ class ContainerExcelImportService
         }
 
         $stats = [
-            'total_imported'          => 0,
-            'new_containers'          => 0,
-            'discharged_count'        => 0,
-            'missing_date_anomalies'  => [],
-            'invalid_iso_anomalies'   => [],
-            'prior_year_anomalies'    => [],
+            'total_imported' => 0,
+            'new_containers' => 0,
+            'discharged_count' => 0,
+            'missing_date_anomalies' => [],
+            'invalid_iso_anomalies' => [],
+            'prior_year_anomalies' => [],
             'date_mismatch_anomalies' => [],
-            'port_change_anomalies'   => [],
-            'all_anomalies'           => [],
-            'all_processed_rows'      => [],
-            'audit_report_url'        => null,
-            'audit_report_filename'   => null,
-            'ports_processed'         => [],
+            'port_change_anomalies' => [],
+            'all_anomalies' => [],
+            'all_processed_rows' => [],
+            'audit_report_url' => null,
+            'audit_report_filename' => null,
+            'ports_processed' => [],
         ];
 
         DB::transaction(function () use (
@@ -682,17 +696,17 @@ class ContainerExcelImportService
                     }
                     $record->update([
                         'report_date' => $reportDate,
-                        'updated_by'  => $userId,
+                        'updated_by' => $userId,
                     ]);
                 } else {
                     $record = ContainerStatusRecord::create([
-                        'port_id'        => $portId,
+                        'port_id' => $portId,
                         'fiscal_year_id' => $fiscalYearId,
-                        'month_id'       => $monthId,
+                        'month_id' => $monthId,
                         'container_type' => $containerType,
-                        'report_date'    => $reportDate,
-                        'created_by'     => $userId,
-                        'total_count'    => 0,
+                        'report_date' => $reportDate,
+                        'created_by' => $userId,
+                        'total_count' => 0,
                     ]);
                 }
 
@@ -716,14 +730,14 @@ class ContainerExcelImportService
                         $currentNumbersInFile = array_keys($allImportedContainers[$portId] ?? []);
 
                         foreach ($prevItems as $prevItem) {
-                            if (!in_array($prevItem->container_number, $currentNumbersInFile)) {
+                            if (! in_array($prevItem->container_number, $currentNumbersInFile)) {
                                 // Container was present in previous month but is NO LONGER in current file -> Discharged!
                                 $prevItem->update([
-                                    'status'                   => 'discharged',
+                                    'status' => 'discharged',
                                     'discharge_fiscal_year_id' => $fiscalYearId,
-                                    'discharge_month_id'       => $monthId,
-                                    'discharge_date'           => $reportDate,
-                                    'updated_by'               => $userId,
+                                    'discharge_month_id' => $monthId,
+                                    'discharge_date' => $reportDate,
+                                    'updated_by' => $userId,
                                 ]);
                                 $dischargedForThisPort++;
                                 $stats['discharged_count']++;
@@ -749,67 +763,69 @@ class ContainerExcelImportService
                     $rowSeverity = 'normal';
 
                     // A. Collect ISO Anomaly if invalid
-                    if (!$isoCheck['is_valid']) {
+                    if (! $isoCheck['is_valid']) {
                         $stats['invalid_iso_anomalies'][] = [
-                            'port_name'        => $portName,
+                            'port_name' => $portName,
                             'container_number' => $cNo,
-                            'entity_name'      => $entityName,
-                            'reason'           => $isoCheck['reason'],
+                            'entity_name' => $entityName,
+                            'reason' => $isoCheck['reason'],
                         ];
                         $containerRemarks[] = $isoCheck['reason'];
                         $rowSeverity = 'danger';
 
                         $stats['all_anomalies'][] = [
                             'container_number' => $cNo,
-                            'iso_status'       => 'غير مطابق (' . $isoCheck['code'] . ')',
-                            'port_name'        => $portName,
-                            'prev_port_name'   => '-',
-                            'entity_name'      => $entityName,
-                            'category'         => 'مخالفة رقم الحاوية القياسي (ISO 6346)',
-                            'severity'         => 'danger',
-                            'details'          => $isoCheck['reason'],
-                            'action_taken'     => 'تم تسجيل الحاوية مع تثبيت الملاحظة الرقابية',
-                            'arrival_year'     => $arrYear,
-                            'arrival_date'     => $currDate ?: 'غير مدون',
-                            'size'             => $itm['size'] ?? '-',
-                            'ship_name'        => $itm['ship_name'] ?? '-',
-                            'goods_type'       => $itm['goods_type'] ?? '-',
-                            'consignee'        => $itm['consignee'] ?? '-',
-                            'berth'            => $itm['berth'] ?? '-',
-                            'original_notes'   => $origNotes,
-                            'notes'            => $itm['notes'] ?? '',
+                            'iso_status' => 'غير مطابق ('.$isoCheck['code'].')',
+                            'port_name' => $portName,
+                            'prev_port_name' => '-',
+                            'entity_name' => $entityName,
+                            'category' => 'مخالفة رقم الحاوية القياسي (ISO 6346)',
+                            'severity' => 'danger',
+                            'details' => $isoCheck['reason'],
+                            'action_taken' => 'تم تسجيل الحاوية مع تثبيت الملاحظة الرقابية',
+                            'arrival_year' => $arrYear,
+                            'arrival_date' => $currDate ?: 'غير مدون',
+                            'size' => $itm['size'] ?? '-',
+                            'ship_name' => $itm['ship_name'] ?? '-',
+                            'goods_type' => $itm['goods_type'] ?? '-',
+                            'consignee' => $itm['consignee'] ?? '-',
+                            'berth' => $itm['berth'] ?? '-',
+                            'original_notes' => $origNotes,
+                            'notes' => $itm['notes'] ?? '',
                         ];
                     }
 
                     // B. Collect Missing Date Anomaly
                     if ($isMissingDate) {
                         $stats['missing_date_anomalies'][] = [
-                            'port_name'        => $portName,
+                            'port_name' => $portName,
                             'container_number' => $cNo,
-                            'entity_name'      => $entityName,
+                            'entity_name' => $entityName,
                         ];
-                        $containerRemarks[] = "تاريخ الوصول غير مدون (أدرجت 2015 فما دون)";
-                        if ($rowSeverity !== 'danger') $rowSeverity = 'warning';
+                        $containerRemarks[] = 'تاريخ الوصول غير مدون (أدرجت 2015 فما دون)';
+                        if ($rowSeverity !== 'danger') {
+                            $rowSeverity = 'warning';
+                        }
 
                         $stats['all_anomalies'][] = [
                             'container_number' => $cNo,
-                            'iso_status'       => $isoCheck['is_valid'] ? 'مطابق' : 'غير مطابق',
-                            'port_name'        => $portName,
-                            'prev_port_name'   => '-',
-                            'entity_name'      => $entityName,
-                            'category'         => 'تاريخ وصول غير مدون (مفقود)',
-                            'severity'         => 'warning',
-                            'details'          => 'حاوية لا تحتوي على تاريخ أو سنة وصول في شيت الإكسل المرفوع',
-                            'action_taken'     => 'تم إدراجها افتراضياً ضمن فئة 2015 فما دون',
-                            'arrival_year'     => '2015 (افتراضي)',
-                            'arrival_date'     => 'غير مدون',
-                            'size'             => $itm['size'] ?? '-',
-                            'ship_name'        => $itm['ship_name'] ?? '-',
-                            'goods_type'       => $itm['goods_type'] ?? '-',
-                            'consignee'        => $itm['consignee'] ?? '-',
-                            'berth'            => $itm['berth'] ?? '-',
-                            'original_notes'   => $origNotes,
-                            'notes'            => $itm['notes'] ?? '',
+                            'iso_status' => $isoCheck['is_valid'] ? 'مطابق' : 'غير مطابق',
+                            'port_name' => $portName,
+                            'prev_port_name' => '-',
+                            'entity_name' => $entityName,
+                            'category' => 'تاريخ وصول غير مدون (مفقود)',
+                            'severity' => 'warning',
+                            'details' => 'حاوية لا تحتوي على تاريخ أو سنة وصول في شيت الإكسل المرفوع',
+                            'action_taken' => 'تم إدراجها افتراضياً ضمن فئة 2015 فما دون',
+                            'arrival_year' => '2015 (افتراضي)',
+                            'arrival_date' => 'غير مدون',
+                            'size' => $itm['size'] ?? '-',
+                            'ship_name' => $itm['ship_name'] ?? '-',
+                            'goods_type' => $itm['goods_type'] ?? '-',
+                            'consignee' => $itm['consignee'] ?? '-',
+                            'berth' => $itm['berth'] ?? '-',
+                            'original_notes' => $origNotes,
+                            'notes' => $itm['notes'] ?? '',
                         ];
                     }
 
@@ -817,53 +833,55 @@ class ContainerExcelImportService
                     $prevContainerAnyPort = ContainerItem::where('container_number', $cNo)
                         ->where(function ($q) use ($fiscalYearId, $monthId) {
                             $q->where('fiscal_year_id', '<', $fiscalYearId)
-                              ->orWhere(function ($q2) use ($fiscalYearId, $monthId) {
-                                  $q2->where('fiscal_year_id', $fiscalYearId)
-                                     ->where('month_id', '<', $monthId);
-                              });
+                                ->orWhere(function ($q2) use ($fiscalYearId, $monthId) {
+                                    $q2->where('fiscal_year_id', $fiscalYearId)
+                                        ->where('month_id', '<', $monthId);
+                                });
                         })
                         ->latest('id')
                         ->first();
 
                     $prevPortNameForThis = '-';
                     // C. Check for Port Change Anomaly
-                    if ($prevContainerAnyPort && (int)$prevContainerAnyPort->port_id !== (int)$portId) {
+                    if ($prevContainerAnyPort && (int) $prevContainerAnyPort->port_id !== (int) $portId) {
                         $prevPortObj = Port::find($prevContainerAnyPort->port_id);
                         $prevPortName = $prevPortObj?->name_ar ?? 'ميناء سابق';
                         $prevPortNameForThis = $prevPortName;
 
                         $stats['port_change_anomalies'][] = [
-                            'port_name'        => $portName,
-                            'prev_port_name'   => $prevPortName,
-                            'curr_port_name'   => $portName,
+                            'port_name' => $portName,
+                            'prev_port_name' => $prevPortName,
+                            'curr_port_name' => $portName,
                             'container_number' => $cNo,
-                            'entity_name'      => $entityName,
+                            'entity_name' => $entityName,
                         ];
                         $warnPort = "[تنبيه رقابي: تغيير الميناء عن السجل السابق (السابق: {$prevPortName} ⟵ الحالي: {$portName})]";
-                        $itm['notes'] = !empty($itm['notes']) ? ($itm['notes'] . ' | ' . $warnPort) : $warnPort;
+                        $itm['notes'] = ! empty($itm['notes']) ? ($itm['notes'].' | '.$warnPort) : $warnPort;
 
                         $containerRemarks[] = "تغيير الميناء (السابق: {$prevPortName} ⟵ الحالي: {$portName})";
-                        if (!in_array($rowSeverity, ['danger', 'warning'])) $rowSeverity = 'info';
+                        if (! in_array($rowSeverity, ['danger', 'warning'])) {
+                            $rowSeverity = 'info';
+                        }
 
                         $stats['all_anomalies'][] = [
                             'container_number' => $cNo,
-                            'iso_status'       => $isoCheck['is_valid'] ? 'مطابق' : 'غير مطابق',
-                            'port_name'        => $portName,
-                            'prev_port_name'   => $prevPortName,
-                            'entity_name'      => $entityName,
-                            'category'         => 'نقل / تغيير الميناء',
-                            'severity'         => 'info',
-                            'details'          => "تم تغيير الميناء المسجل للحاوية من ({$prevPortName}) إلى ({$portName})",
-                            'action_taken'     => 'تم تحديث الميناء وربط الحاوية بالميناء الجديد',
-                            'arrival_year'     => $arrYear,
-                            'arrival_date'     => $currDate ?: 'غير مدون',
-                            'size'             => $itm['size'] ?? '-',
-                            'ship_name'        => $itm['ship_name'] ?? '-',
-                            'goods_type'       => $itm['goods_type'] ?? '-',
-                            'consignee'        => $itm['consignee'] ?? '-',
-                            'berth'            => $itm['berth'] ?? '-',
-                            'original_notes'   => $origNotes,
-                            'notes'            => $itm['notes'] ?? '',
+                            'iso_status' => $isoCheck['is_valid'] ? 'مطابق' : 'غير مطابق',
+                            'port_name' => $portName,
+                            'prev_port_name' => $prevPortName,
+                            'entity_name' => $entityName,
+                            'category' => 'نقل / تغيير الميناء',
+                            'severity' => 'info',
+                            'details' => "تم تغيير الميناء المسجل للحاوية من ({$prevPortName}) إلى ({$portName})",
+                            'action_taken' => 'تم تحديث الميناء وربط الحاوية بالميناء الجديد',
+                            'arrival_year' => $arrYear,
+                            'arrival_date' => $currDate ?: 'غير مدون',
+                            'size' => $itm['size'] ?? '-',
+                            'ship_name' => $itm['ship_name'] ?? '-',
+                            'goods_type' => $itm['goods_type'] ?? '-',
+                            'consignee' => $itm['consignee'] ?? '-',
+                            'berth' => $itm['berth'] ?? '-',
+                            'original_notes' => $origNotes,
+                            'notes' => $itm['notes'] ?? '',
                         ];
                     }
 
@@ -878,11 +896,11 @@ class ContainerExcelImportService
                         $prevDateLabel = '';
                         $currDateLabel = '';
 
-                        if (!empty($currDate) && !empty($prevDate) && $currDate !== $prevDate) {
+                        if (! empty($currDate) && ! empty($prevDate) && $currDate !== $prevDate) {
                             $isDateMismatch = true;
                             $prevDateLabel = date('d/m/Y', strtotime($prevDate));
                             $currDateLabel = date('d/m/Y', strtotime($currDate));
-                        } elseif (!empty($arrYear) && !empty($prevYear) && $arrYear !== $prevYear && $prevYear !== '2015' && $arrYear !== '2015') {
+                        } elseif (! empty($arrYear) && ! empty($prevYear) && $arrYear !== $prevYear && $prevYear !== '2015' && $arrYear !== '2015') {
                             $isDateMismatch = true;
                             $prevDateLabel = $prevYear;
                             $currDateLabel = $arrYear;
@@ -890,101 +908,105 @@ class ContainerExcelImportService
 
                         if ($isDateMismatch) {
                             $stats['date_mismatch_anomalies'][] = [
-                                'port_name'        => $portName,
+                                'port_name' => $portName,
                                 'container_number' => $cNo,
-                                'prev_date'        => (string)$prevDateLabel,
-                                'curr_date'        => (string)$currDateLabel,
-                                'entity_name'      => $entityName,
+                                'prev_date' => (string) $prevDateLabel,
+                                'curr_date' => (string) $currDateLabel,
+                                'entity_name' => $entityName,
                             ];
                             $warnText = "[تنبيه رقابي: اختلاف تاريخ الوصول عن السجل السابق (السابق: {$prevDateLabel}، الحالي: {$currDateLabel})]";
-                            $itm['notes'] = !empty($itm['notes']) ? ($itm['notes'] . ' | ' . $warnText) : $warnText;
+                            $itm['notes'] = ! empty($itm['notes']) ? ($itm['notes'].' | '.$warnText) : $warnText;
 
                             $containerRemarks[] = "اختلاف تاريخ الوصول (السابق: {$prevDateLabel} ⟵ الحالي: {$currDateLabel})";
-                            if ($rowSeverity !== 'danger') $rowSeverity = 'warning';
+                            if ($rowSeverity !== 'danger') {
+                                $rowSeverity = 'warning';
+                            }
 
                             $stats['all_anomalies'][] = [
                                 'container_number' => $cNo,
-                                'iso_status'       => $isoCheck['is_valid'] ? 'مطابق' : 'غير مطابق',
-                                'port_name'        => $portName,
-                                'prev_port_name'   => '-',
-                                'entity_name'      => $entityName,
-                                'category'         => 'اختلاف تاريخ الوصول عن السجل السابق',
-                                'severity'         => 'warning',
-                                'details'          => "تاريخ/سنة الوصول الحالية ({$currDateLabel}) تختلف عما كان مسجلاً سابقاً ({$prevDateLabel})",
-                                'action_taken'     => 'تم اعتماد التاريخ الجديد مع وسم الملاحظة الرقابية',
-                                'arrival_year'     => $arrYear,
-                                'arrival_date'     => $currDate ?: 'غير مدون',
-                                'size'             => $itm['size'] ?? '-',
-                                'ship_name'        => $itm['ship_name'] ?? '-',
-                                'goods_type'       => $itm['goods_type'] ?? '-',
-                                'consignee'        => $itm['consignee'] ?? '-',
-                                'berth'            => $itm['berth'] ?? '-',
-                                'original_notes'   => $origNotes,
-                                'notes'            => $itm['notes'] ?? '',
+                                'iso_status' => $isoCheck['is_valid'] ? 'مطابق' : 'غير مطابق',
+                                'port_name' => $portName,
+                                'prev_port_name' => '-',
+                                'entity_name' => $entityName,
+                                'category' => 'اختلاف تاريخ الوصول عن السجل السابق',
+                                'severity' => 'warning',
+                                'details' => "تاريخ/سنة الوصول الحالية ({$currDateLabel}) تختلف عما كان مسجلاً سابقاً ({$prevDateLabel})",
+                                'action_taken' => 'تم اعتماد التاريخ الجديد مع وسم الملاحظة الرقابية',
+                                'arrival_year' => $arrYear,
+                                'arrival_date' => $currDate ?: 'غير مدون',
+                                'size' => $itm['size'] ?? '-',
+                                'ship_name' => $itm['ship_name'] ?? '-',
+                                'goods_type' => $itm['goods_type'] ?? '-',
+                                'consignee' => $itm['consignee'] ?? '-',
+                                'berth' => $itm['berth'] ?? '-',
+                                'original_notes' => $origNotes,
+                                'notes' => $itm['notes'] ?? '',
                             ];
                         }
                     }
 
                     // E. Check for Prior-Year Additions Anomaly
-                    if (!empty($prevNumbersList)) {
+                    if (! empty($prevNumbersList)) {
                         $isPriorYear = is_numeric($arrYear) && (int) $arrYear < $currentYearNum;
-                        if ($isPriorYear && !in_array($cNo, $prevNumbersList) && (!$prevContainerAnyPort || (int)$prevContainerAnyPort->port_id === (int)$portId)) {
+                        if ($isPriorYear && ! in_array($cNo, $prevNumbersList) && (! $prevContainerAnyPort || (int) $prevContainerAnyPort->port_id === (int) $portId)) {
                             $stats['prior_year_anomalies'][] = [
-                                'port_name'        => $portName,
+                                'port_name' => $portName,
                                 'container_number' => $cNo,
-                                'arrival_year'     => $arrYear,
-                                'entity_name'      => $entityName,
+                                'arrival_year' => $arrYear,
+                                'entity_name' => $entityName,
                             ];
                             $warnPrior = "[تنبيه رقابي: حاوية بسنة سابقة ({$arrYear}) مضافة حديثاً لم تكن مسجلة في الشهر السابق]";
-                            $itm['notes'] = !empty($itm['notes']) ? ($itm['notes'] . ' | ' . $warnPrior) : $warnPrior;
+                            $itm['notes'] = ! empty($itm['notes']) ? ($itm['notes'].' | '.$warnPrior) : $warnPrior;
 
                             $containerRemarks[] = "حاوية بسنة سابقة ({$arrYear}) مضافة حديثاً";
-                            if ($rowSeverity !== 'danger') $rowSeverity = 'warning';
+                            if ($rowSeverity !== 'danger') {
+                                $rowSeverity = 'warning';
+                            }
 
                             $stats['all_anomalies'][] = [
                                 'container_number' => $cNo,
-                                'iso_status'       => $isoCheck['is_valid'] ? 'مطابق' : 'غير مطابق',
-                                'port_name'        => $portName,
-                                'prev_port_name'   => '-',
-                                'entity_name'      => $entityName,
-                                'category'         => 'إضافة حاوية بسنة سابقة لم تكن مسجلة',
-                                'severity'         => 'warning',
-                                'details'          => "حاوية مضافة حديثاً بسنة سابقة ({$arrYear}) ولم تكن مسجلة في الشهر السابق لهذا الميناء",
-                                'action_taken'     => 'تم إدراجها ضمن سنة وصولها مع توثيق المخالفة الرقابية',
-                                'arrival_year'     => $arrYear,
-                                'arrival_date'     => $currDate ?: 'غير مدون',
-                                'size'             => $itm['size'] ?? '-',
-                                'ship_name'        => $itm['ship_name'] ?? '-',
-                                'goods_type'       => $itm['goods_type'] ?? '-',
-                                'consignee'        => $itm['consignee'] ?? '-',
-                                'berth'            => $itm['berth'] ?? '-',
-                                'original_notes'   => $origNotes,
-                                'notes'            => $itm['notes'] ?? '',
+                                'iso_status' => $isoCheck['is_valid'] ? 'مطابق' : 'غير مطابق',
+                                'port_name' => $portName,
+                                'prev_port_name' => '-',
+                                'entity_name' => $entityName,
+                                'category' => 'إضافة حاوية بسنة سابقة لم تكن مسجلة',
+                                'severity' => 'warning',
+                                'details' => "حاوية مضافة حديثاً بسنة سابقة ({$arrYear}) ولم تكن مسجلة في الشهر السابق لهذا الميناء",
+                                'action_taken' => 'تم إدراجها ضمن سنة وصولها مع توثيق المخالفة الرقابية',
+                                'arrival_year' => $arrYear,
+                                'arrival_date' => $currDate ?: 'غير مدون',
+                                'size' => $itm['size'] ?? '-',
+                                'ship_name' => $itm['ship_name'] ?? '-',
+                                'goods_type' => $itm['goods_type'] ?? '-',
+                                'consignee' => $itm['consignee'] ?? '-',
+                                'berth' => $itm['berth'] ?? '-',
+                                'original_notes' => $origNotes,
+                                'notes' => $itm['notes'] ?? '',
                             ];
                         }
                     }
 
-                    $hasAuditNote = !empty($containerRemarks);
+                    $hasAuditNote = ! empty($containerRemarks);
                     $auditDetailsText = $hasAuditNote ? implode(' | ', $containerRemarks) : 'مطابق (لا توجد ملاحظات)';
 
                     $stats['all_processed_rows'][] = [
                         'container_number' => $cNo,
-                        'suggested_number' => (!$isoCheck['is_valid'] && !empty($isoCheck['inferred_number'])) ? $isoCheck['inferred_number'] : '',
-                        'iso_status'       => $isoCheck['is_valid'] ? 'مطابق' : ('غير مطابق (' . $isoCheck['code'] . ')'),
-                        'port_name'        => $portName,
-                        'prev_port_name'   => $prevPortNameForThis,
-                        'entity_name'      => $entityName,
-                        'size'             => $itm['size'] ?? '-',
-                        'ship_name'        => $itm['ship_name'] ?? '-',
-                        'goods_type'       => $itm['goods_type'] ?? '-',
-                        'consignee'        => $itm['consignee'] ?? '-',
-                        'arrival_date'     => $currDate ?: 'غير مدون',
-                        'arrival_year'     => $arrYear,
-                        'berth'            => $itm['berth'] ?? '-',
-                        'original_notes'   => $origNotes,
-                        'audit_details'    => $auditDetailsText,
-                        'has_anomaly'      => $hasAuditNote,
-                        'severity'         => $rowSeverity,
+                        'suggested_number' => (! $isoCheck['is_valid'] && ! empty($isoCheck['inferred_number'])) ? $isoCheck['inferred_number'] : '',
+                        'iso_status' => $isoCheck['is_valid'] ? 'مطابق' : ('غير مطابق ('.$isoCheck['code'].')'),
+                        'port_name' => $portName,
+                        'prev_port_name' => $prevPortNameForThis,
+                        'entity_name' => $entityName,
+                        'size' => $itm['size'] ?? '-',
+                        'ship_name' => $itm['ship_name'] ?? '-',
+                        'goods_type' => $itm['goods_type'] ?? '-',
+                        'consignee' => $itm['consignee'] ?? '-',
+                        'arrival_date' => $currDate ?: 'غير مدون',
+                        'arrival_year' => $arrYear,
+                        'berth' => $itm['berth'] ?? '-',
+                        'original_notes' => $origNotes,
+                        'audit_details' => $auditDetailsText,
+                        'has_anomaly' => $hasAuditNote,
+                        'severity' => $rowSeverity,
                     ];
 
                     // Remove helper _raw_data before DB insert
@@ -996,12 +1018,12 @@ class ContainerExcelImportService
                 ContainerItem::withTrashed()
                     ->where(function ($q) use ($record, $portId, $fiscalYearId, $monthId, $containerType) {
                         $q->where('container_status_record_id', $record->id)
-                          ->orWhere(function ($q2) use ($portId, $fiscalYearId, $monthId, $containerType) {
-                              $q2->where('port_id', $portId)
-                                 ->where('fiscal_year_id', $fiscalYearId)
-                                 ->where('month_id', $monthId)
-                                 ->where('container_type', $containerType);
-                          });
+                            ->orWhere(function ($q2) use ($portId, $fiscalYearId, $monthId, $containerType) {
+                                $q2->where('port_id', $portId)
+                                    ->where('fiscal_year_id', $fiscalYearId)
+                                    ->where('month_id', $monthId)
+                                    ->where('container_type', $containerType);
+                            });
                     })
                     ->forceDelete();
 
@@ -1018,17 +1040,17 @@ class ContainerExcelImportService
                 ContainerItem::syncRecordDetails($record->id);
 
                 $stats['ports_processed'][$portId] = [
-                    'port_name'        => $portName,
-                    'record_id'        => $record->id,
-                    'imported_count'   => $portImportedCount,
+                    'port_name' => $portName,
+                    'record_id' => $record->id,
+                    'imported_count' => $portImportedCount,
                     'discharged_count' => $dischargedForThisPort,
-                    'final_total'      => $record->fresh()->total_count,
+                    'final_total' => $record->fresh()->total_count,
                 ];
             }
         });
 
         // Always generate Excel Audit Report for full traceability and auditing
-        if (!empty($stats['all_processed_rows'])) {
+        if (! empty($stats['all_processed_rows'])) {
             $auditReport = static::generateAuditExcelReport(
                 allProcessedRows: $stats['all_processed_rows'],
                 allAnomalies: $stats['all_anomalies'],
@@ -1046,21 +1068,21 @@ class ContainerExcelImportService
 
         // Log the import activity with lightweight stats
         $auditStats = [
-            'total_imported'             => $stats['total_imported'],
-            'discharged_count'           => $stats['discharged_count'],
-            'missing_date_count'         => count($stats['missing_date_anomalies']),
-            'invalid_iso_count'          => count($stats['invalid_iso_anomalies']),
+            'total_imported' => $stats['total_imported'],
+            'discharged_count' => $stats['discharged_count'],
+            'missing_date_count' => count($stats['missing_date_anomalies']),
+            'invalid_iso_count' => count($stats['invalid_iso_anomalies']),
             'prior_year_anomalies_count' => count($stats['prior_year_anomalies']),
-            'date_mismatch_count'        => count($stats['date_mismatch_anomalies']),
-            'port_change_count'          => count($stats['port_change_anomalies']),
-            'total_anomalies_count'      => count($stats['all_anomalies']),
-            'audit_report_filename'      => $stats['audit_report_filename'],
-            'ports_processed'            => $stats['ports_processed'],
+            'date_mismatch_count' => count($stats['date_mismatch_anomalies']),
+            'port_change_count' => count($stats['port_change_anomalies']),
+            'total_anomalies_count' => count($stats['all_anomalies']),
+            'audit_report_filename' => $stats['audit_report_filename'],
+            'ports_processed' => $stats['ports_processed'],
         ];
 
         ActivityLogger::log(
             'created',
-            "استيراد ومعالجة ذكية لموقف الحاويات (" . ($containerType === 'dangerous' ? 'الخطرة' : 'المتخلفة') . ") لشهر {$currMonth?->name_ar} {$fiscalYearModel?->year} - إجمالي {$stats['total_imported']} حاوية، تخريج {$stats['discharged_count']} حاوية، ورصد " . count($stats['all_anomalies']) . " ملاحظة رقابية",
+            'استيراد ومعالجة ذكية لموقف الحاويات ('.($containerType === 'dangerous' ? 'الخطرة' : 'المتخلفة').") لشهر {$currMonth?->name_ar} {$fiscalYearModel?->year} - إجمالي {$stats['total_imported']} حاوية، تخريج {$stats['discharged_count']} حاوية، ورصد ".count($stats['all_anomalies']).' ملاحظة رقابية',
             ContainerStatusRecord::class,
             $stats['ports_processed'] ? reset($stats['ports_processed'])['record_id'] : null,
             $auditStats
@@ -1081,14 +1103,14 @@ class ContainerExcelImportService
         string $containerType = 'abandoned'
     ): ?array {
         try {
-            $spreadsheet = new Spreadsheet();
+            $spreadsheet = new Spreadsheet;
 
             $typeLabel = $containerType === 'dangerous' ? 'الخطرة' : 'المتخلفة';
             $monthName = $month?->name_ar ?? 'الشهر الحالي';
             $yearName = $fiscalYear?->year ?? date('Y');
             $totalCount = count($allProcessedRows);
             $totalAnom = count($allAnomalies);
-            $cleanCount = $totalCount - count(array_filter($allProcessedRows, fn($r) => !empty($r['has_anomaly'])));
+            $cleanCount = $totalCount - count(array_filter($allProcessedRows, fn ($r) => ! empty($r['has_anomaly'])));
 
             $headers = [
                 'A' => 'ت',
@@ -1148,7 +1170,7 @@ class ContainerExcelImportService
             $sheet1->getRowDimension(3)->setRowHeight(26);
 
             $sheet1->mergeCells('A4:N4');
-            $metaText = "تاريخ التصدير: " . date('d/m/Y H:i') . " | إجمالي الحاويات المرفوعة: " . number_format($totalCount) . " | الحاويات المطابقة: " . number_format($cleanCount) . " | الحاويات ذات الملاحظات الرقابية: " . number_format($totalAnom);
+            $metaText = 'تاريخ التصدير: '.date('d/m/Y H:i').' | إجمالي الحاويات المرفوعة: '.number_format($totalCount).' | الحاويات المطابقة: '.number_format($cleanCount).' | الحاويات ذات الملاحظات الرقابية: '.number_format($totalAnom);
             $sheet1->setCellValue('A4', $metaText);
             $sheet1->getStyle('A4')->getFont()->setBold(true)->setSize(10)->getColor()->setARGB('FF334155');
             $sheet1->getStyle('A4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFF1F5F9');
@@ -1157,7 +1179,7 @@ class ContainerExcelImportService
 
             // Table Headers
             foreach ($headers as $col => $title) {
-                $cell = $col . '6';
+                $cell = $col.'6';
                 $sheet1->setCellValue($cell, $title);
                 $sheet1->getStyle($cell)->getFont()->setBold(true)->setSize(11)->getColor()->setARGB('FFFFFFFF');
                 $sheet1->getStyle($cell)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF334155');
@@ -1204,20 +1226,20 @@ class ContainerExcelImportService
                 // Highlight only rows with anomalies
                 $rIdx = 7;
                 foreach ($allProcessedRows as $row) {
-                    if (!empty($row['has_anomaly'])) {
+                    if (! empty($row['has_anomaly'])) {
                         $rowBg = match ($row['severity'] ?? 'warning') {
-                            'danger'  => 'FFFFF1F2',
+                            'danger' => 'FFFFF1F2',
                             'warning' => 'FFFEFCE8',
-                            'info'    => 'FFF0F9FF',
-                            default   => 'FFFFFBEB',
+                            'info' => 'FFF0F9FF',
+                            default => 'FFFFFBEB',
                         };
                         $sheet1->getStyle("A{$rIdx}:N{$rIdx}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($rowBg);
 
                         $badgeColor = match ($row['severity'] ?? 'warning') {
-                            'danger'  => 'FF991B1B',
+                            'danger' => 'FF991B1B',
                             'warning' => 'FF92400E',
-                            'info'    => 'FF0369A1',
-                            default   => 'FFB45309',
+                            'info' => 'FF0369A1',
+                            default => 'FFB45309',
                         };
                         $sheet1->getStyle("D{$rIdx}")->getFont()->setBold(true)->getColor()->setARGB($badgeColor);
                     }
@@ -1232,10 +1254,10 @@ class ContainerExcelImportService
             // ══════════════════════════════════════════════════════════════════
             // أوراق العمل لكل ميناء على حدة (الملاحظات الرقابية مقسمة حسب الموانئ)
             // ══════════════════════════════════════════════════════════════════
-            $flaggedRows = array_values(array_filter($allProcessedRows, fn($r) => !empty($r['has_anomaly'])));
+            $flaggedRows = array_values(array_filter($allProcessedRows, fn ($r) => ! empty($r['has_anomaly'])));
             $flaggedByPort = [];
             foreach ($flaggedRows as $row) {
-                $pName = !empty($row['port_name']) ? trim($row['port_name']) : 'ميناء غير محدد';
+                $pName = ! empty($row['port_name']) ? trim($row['port_name']) : 'ميناء غير محدد';
                 $flaggedByPort[$pName][] = $row;
             }
 
@@ -1267,11 +1289,13 @@ class ContainerExcelImportService
             } else {
                 foreach ($flaggedByPort as $portNameKey => $portRows) {
                     $baseTitle = trim(preg_replace('/[\*\:\?\/\x5c\[\]]/u', '', $portNameKey));
-                    if (empty($baseTitle)) $baseTitle = 'ميناء';
+                    if (empty($baseTitle)) {
+                        $baseTitle = 'ميناء';
+                    }
                     $sheetTitle = mb_substr($baseTitle, 0, 28);
                     $suffix = 1;
                     while (isset($usedSheetTitles[$sheetTitle])) {
-                        $sheetTitle = mb_substr($baseTitle, 0, 24) . '_' . ($suffix++);
+                        $sheetTitle = mb_substr($baseTitle, 0, 24).'_'.($suffix++);
                     }
                     $usedSheetTitles[$sheetTitle] = true;
 
@@ -1295,14 +1319,14 @@ class ContainerExcelImportService
                     $sheetP->getRowDimension(3)->setRowHeight(26);
 
                     $sheetP->mergeCells('A4:N4');
-                    $sheetP->setCellValue('A4', "عدد الحاويات المرصودة بالميناء: " . number_format(count($portRows)) . " حاوية ذات ملاحظة رقابية | تاريخ التصدير: " . date('d/m/Y H:i'));
+                    $sheetP->setCellValue('A4', 'عدد الحاويات المرصودة بالميناء: '.number_format(count($portRows)).' حاوية ذات ملاحظة رقابية | تاريخ التصدير: '.date('d/m/Y H:i'));
                     $sheetP->getStyle('A4')->getFont()->setBold(true)->setSize(10)->getColor()->setARGB('FF991B1B');
                     $sheetP->getStyle('A4')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FFFEE2E2');
                     $sheetP->getStyle('A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER)->setVertical(Alignment::VERTICAL_CENTER);
                     $sheetP->getRowDimension(4)->setRowHeight(22);
 
                     foreach ($headers as $col => $title) {
-                        $cell = $col . '6';
+                        $cell = $col.'6';
                         $sheetP->setCellValue($cell, $title);
                         $sheetP->getStyle($cell)->getFont()->setBold(true)->setSize(11)->getColor()->setARGB('FFFFFFFF');
                         $sheetP->getStyle($cell)->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB('FF7F1D1D');
@@ -1349,18 +1373,18 @@ class ContainerExcelImportService
                         $rIdxP = 7;
                         foreach ($portRows as $row) {
                             $rowBg = match ($row['severity'] ?? 'warning') {
-                                'danger'  => 'FFFFF1F2',
+                                'danger' => 'FFFFF1F2',
                                 'warning' => 'FFFEFCE8',
-                                'info'    => 'FFF0F9FF',
-                                default   => 'FFFFFBEB',
+                                'info' => 'FFF0F9FF',
+                                default => 'FFFFFBEB',
                             };
                             $sheetP->getStyle("A{$rIdxP}:N{$rIdxP}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($rowBg);
 
                             $badgeColor = match ($row['severity'] ?? 'warning') {
-                                'danger'  => 'FF991B1B',
+                                'danger' => 'FF991B1B',
                                 'warning' => 'FF92400E',
-                                'info'    => 'FF0369A1',
-                                default   => 'FFB45309',
+                                'info' => 'FF0369A1',
+                                default => 'FFB45309',
                             };
                             $sheetP->getStyle("D{$rIdxP}")->getFont()->setBold(true)->getColor()->setARGB($badgeColor);
                             $rIdxP++;
@@ -1398,21 +1422,21 @@ class ContainerExcelImportService
             $summaryItems = [
                 ['المؤشر الرقابي', 'العدد', 'النسبة من الإجمالي', 'الحالة / التقييم'],
                 ['إجمالي الحاويات المفحوصة والمستوردة', $totalCount, '100%', 'مكتمل'],
-                ['الحاويات المطابقة تماماً للنظام والمواصفات', $cleanCount, $totalCount > 0 ? round(($cleanCount / $totalCount) * 100, 1) . '%' : '0%', 'مطابق'],
-                ['الحاويات بدون تاريخ أو سنة وصول (مفقودة)', count($stats['missing_date_anomalies']), $totalCount > 0 ? round((count($stats['missing_date_anomalies']) / $totalCount) * 100, 1) . '%' : '0%', 'تنبيه (مدرجة 2015 فما دون)'],
-                ['الحاويات المخالفة للمواصفة القياسية ISO 6346', count($stats['invalid_iso_anomalies']), $totalCount > 0 ? round((count($stats['invalid_iso_anomalies']) / $totalCount) * 100, 1) . '%' : '0%', 'مخالفة معيارية'],
-                ['الحاويات التي تم تغيير مينائها عن السجلات السابقة', count($stats['port_change_anomalies']), $totalCount > 0 ? round((count($stats['port_change_anomalies']) / $totalCount) * 100, 1) . '%' : '0%', 'نقل ميناء'],
-                ['الحاويات التي اختلف تاريخ وصولها عن السابق', count($stats['date_mismatch_anomalies']), $totalCount > 0 ? round((count($stats['date_mismatch_anomalies']) / $totalCount) * 100, 1) . '%' : '0%', 'تحديث تاريخ'],
-                ['الحاويات المضافة بسنة سابقة لم تكن مسجلة', count($stats['prior_year_anomalies']), $totalCount > 0 ? round((count($stats['prior_year_anomalies']) / $totalCount) * 100, 1) . '%' : '0%', 'ملاحظة رقابية'],
+                ['الحاويات المطابقة تماماً للنظام والمواصفات', $cleanCount, $totalCount > 0 ? round(($cleanCount / $totalCount) * 100, 1).'%' : '0%', 'مطابق'],
+                ['الحاويات بدون تاريخ أو سنة وصول (مفقودة)', count($stats['missing_date_anomalies']), $totalCount > 0 ? round((count($stats['missing_date_anomalies']) / $totalCount) * 100, 1).'%' : '0%', 'تنبيه (مدرجة 2015 فما دون)'],
+                ['الحاويات المخالفة للمواصفة القياسية ISO 6346', count($stats['invalid_iso_anomalies']), $totalCount > 0 ? round((count($stats['invalid_iso_anomalies']) / $totalCount) * 100, 1).'%' : '0%', 'مخالفة معيارية'],
+                ['الحاويات التي تم تغيير مينائها عن السجلات السابقة', count($stats['port_change_anomalies']), $totalCount > 0 ? round((count($stats['port_change_anomalies']) / $totalCount) * 100, 1).'%' : '0%', 'نقل ميناء'],
+                ['الحاويات التي اختلف تاريخ وصولها عن السابق', count($stats['date_mismatch_anomalies']), $totalCount > 0 ? round((count($stats['date_mismatch_anomalies']) / $totalCount) * 100, 1).'%' : '0%', 'تحديث تاريخ'],
+                ['الحاويات المضافة بسنة سابقة لم تكن مسجلة', count($stats['prior_year_anomalies']), $totalCount > 0 ? round((count($stats['prior_year_anomalies']) / $totalCount) * 100, 1).'%' : '0%', 'ملاحظة رقابية'],
                 ['إجمالي الحاويات المخرجة لهذا الشهر', $stats['discharged_count'], '-', 'تم التخريج بنجاح'],
             ];
 
             $sRow = 5;
             foreach ($summaryItems as $idx => $sItem) {
-                $sheet3->setCellValue('A' . $sRow, $sItem[0]);
-                $sheet3->setCellValue('B' . $sRow, $sItem[1]);
-                $sheet3->setCellValue('C' . $sRow, $sItem[2]);
-                $sheet3->setCellValue('D' . $sRow, $sItem[3]);
+                $sheet3->setCellValue('A'.$sRow, $sItem[0]);
+                $sheet3->setCellValue('B'.$sRow, $sItem[1]);
+                $sheet3->setCellValue('C'.$sRow, $sItem[2]);
+                $sheet3->setCellValue('D'.$sRow, $sItem[3]);
 
                 if ($idx === 0) {
                     $sheet3->getStyle("A{$sRow}:D{$sRow}")->getFont()->setBold(true)->getColor()->setARGB('FFFFFFFF');
@@ -1438,25 +1462,26 @@ class ContainerExcelImportService
             $spreadsheet->setActiveSheetIndex(0);
 
             $storageDir = storage_path('app/public/audit_reports');
-            if (!is_dir($storageDir)) {
+            if (! is_dir($storageDir)) {
                 mkdir($storageDir, 0777, true);
             }
 
             $safeMonth = $month ? $month->month_number : date('m');
             $safeYear = $fiscalYear ? $fiscalYear->year : date('Y');
-            $fileName = "كشف_الملاحظات_الرقابية_{$typeLabel}_{$safeYear}_{$safeMonth}_" . date('Ymd_His') . ".xlsx";
-            $fullPath = $storageDir . DIRECTORY_SEPARATOR . $fileName;
+            $fileName = "كشف_الملاحظات_الرقابية_{$typeLabel}_{$safeYear}_{$safeMonth}_".date('Ymd_His').'.xlsx';
+            $fullPath = $storageDir.DIRECTORY_SEPARATOR.$fileName;
 
             $writer = new Xlsx($spreadsheet);
             $writer->save($fullPath);
 
             return [
-                'file_path'    => $fullPath,
-                'file_name'    => $fileName,
-                'download_url' => asset('storage/audit_reports/' . $fileName),
+                'file_path' => $fullPath,
+                'file_name' => $fileName,
+                'download_url' => asset('storage/audit_reports/'.$fileName),
             ];
         } catch (\Throwable $e) {
-            Log::error('Failed to generate audit Excel report: ' . $e->getMessage());
+            Log::error('Failed to generate audit Excel report: '.$e->getMessage());
+
             return null;
         }
     }

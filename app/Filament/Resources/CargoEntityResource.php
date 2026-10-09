@@ -16,7 +16,6 @@ use Filament\Actions\RestoreBulkAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -35,17 +34,25 @@ use Illuminate\Support\Facades\Auth;
 class CargoEntityResource extends Resource
 {
     protected static ?string $model = CargoEntity::class;
+
     protected static string|\BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice;
+
     protected static ?string $navigationLabel = 'إدارة جهات المواد';
+
     protected static ?string $modelLabel = 'جهة مواد وبضائع';
+
     protected static ?string $pluralModelLabel = 'جهات المواد والبضائع';
+
     protected static string|\UnitEnum|null $navigationGroup = NavigationGroup::Cargo;
+
     protected static ?int $navigationSort = 1;
 
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return true;
     }
@@ -64,7 +71,7 @@ class CargoEntityResource extends Resource
                     ->required()
                     ->options([
                         'government' => 'قطاع حكومي',
-                        'private'    => 'قطاع خاص',
+                        'private' => 'قطاع خاص',
                     ])
                     ->default('government')
                     ->live()
@@ -86,9 +93,11 @@ class CargoEntityResource extends Resource
                         $type = $get('entity_type') ?? 'government';
                         if ($type === 'private') {
                             $max = CargoEntity::where('entity_type', 'private')->max('sort_order');
+
                             return $max ? $max + 1 : 100;
                         }
                         $max = CargoEntity::where('entity_type', 'government')->max('sort_order');
+
                         return $max ? $max + 1 : 1;
                     }),
 
@@ -117,15 +126,15 @@ class CargoEntityResource extends Resource
                 TextColumn::make('entity_type')
                     ->label('القطاع')
                     ->badge()
-                    ->formatStateUsing(fn($state) => match($state) {
+                    ->formatStateUsing(fn ($state) => match ($state) {
                         'government' => 'حكومي',
-                        'private'    => 'خاص',
-                        default      => $state,
+                        'private' => 'خاص',
+                        default => $state,
                     })
-                    ->color(fn($state) => match($state) {
+                    ->color(fn ($state) => match ($state) {
                         'government' => 'info',
-                        'private'    => 'warning',
-                        default      => 'gray',
+                        'private' => 'warning',
+                        default => 'gray',
                     }),
 
                 IconColumn::make('is_active')
@@ -144,7 +153,7 @@ class CargoEntityResource extends Resource
                     ->label('نوع القطاع')
                     ->options([
                         'government' => 'قطاع حكومي',
-                        'private'    => 'قطاع خاص',
+                        'private' => 'قطاع خاص',
                     ]),
 
                 TernaryFilter::make('is_active')
@@ -172,8 +181,8 @@ class CargoEntityResource extends Resource
                         ->modalHeading('⚠️ تحذير: حذف نهائي لا رجعة فيه!')
                         ->successNotificationTitle('تم الحذف النهائي'),
                 ])
-                ->tooltip('قائمة الإجراءات')
-                ->icon('heroicon-m-ellipsis-vertical'),
+                    ->tooltip('قائمة الإجراءات')
+                    ->icon('heroicon-m-ellipsis-vertical'),
             ])
             ->toolbarActions([
                 DeleteBulkAction::make()->label('حذف مؤقت للمحدد'),
@@ -192,9 +201,9 @@ class CargoEntityResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListCargoEntities::route('/'),
+            'index' => Pages\ListCargoEntities::route('/'),
             'create' => Pages\CreateCargoEntity::route('/create'),
-            'edit'   => Pages\EditCargoEntity::route('/{record}/edit'),
+            'edit' => Pages\EditCargoEntity::route('/{record}/edit'),
         ];
     }
 }

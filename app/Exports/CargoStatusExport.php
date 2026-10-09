@@ -2,40 +2,43 @@
 
 namespace App\Exports;
 
-use App\Models\CargoEntity;
 use App\Models\CargoStatusRecord;
 use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\Port;
 use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Color;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnWidths, WithEvents, WithStrictNullComparison
+class CargoStatusExport implements FromArray, WithColumnWidths, WithEvents, WithStrictNullComparison, WithStyles, WithTitle
 {
     protected string $cargoType;
-    protected ?int   $fiscalYearId;
-    protected ?int   $monthId;
-    protected ?int   $portId;
+
+    protected ?int $fiscalYearId;
+
+    protected ?int $monthId;
+
+    protected ?int $portId;
 
     public function __construct(
-        string $cargoType    = 'abandoned',
-        ?int   $fiscalYearId = null,
-        ?int   $monthId      = null,
-        ?int   $portId       = null
+        string $cargoType = 'abandoned',
+        ?int $fiscalYearId = null,
+        ?int $monthId = null,
+        ?int $portId = null
     ) {
-        $this->cargoType    = $cargoType;
+        $this->cargoType = $cargoType;
         $this->fiscalYearId = $fiscalYearId ?: (FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id);
-        $this->monthId      = $monthId ?: (Month::where('month_number', now()->month)->first()?->id ?? Month::first()?->id);
-        $this->portId       = $portId;
+        $this->monthId = $monthId ?: (Month::where('month_number', now()->month)->first()?->id ?? Month::first()?->id);
+        $this->portId = $portId;
     }
 
     public function title(): string
@@ -45,12 +48,12 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
 
     public function array(): array
     {
-        $typeLabel  = $this->cargoType === 'abandoned' ? 'المتخلفة' : 'الخطرة';
-        $monthObj   = Month::find($this->monthId);
-        $yearObj    = FiscalYear::find($this->fiscalYearId);
-        $monthName  = $monthObj ? "{$monthObj->month_number} - {$monthObj->name_ar}" : '';
-        $yearName   = $yearObj ? (string) $yearObj->year : '';
-        $portName   = $this->portId
+        $typeLabel = $this->cargoType === 'abandoned' ? 'المتخلفة' : 'الخطرة';
+        $monthObj = Month::find($this->monthId);
+        $yearObj = FiscalYear::find($this->fiscalYearId);
+        $monthName = $monthObj ? "{$monthObj->month_number} - {$monthObj->name_ar}" : '';
+        $yearName = $yearObj ? (string) $yearObj->year : '';
+        $portName = $this->portId
             ? (Port::find($this->portId)?->name_ar ?? 'جميع الموانئ')
             : 'جميع الموانئ (مجمّع)';
 
@@ -64,29 +67,29 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
         $records = CargoStatusRecord::where('cargo_type', $this->cargoType)
             ->where('fiscal_year_id', $this->fiscalYearId)
             ->where('month_id', $this->monthId)
-            ->when($this->portId, fn($q) => $q->where('port_id', $this->portId))
+            ->when($this->portId, fn ($q) => $q->where('port_id', $this->portId))
             ->with('details.entity')
             ->get();
 
         // Build data matrix: [entity_id][year] => count
-        $dataMatrix  = [];
-        $entityList  = [];
+        $dataMatrix = [];
+        $entityList = [];
         $entityOrder = [];
 
         foreach ($records as $rec) {
-            $sortedDetails = $rec->details->sortBy(fn($d) => [$d->sort_order ?: 999, $d->id]);
+            $sortedDetails = $rec->details->sortBy(fn ($d) => [$d->sort_order ?: 999, $d->id]);
             foreach ($sortedDetails as $det) {
-                $eid    = $det->cargo_entity_id;
-                $year   = (string) $det->year_label;
+                $eid = $det->cargo_entity_id;
+                $year = (string) $det->year_label;
                 $entity = $det->entity;
 
-                if (!$entity || $det->count <= 0) {
+                if (! $entity || $det->count <= 0) {
                     continue;
                 }
 
-                if (!isset($dataMatrix[$eid])) {
-                    $dataMatrix[$eid]  = array_fill_keys($allYears, 0);
-                    $entityList[$eid]  = $entity;
+                if (! isset($dataMatrix[$eid])) {
+                    $dataMatrix[$eid] = array_fill_keys($allYears, 0);
+                    $entityList[$eid] = $entity;
                     $entityOrder[$eid] = $det->sort_order ?: ($entity->sort_order ?: 999);
                 }
 
@@ -97,9 +100,9 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
         }
 
         // Sort entities: government first, then private, respecting sort_order
-        uksort($entityList, function($idA, $idB) use ($entityList, $entityOrder) {
-            $entA  = $entityList[$idA];
-            $entB  = $entityList[$idB];
+        uksort($entityList, function ($idA, $idB) use ($entityList, $entityOrder) {
+            $entA = $entityList[$idA];
+            $entB = $entityList[$idB];
             $typeA = $entA->entity_type ?? 'government';
             $typeB = $entB->entity_type ?? 'government';
 
@@ -111,10 +114,13 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
         });
 
         // Remove years where all entities have 0 count
-        $activeYears = array_filter($allYears, function($y) use ($dataMatrix) {
+        $activeYears = array_filter($allYears, function ($y) use ($dataMatrix) {
             foreach ($dataMatrix as $rows) {
-                if (($rows[$y] ?? 0) > 0) return true;
+                if (($rows[$y] ?? 0) > 0) {
+                    return true;
+                }
             }
+
             return false;
         });
         if (empty($activeYears)) {
@@ -148,31 +154,35 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
         $rows[] = $headers;
 
         // Data rows
-        $totalByYear   = array_fill_keys($activeYears, 0);
-        $grandTotal    = 0;
-        $govTotByYear  = array_fill_keys($activeYears, 0);
-        $govGrand      = 0;
+        $totalByYear = array_fill_keys($activeYears, 0);
+        $grandTotal = 0;
+        $govTotByYear = array_fill_keys($activeYears, 0);
+        $govGrand = 0;
         $privTotByYear = array_fill_keys($activeYears, 0);
-        $privGrand     = 0;
+        $privGrand = 0;
 
-        $govRowNum  = 1;
+        $govRowNum = 1;
 
         // Government rows
         foreach ($entityList as $eid => $ent) {
-            if ($ent->entity_type !== 'government') continue;
+            if ($ent->entity_type !== 'government') {
+                continue;
+            }
 
             $row = ["{$govRowNum}. {$ent->name_ar}"];
             $rowTotal = 0;
             foreach ($activeYears as $y) {
                 $val = (int) ($dataMatrix[$eid][$y] ?? 0);
                 $row[] = $val;
-                $totalByYear[$y]  += $val;
+                $totalByYear[$y] += $val;
                 $govTotByYear[$y] += $val;
                 $rowTotal += $val;
                 $grandTotal += $val;
-                $govGrand   += $val;
+                $govGrand += $val;
             }
-            if ($rowTotal <= 0) continue;
+            if ($rowTotal <= 0) {
+                continue;
+            }
             $row[] = (int) $rowTotal;
             $rows[] = $row;
             $govRowNum++;
@@ -180,20 +190,24 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
 
         // Private rows
         foreach ($entityList as $eid => $ent) {
-            if ($ent->entity_type !== 'private') continue;
+            if ($ent->entity_type !== 'private') {
+                continue;
+            }
 
-            $row = ["القطاع الخاص"];
+            $row = ['القطاع الخاص'];
             $rowTotal = 0;
             foreach ($activeYears as $y) {
                 $val = (int) ($dataMatrix[$eid][$y] ?? 0);
                 $row[] = $val;
-                $totalByYear[$y]   += $val;
+                $totalByYear[$y] += $val;
                 $privTotByYear[$y] += $val;
                 $rowTotal += $val;
                 $grandTotal += $val;
-                $privGrand  += $val;
+                $privGrand += $val;
             }
-            if ($rowTotal <= 0) continue;
+            if ($rowTotal <= 0) {
+                continue;
+            }
             $row[] = (int) $rowTotal;
             $rows[] = $row;
         }
@@ -236,29 +250,29 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
 
     public function styles(Worksheet $sheet): array
     {
-        $lastRow    = $sheet->getHighestRow();
-        $lastCol    = $sheet->getHighestColumn();
+        $lastRow = $sheet->getHighestRow();
+        $lastCol = $sheet->getHighestColumn();
 
         // Row 1 - title
         $sheet->mergeCells("A1:{$lastCol}1");
         $sheet->getStyle("A1:{$lastCol}1")->applyFromArray([
-            'font'      => ['bold' => true, 'size' => 13, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
-            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FDE68A']],
+            'font' => ['bold' => true, 'size' => 13, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FDE68A']],
             'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => 'CA8A04']]],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_MEDIUM, 'color' => ['rgb' => 'CA8A04']]],
         ]);
         $sheet->getRowDimension(1)->setRowHeight(36);
 
         // Row 2 - headers
         $sheet->getStyle("A2:{$lastCol}2")->applyFromArray([
-            'font'      => ['bold' => true, 'size' => 11, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
-            'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FACC15']],
+            'font' => ['bold' => true, 'size' => 11, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
+            'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FACC15']],
             'alignment' => [
                 'horizontal' => Alignment::HORIZONTAL_CENTER,
-                'vertical'   => Alignment::VERTICAL_CENTER,
-                'wrapText'   => true,
+                'vertical' => Alignment::VERTICAL_CENTER,
+                'wrapText' => true,
             ],
-            'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'D4A500']]],
+            'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => 'D4A500']]],
         ]);
         $sheet->getRowDimension(2)->setRowHeight(38);
 
@@ -269,17 +283,17 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
             if ($cellA === 'المجموع') {
                 // Grand total row (صف المجموع العام)
                 $sheet->getStyle("A{$r}:{$lastCol}{$r}")->applyFromArray([
-                    'font'      => ['bold' => true, 'size' => 11, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
-                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FDE047']],
+                    'font' => ['bold' => true, 'size' => 11, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FDE047']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
                 ]);
 
                 // Highlight non-zero numbers in dark red in the total row
                 for ($col = 'B'; $col <= $lastCol; $col++) {
                     $val = $sheet->getCell("{$col}{$r}")->getValue();
                     if (is_numeric($val) && (int) $val > 0) {
-                        $sheet->getStyle("{$col}{$r}")->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('991B1B'))->setBold(true);
+                        $sheet->getStyle("{$col}{$r}")->getFont()->setColor(new Color('991B1B'))->setBold(true);
                     }
                 }
 
@@ -288,25 +302,25 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
                 // Mini summary block below
                 if ($sheet->getCell("B{$r}")->getValue() !== null) {
                     $sheet->getStyle("B{$r}:C{$r}")->applyFromArray([
-                        'font'      => ['bold' => true, 'size' => 10, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
-                        'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF9C3']],
+                        'font' => ['bold' => true, 'size' => 10, 'name' => 'Calibri', 'color' => ['rgb' => '1c1917']],
+                        'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF9C3']],
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                        'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
+                        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
                     ]);
-                    $sheet->getStyle("C{$r}")->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('991B1B'))->setBold(true);
+                    $sheet->getStyle("C{$r}")->getFont()->setColor(new Color('991B1B'))->setBold(true);
                     $sheet->getRowDimension($r)->setRowHeight(22);
                 }
             } else {
                 // Regular data row
-                $isGov = !str_starts_with($cellA, 'القطاع الخاص');
+                $isGov = ! str_starts_with($cellA, 'القطاع الخاص');
                 $color = $isGov ? 'BFDBFE' : 'BBF7D0';
                 $textColor = $isGov ? '1e40af' : '065f46';
 
                 $sheet->getStyle("A{$r}")->applyFromArray([
-                    'font'      => ['bold' => true, 'size' => 10, 'color' => ['rgb' => $textColor]],
-                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $color]],
+                    'font' => ['bold' => true, 'size' => 10, 'color' => ['rgb' => $textColor]],
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => $color]],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_RIGHT, 'vertical' => Alignment::VERTICAL_CENTER],
-                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '94A3B8']]],
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '94A3B8']]],
                 ]);
 
                 // Style data cells: highlight > 0 in dark red, 0 in muted gray
@@ -323,14 +337,14 @@ class CargoStatusExport implements FromArray, WithTitle, WithStyles, WithColumnW
                     }
                     $sheet->getStyle("{$col}{$r}")->applyFromArray([
                         'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
-                        'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '94A3B8']]],
+                        'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '94A3B8']]],
                     ]);
                 }
 
                 // Highlight total column for each row
                 $sheet->getStyle("{$lastCol}{$r}")->applyFromArray([
-                    'fill'      => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF08A']],
-                    'borders'   => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
+                    'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'FEF08A']],
+                    'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['rgb' => '000000']]],
                 ]);
 
                 $sheet->getRowDimension($r)->setRowHeight(24);

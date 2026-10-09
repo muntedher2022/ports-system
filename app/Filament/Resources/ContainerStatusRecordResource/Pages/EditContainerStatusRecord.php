@@ -27,22 +27,24 @@ class EditContainerStatusRecord extends EditRecord
             foreach ($details as $d) {
                 $yearsData[] = [
                     'year_label' => (string) $d->year_label,
-                    'count'      => $d->count,
+                    'count' => $d->count,
                 ];
             }
             $grouped[] = [
                 'container_entity_id' => $entityId,
-                'years'               => $yearsData,
+                'years' => $yearsData,
             ];
         }
 
         $data['entities_data'] = $grouped;
+
         return $data;
     }
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
         $data['updated_by'] = Auth::id();
+
         return $data;
     }
 
@@ -52,11 +54,11 @@ class EditContainerStatusRecord extends EditRecord
         $record = $this->getRecord();
         $record->details()->delete();
 
-        if (!empty($data['entities_data']) && is_array($data['entities_data'])) {
+        if (! empty($data['entities_data']) && is_array($data['entities_data'])) {
             $sortOrder = 1;
             foreach ($data['entities_data'] as $entityItem) {
                 $entityId = $entityItem['container_entity_id'] ?? null;
-                if (!$entityId || empty($entityItem['years']) || !is_array($entityItem['years'])) {
+                if (! $entityId || empty($entityItem['years']) || ! is_array($entityItem['years'])) {
                     continue;
                 }
 
@@ -68,10 +70,10 @@ class EditContainerStatusRecord extends EditRecord
                         $record->details()->updateOrCreate(
                             [
                                 'container_entity_id' => $entityId,
-                                'year_label'          => $year,
+                                'year_label' => $year,
                             ],
                             [
-                                'count'      => $count,
+                                'count' => $count,
                                 'sort_order' => $sortOrder,
                             ]
                         );

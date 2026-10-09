@@ -2,7 +2,6 @@
 
 namespace App\Filament\Widgets;
 
-use App\Models\CargoStatusDetail;
 use App\Models\ContainerStatusDetail;
 use App\Models\FiscalYear;
 use App\Models\MonthlyPortRecord;
@@ -10,13 +9,15 @@ use App\Models\Port;
 use App\Models\RevenueRecord;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\DB;
 
 class MaritimeIntelligenceAgencyWidget extends Widget
 {
     protected static ?string $heading = '🌐 وكالة التحليل واستخبارات العمليات المينائية (Maritime Intelligence & Analytics)';
+
     protected static ?int $sort = 2;
-    protected int | string | array $columnSpan = 'full';
+
+    protected int|string|array $columnSpan = 'full';
+
     protected string $view = 'filament.widgets.maritime-intelligence-agency-widget';
 
     public function getHeading(): ?string
@@ -27,7 +28,9 @@ class MaritimeIntelligenceAgencyWidget extends Widget
     public static function canView(): bool
     {
         $user = Auth::user();
-        if (! $user) return false;
+        if (! $user) {
+            return false;
+        }
 
         return $user->hasRole(['super_admin', 'المدير العام', 'general_manager', 'reviewer', 'مدقق / مراجع', 'operations_manager', 'مسؤول المتابعة المركزية والعمليات'])
             || ! ($user->isPortRestricted() && $user->port_id);
@@ -117,9 +120,9 @@ class MaritimeIntelligenceAgencyWidget extends Widget
         // هـ) الموانئ الرائدة حسب التخصص (Sector Dominance Hubs)
         $ports = Port::where('is_active', true)->get();
         $topContainerHub = ['name' => '—', 'val' => 0];
-        $topCargoHub     = ['name' => '—', 'val' => 0];
-        $topOilHub       = ['name' => '—', 'val' => 0];
-        $topRevenueHub   = ['name' => '—', 'val' => 0];
+        $topCargoHub = ['name' => '—', 'val' => 0];
+        $topOilHub = ['name' => '—', 'val' => 0];
+        $topRevenueHub = ['name' => '—', 'val' => 0];
 
         foreach ($ports as $p) {
             $pRecs = $currRecords->where('port_id', $p->id);
@@ -143,34 +146,34 @@ class MaritimeIntelligenceAgencyWidget extends Widget
         }
 
         // و) مؤشر كفاءة وضغط الساحات (Yard Risk & Stock Density)
-        $totalContDet = (int) ContainerStatusDetail::whereHas('record', fn($q) => $q->when($currentYear, fn($sq) => $sq->where('fiscal_year_id', $currentYear->id)))->sum('count');
-        $dangerContDet = (int) ContainerStatusDetail::whereHas('record', fn($q) => $q->where('container_type', 'dangerous')->when($currentYear, fn($sq) => $sq->where('fiscal_year_id', $currentYear->id)))->sum('count');
+        $totalContDet = (int) ContainerStatusDetail::whereHas('record', fn ($q) => $q->when($currentYear, fn ($sq) => $sq->where('fiscal_year_id', $currentYear->id)))->sum('count');
+        $dangerContDet = (int) ContainerStatusDetail::whereHas('record', fn ($q) => $q->where('container_type', 'dangerous')->when($currentYear, fn ($sq) => $sq->where('fiscal_year_id', $currentYear->id)))->sum('count');
         $contRiskPercent = $totalContDet > 0 ? round(($dangerContDet / $totalContDet) * 100, 1) : 0;
 
         return [
-            'currentYear'         => $currentYear?->year ?? date('Y'),
-            'prevYear'            => $prevYear?->year ?? (date('Y') - 1),
-            'monthsCount'         => $monthsCount,
-            'currTons'            => $currTons,
-            'currRev'             => $currRev,
-            'currShips'           => $currShips,
-            'currTotalTeu'        => $currTotalTeu,
-            'revPerTon'           => $revPerTon,
-            'revPerTonDiff'       => $revPerTonDiff,
-            'payloadPerShip'      => $payloadPerShip,
-            'payloadDiff'         => $payloadDiff,
-            'teuExportRatio'      => $teuExportRatio,
-            'currImpTeu'          => $currImpTeu,
-            'currExpTeu'          => $currExpTeu,
+            'currentYear' => $currentYear?->year ?? date('Y'),
+            'prevYear' => $prevYear?->year ?? (date('Y') - 1),
+            'monthsCount' => $monthsCount,
+            'currTons' => $currTons,
+            'currRev' => $currRev,
+            'currShips' => $currShips,
+            'currTotalTeu' => $currTotalTeu,
+            'revPerTon' => $revPerTon,
+            'revPerTonDiff' => $revPerTonDiff,
+            'payloadPerShip' => $payloadPerShip,
+            'payloadDiff' => $payloadDiff,
+            'teuExportRatio' => $teuExportRatio,
+            'currImpTeu' => $currImpTeu,
+            'currExpTeu' => $currExpTeu,
             'projectedAnnualTons' => $projectedAnnualTons,
-            'projectedAnnualRev'  => $projectedAnnualRev,
-            'topContainerHub'     => $topContainerHub,
-            'topCargoHub'         => $topCargoHub,
-            'topOilHub'           => $topOilHub,
-            'topRevenueHub'       => $topRevenueHub,
-            'contRiskPercent'     => $contRiskPercent,
-            'totalContDet'        => $totalContDet,
-            'dangerContDet'       => $dangerContDet,
+            'projectedAnnualRev' => $projectedAnnualRev,
+            'topContainerHub' => $topContainerHub,
+            'topCargoHub' => $topCargoHub,
+            'topOilHub' => $topOilHub,
+            'topRevenueHub' => $topRevenueHub,
+            'contRiskPercent' => $contRiskPercent,
+            'totalContDet' => $totalContDet,
+            'dangerContDet' => $dangerContDet,
         ];
     }
 }

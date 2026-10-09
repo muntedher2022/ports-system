@@ -8,24 +8,29 @@ use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\Port;
 use Maatwebsite\Excel\Concerns\FromArray;
-use Maatwebsite\Excel\Concerns\WithTitle;
-use Maatwebsite\Excel\Concerns\WithStyles;
 use Maatwebsite\Excel\Concerns\WithColumnWidths;
 use Maatwebsite\Excel\Concerns\WithEvents;
 use Maatwebsite\Excel\Concerns\WithStrictNullComparison;
+use Maatwebsite\Excel\Concerns\WithStyles;
+use Maatwebsite\Excel\Concerns\WithTitle;
 use Maatwebsite\Excel\Events\AfterSheet;
-use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
-use PhpOffice\PhpSpreadsheet\Style\Fill;
 use PhpOffice\PhpSpreadsheet\Style\Alignment;
 use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
+use PhpOffice\PhpSpreadsheet\Worksheet\Worksheet;
 
-class ContainerEntitySheetExport implements FromArray, WithTitle, WithStyles, WithColumnWidths, WithEvents, WithStrictNullComparison
+class ContainerEntitySheetExport implements FromArray, WithColumnWidths, WithEvents, WithStrictNullComparison, WithStyles, WithTitle
 {
     protected ContainerEntity $entity;
+
     protected string $containerType;
+
     protected ?int $fiscalYearId;
+
     protected ?int $monthId;
+
     protected ?int $portId;
+
     protected array $items;
 
     public function __construct(
@@ -46,9 +51,9 @@ class ContainerEntitySheetExport implements FromArray, WithTitle, WithStyles, Wi
             ->where('status', 'in_port') // Only active containers in port (exclude discharged)
             ->where('container_entity_id', $this->entity->id)
             ->where('container_type', $this->containerType)
-            ->when($this->fiscalYearId, fn($q) => $q->where('fiscal_year_id', $this->fiscalYearId))
-            ->when($this->monthId, fn($q) => $q->where('month_id', $this->monthId))
-            ->when($this->portId, fn($q) => $q->where('port_id', $this->portId))
+            ->when($this->fiscalYearId, fn ($q) => $q->where('fiscal_year_id', $this->fiscalYearId))
+            ->when($this->monthId, fn ($q) => $q->where('month_id', $this->monthId))
+            ->when($this->portId, fn ($q) => $q->where('port_id', $this->portId))
             ->with(['port', 'entity'])
             ->orderByRaw("COALESCE(arrival_date, CASE WHEN arrival_year REGEXP '^[0-9]{4}$' THEN STR_TO_DATE(CONCAT(arrival_year, '-01-01'), '%Y-%m-%d') ELSE '9999-12-31' END) ASC")
             ->orderBy('arrival_date', 'asc')
@@ -64,6 +69,7 @@ class ContainerEntitySheetExport implements FromArray, WithTitle, WithStyles, Wi
         // Clean sheet name (Excel limits sheet names to 31 chars and bans *:\/?[] characters)
         $clean = preg_replace('/[*:\/?\[\]]/', '', $this->entity->name_ar);
         $clean = trim($clean);
+
         return mb_substr($clean, 0, 30) ?: 'الجهة';
     }
 
@@ -136,7 +142,7 @@ class ContainerEntitySheetExport implements FromArray, WithTitle, WithStyles, Wi
         // 4. Total Summary Row
         $rows[] = [
             'المجموع الكلي',
-            count($this->items) . ' حاوية',
+            count($this->items).' حاوية',
             '',
             '',
             '',
@@ -222,7 +228,7 @@ class ContainerEntitySheetExport implements FromArray, WithTitle, WithStyles, Wi
         $cleanParts = [];
         foreach ($parts as $part) {
             $trimmed = trim($part, " \t\n\r\0\x0B-");
-            if (!empty($trimmed) && !str_contains($trimmed, 'تنبيه')) {
+            if (! empty($trimmed) && ! str_contains($trimmed, 'تنبيه')) {
                 $cleanParts[] = $trimmed;
             }
         }

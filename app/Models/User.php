@@ -2,20 +2,22 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable;
-use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
-use OwenIt\Auditing\Contracts\Auditable;
-use Spatie\Permission\Traits\HasRoles;
+use Database\Factories\UserFactory;
 use Filament\Models\Contracts\FilamentUser;
 use Filament\Panel;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Foundation\Auth\User as Authenticatable;
+use Illuminate\Notifications\Notifiable;
+use OwenIt\Auditing\Contracts\Auditable;
+use Spatie\Permission\Traits\HasRoles;
 
-class User extends Authenticatable implements FilamentUser, Auditable
+class User extends Authenticatable implements Auditable, FilamentUser
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
-    use HasFactory, Notifiable, HasRoles, SoftDeletes;
+    /** @use HasFactory<UserFactory> */
+    use HasFactory, HasRoles, Notifiable, SoftDeletes;
+
     use \OwenIt\Auditing\Auditable;
 
     protected $fillable = [
@@ -40,7 +42,7 @@ class User extends Authenticatable implements FilamentUser, Auditable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password'          => 'hashed',
+            'password' => 'hashed',
             'is_totp_required' => 'boolean',
         ];
     }
@@ -69,7 +71,7 @@ class User extends Authenticatable implements FilamentUser, Auditable
 
     public function hasTotpSetup(): bool
     {
-        return !empty($this->two_factor_secret) && !empty($this->two_factor_confirmed_at);
+        return ! empty($this->two_factor_secret) && ! empty($this->two_factor_confirmed_at);
     }
 
     public function isTotpRequired(): bool
@@ -77,12 +79,12 @@ class User extends Authenticatable implements FilamentUser, Auditable
         return (bool) ($this->is_totp_required ?? false);
     }
 
-
     public function isAdmin(): bool
     {
         if (method_exists($this, 'hasRole')) {
             return $this->hasRole('super_admin') || $this->hasRole('admin');
         }
+
         return (bool) ($this->is_admin ?? false);
     }
 
@@ -90,5 +92,4 @@ class User extends Authenticatable implements FilamentUser, Auditable
     {
         return $this->hasTotpSetup();
     }
-
 }

@@ -46,7 +46,7 @@ class VerifyLicenseMiddleware
         // فحص حالة الترخيص
         $licenseCheck = LicensingService::check();
 
-        if (!$licenseCheck['valid']) {
+        if (! $licenseCheck['valid']) {
             // إذا كان الطلب عبارة عن طلب API (يحتوي على api/ أو يطلب JSON)، نرجع استجابة JSON كود 402
             if ($request->is('api/*') || $request->is('*/api/*') || $request->expectsJson()) {
                 return response()->json([
@@ -54,14 +54,14 @@ class VerifyLicenseMiddleware
                     'reason' => $licenseCheck['reason'],
                     'hwid' => $licenseCheck['hwid'] ?? HardwareFingerprint::get(),
                     'message' => $licenseCheck['message'],
-                    'activation_url' => url('/activate')
+                    'activation_url' => url('/activate'),
                 ], Response::HTTP_PAYMENT_REQUIRED);
             }
 
             // إذا كان تصفح عادي عبر الويب، نرجع واجهة التفعيل HTML الأنيقة والذاتية
             $hwid = $licenseCheck['hwid'] ?? HardwareFingerprint::get();
             $message = $licenseCheck['message'];
-            
+
             // تحديد مسار API التفعيل بدقة وبطريقة نسبية لتجنب مشاكل النطاقات وبروتوكولات HTTPS
             $activateUrl = '/api/license/activate';
 

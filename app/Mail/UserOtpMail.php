@@ -11,9 +11,13 @@ class UserOtpMail extends Mailable
     use Queueable, SerializesModels;
 
     public string $otp;
+
     public string $ipAddress;
+
     public string $time;
+
     public string $userName;
+
     public string $projectName;
 
     public function __construct(string $otp, ?string $ipAddress = null, ?string $userName = null, ?string $projectName = null)
@@ -27,7 +31,7 @@ class UserOtpMail extends Mailable
 
     public function build()
     {
-        return $this->subject('رمز التحقق الثنائي (OTP) - ' . $this->projectName)
-                    ->view('emails.user-otp');
+        return $this->subject('رمز التحقق الثنائي (OTP) - '.$this->projectName)
+            ->view('emails.user-otp');
     }
 }

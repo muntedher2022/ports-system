@@ -9,6 +9,7 @@ use Filament\Resources\Pages\EditRecord;
 class EditPort extends EditRecord
 {
     protected static string $resource = PortResource::class;
+
     protected ?string $heading = 'تعديل بيانات الميناء';
 
     protected function getHeaderActions(): array
