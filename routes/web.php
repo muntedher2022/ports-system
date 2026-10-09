@@ -46,6 +46,13 @@ Route::middleware(['auth'])->prefix('admin/templates')->name('admin.templates.')
     })->name('revenue-records');
 });
 
+// ─── مسارات الكتب والمذكرات الرسمية (الإيراد، الطاقة، موقف الحاويات، موقف البضائع) ───
+Route::middleware(['auth'])->prefix('admin/official-letters')->name('admin.official-letters.')->group(function () {
+    Route::get('{type}/preview', [\App\Http\Controllers\OfficialLetterController::class, 'preview'])->name('preview');
+    Route::get('{type}/docx', [\App\Http\Controllers\OfficialLetterController::class, 'downloadDocx'])->name('docx');
+});
+
+
 
 // مسارات تفعيل التراخيص والتحقق والـ OTP
 Route::match(['get', 'post'], '/api/license/status', [\App\Licensing\LicenseController::class, 'status']);

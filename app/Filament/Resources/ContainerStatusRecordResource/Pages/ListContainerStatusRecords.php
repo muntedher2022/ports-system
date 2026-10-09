@@ -459,6 +459,32 @@ class ListContainerStatusRecords extends ListRecords
                     return redirect()->away(route('admin.containers.export-detailed-excel') . '?' . $queryParams);
                 }),
 
+            // ─── زر كتاب الموقف الشهري للحاويات (صادر مركزي يسحب فارغاً) ───
+            Action::make('official_container_letter')
+                ->label('كتاب الموقف الشهري للحاويات (صادر مركزي)')
+                ->icon('heroicon-o-document-text')
+                ->color('warning')
+                ->form([
+                    Select::make('fiscal_year_id')
+                        ->label('السنة المالية')
+                        ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                        ->default(FiscalYear::where('is_current', true)->first()?->id),
+                    Select::make('month_id')
+                        ->label('الشهر')
+                        ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                        ->default(Month::where('month_number', 9)->first()?->id),
+                ])
+                ->modalHeading('إصدار كتاب الموقف الشهري للحاويات المتخلفة والخطرة (صادر مركزي)')
+                ->modalDescription('كتاب رسمي موجه إلى وزارة النقل / الدائرة الفنية. يُسحب بحقول فارغة للعدد والتاريخ للختم والقيد المركزي.')
+                ->modalSubmitActionLabel('معاينة وطباعة الكتاب')
+                ->action(function (array $data) {
+                    $params = http_build_query([
+                        'fiscal_year_id' => $data['fiscal_year_id'],
+                        'month_id'       => $data['month_id'],
+                    ]);
+                    return redirect()->away(route('admin.official-letters.preview', ['type' => 'containers_letter']) . '?' . $params);
+                }),
+
             // ─── زر تحميل آخر كشف للملاحظات والمخالفات الرقابية ───
             Action::make('download_latest_audit')
                 ->label('تحميل كشف الملاحظات الرقابية (Excel)')

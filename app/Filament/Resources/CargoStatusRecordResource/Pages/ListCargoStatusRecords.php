@@ -179,6 +179,32 @@ class ListCargoStatusRecords extends ListRecords
                             ->success()
                             ->send();
                     }),
+
+                // ─── زر كتاب الموقف الشهري للمواد والبضائع (صادر مركزي يسحب فارغاً) ───
+                Action::make('official_cargo_letter')
+                    ->label('كتاب الموقف الشهري للمواد (صادر مركزي)')
+                    ->icon('heroicon-o-document-text')
+                    ->color('warning')
+                    ->form([
+                        Select::make('fiscal_year_id')
+                            ->label('السنة المالية')
+                            ->options(FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                            ->default(FiscalYear::where('is_current', true)->first()?->id),
+                        Select::make('month_id')
+                            ->label('الشهر')
+                            ->options(Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                            ->default(Month::where('month_number', 8)->first()?->id),
+                    ])
+                    ->modalHeading('إصدار كتاب الموقف الشهري للمواد والبضائع المتخلفة (صادر مركزي)')
+                    ->modalDescription('كتاب رسمي موجه إلى وزارة النقل / الدائرة الفنية. يُسحب بحقول فارغة للعدد والتاريخ للختم والقيد المركزي.')
+                    ->modalSubmitActionLabel('معاينة وطباعة الكتاب')
+                    ->action(function (array $data) {
+                        $params = http_build_query([
+                            'fiscal_year_id' => $data['fiscal_year_id'],
+                            'month_id'       => $data['month_id'],
+                        ]);
+                        return redirect()->away(route('admin.official-letters.preview', ['type' => 'cargo_letter']) . '?' . $params);
+                    }),
             ])
             ->label('خيارات وإجراءات المواد والبضائع')
             ->icon('heroicon-o-chevron-down')

@@ -19,6 +19,42 @@ class ListRevenueRecords extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
+            // ─── زر إصدار مذكرة الإيراد الرسمية (نموذج 87) ───
+            Action::make('official_revenue_memo')
+                ->label('مذكرة الإيراد (نموذج 87)')
+                ->icon('heroicon-o-document-text')
+                ->color('warning')
+                ->form([
+                    \Filament\Forms\Components\Select::make('fiscal_year_id')
+                        ->label('السنة المالية')
+                        ->options(\App\Models\FiscalYear::orderBy('year', 'desc')->pluck('year', 'id'))
+                        ->default(\App\Models\FiscalYear::where('is_current', true)->first()?->id),
+                    \Filament\Forms\Components\Select::make('month_id')
+                        ->label('الشهر')
+                        ->options(\App\Models\Month::orderBy('month_number')->pluck('name_ar', 'id'))
+                        ->default(\App\Models\Month::where('month_number', 8)->first()?->id),
+                    \Filament\Forms\Components\TextInput::make('memo_number')
+                        ->label('رقم المذكرة (مطلوب)')
+                        ->required()
+                        ->default('87'),
+                    \Filament\Forms\Components\TextInput::make('memo_date')
+                        ->label('تاريخ المذكرة (مطلوب)')
+                        ->required()
+                        ->default('9 / 9 / ' . (\App\Models\FiscalYear::where('is_current', true)->first()?->year ?? date('Y'))),
+                ])
+                ->modalHeading('إصدار مذكرة الإيراد الكلي والصافي (نموذج م.ت 87)')
+                ->modalDescription('المذكرة موجهة للسيد المدير العام وتتضمن الإيراد الكلي والصافي للمراكز السبعة ومقارنة بالسنة السابقة.')
+                ->modalSubmitActionLabel('معاينة وطباعة الكتاب')
+                ->action(function (array $data) {
+                    $params = http_build_query([
+                        'fiscal_year_id' => $data['fiscal_year_id'],
+                        'month_id'       => $data['month_id'],
+                        'memo_number'    => $data['memo_number'],
+                        'memo_date'      => $data['memo_date'],
+                    ]);
+                    return redirect()->away(route('admin.official-letters.preview', ['type' => 'revenue_memo']) . '?' . $params);
+                }),
+
             // ─── زر تصدير بيانات الإيراد إلى Excel ───
             Action::make('export_excel')
                 ->label('تصدير إلى Excel')
