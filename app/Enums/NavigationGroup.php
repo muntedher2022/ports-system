@@ -14,9 +14,9 @@ enum NavigationGroup implements HasLabel
     case Operations;
     case Revenue;
     case Analytics;
-    case Reports;
     case Containers;
     case Cargo;
+    case Reports;
     case SystemAdmin;
 
     public function getLabel(): string
@@ -26,9 +26,9 @@ enum NavigationGroup implements HasLabel
             self::Operations => 'البيانات التشغيلية والإيراد',
             self::Revenue => 'الإيراد',
             self::Analytics => 'التحليلات والمقارنات',
-            self::Reports => 'التقارير',
             self::Containers => 'الحاويات المتخلفة والخطرة',
             self::Cargo => 'المواد والبضائع المتخلفة والخطرة',
+            self::Reports => 'التقارير',
             self::SystemAdmin => 'إدارة النظام',
         };
     }
