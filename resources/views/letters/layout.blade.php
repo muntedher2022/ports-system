@@ -4,37 +4,37 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $title ?? 'كتاب رسمي - الشركة العامة لموانئ العراق' }}</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
     <style>
         @page {
             size: A4 portrait;
-            margin: 10mm 15mm 12mm 15mm;
+            margin: 0;
         }
 
         * {
             box-sizing: border-box;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+            color-adjust: exact !important;
+        }
+
+        html, body {
+            margin: 0;
+            padding: 0;
+            direction: rtl;
+            font-family: 'Times New Roman', Times, serif;
+            background-color: #cbd5e1;
+            color: #000000;
         }
 
         body {
-            direction: rtl;
-            font-family: 'Amiri', 'Tajawal', serif, sans-serif;
-            background-color: #f1f5f9;
-            color: #000000;
-            margin: 0;
             padding: 20px 0;
-            font-size: 14pt;
-            line-height: 1.6;
         }
 
-        /* شريط الإجراءات والتحكم العلوي (يختفي عند الطباعة) */
+        /* شريط الأدوات والتحكم العلوي (يختفي عند الطباعة) */
         .no-print-bar {
             width: 210mm;
             max-width: 95%;
-            margin: 0 auto 15px auto;
+            margin: 0 auto 16px auto;
             background: #ffffff;
             padding: 12px 20px;
             border-radius: 12px;
@@ -43,7 +43,7 @@
             align-items: center;
             justify-content: space-between;
             gap: 15px;
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Times New Roman', Times, serif;
         }
 
         .no-print-bar .title {
@@ -56,8 +56,8 @@
         }
 
         .no-print-bar .badge {
-            font-size: 9.5pt;
-            padding: 3px 10px;
+            font-size: 10pt;
+            padding: 4px 12px;
             border-radius: 9999px;
             font-weight: 600;
         }
@@ -77,17 +77,18 @@
         .no-print-bar .btn-group {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 8px;
+            flex-wrap: wrap;
         }
 
         .btn {
-            font-family: 'Tajawal', sans-serif;
+            font-family: 'Times New Roman', Times, serif;
             display: inline-flex;
             align-items: center;
             gap: 6px;
-            padding: 8px 16px;
-            font-size: 10.5pt;
-            font-weight: 600;
+            padding: 7px 14px;
+            font-size: 11pt;
+            font-weight: 700;
             border-radius: 8px;
             text-decoration: none;
             cursor: pointer;
@@ -101,6 +102,14 @@
         }
         .btn-print:hover {
             background: #1d4ed8;
+        }
+
+        .btn-print-yellow {
+            background: #d97706;
+            color: #ffffff;
+        }
+        .btn-print-yellow:hover {
+            background: #b45309;
         }
 
         .btn-docx {
@@ -121,96 +130,135 @@
             color: #1e293b;
         }
 
-        /* ورقة A4 الرسمية */
+        /* ─── ورقة A4 الرسمية ─── */
         .a4-sheet {
             width: 210mm;
+            height: 297mm;
             min-height: 297mm;
+            max-height: 297mm;
             margin: 0 auto;
-            background: #ffffff;
-            padding: 12mm 18mm 15mm 18mm;
-            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            background-color: #ffffff;
+            background-repeat: no-repeat;
+            background-position: top left;
+            background-size: 210mm 297mm;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
             position: relative;
             box-sizing: border-box;
+            overflow: hidden;
+            font-family: 'Times New Roman', Times, serif;
+        }
+
+        /* مذكرة داخلية (فورمة داخلية.pdf) */
+        .sheet-internal {
+            background-image: url('/images/letters/internal_form.png');
+            background-image: url('{{ asset('images/letters/internal_form.png') }}');
+            padding: 57mm 22mm 38mm 22mm;
+        }
+
+        /* كتاب رسمي صادر مركزي - الورقة الأولى (فورمة.pdf) */
+        .sheet-official {
+            background-image: url('/images/letters/official_form.png');
+            background-image: url('{{ asset('images/letters/official_form.png') }}');
+            padding: 66mm 22mm 26mm 22mm;
+        }
+
+        /* كتاب رسمي صادر مركزي - الورقة الثانية المروّسة الصفراء (خالية من الفورمة) */
+        .sheet-preprinted {
+            background-color: #ffffff;
+            background-image: none !important;
+            padding: 66mm 22mm 26mm 22mm;
+        }
+
+        /* المتابعة المركزية والعمليات في هيدر الورقة الصفراء المروّسة */
+        .preprinted-header-dept {
+            position: absolute;
+            top: 27.5mm;
+            right: 14mm;
+            width: 78mm;
+            text-align: center;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 16pt;
+            font-weight: bold;
+            color: #000000;
+            line-height: 1.25;
+            direction: rtl;
+        }
+
+        /* فاصل توضيحي بين الورقتين على الشاشة */
+        .sheet-divider {
+            width: 210mm;
+            max-width: 95%;
+            margin: 25px auto 18px auto;
+            text-align: center;
+            position: relative;
+        }
+        .sheet-divider::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: #94a3b8;
+            z-index: 1;
+        }
+        .sheet-divider-badge {
+            position: relative;
+            z-index: 2;
+            display: inline-block;
+            background: #fef3c7;
+            color: #92400e;
+            border: 2px solid #f59e0b;
+            padding: 6px 20px;
+            border-radius: 9999px;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 12pt;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        /* كتابة الرقم والتاريخ فقط في المذكرات الداخلية */
+        .internal-memo-num {
+            position: absolute;
+            top: 34.6mm;
+            right: 40mm;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 14pt;
+            font-weight: bold;
+            color: #000000;
+            line-height: 1;
+            direction: rtl;
+        }
+
+        .internal-memo-date {
+            position: absolute;
+            top: 41.8mm;
+            right: 36mm;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 13.5pt;
+            font-weight: bold;
+            color: #000000;
+            line-height: 1;
+            direction: rtl;
+        }
+
+        /* حاوية المحتوى */
+        .letter-content {
+            width: 100%;
+            height: 100%;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            box-sizing: border-box;
         }
 
-        /* ─── ترويسة الكتاب (الهيدر) مطابق للنموذج الأصلي ─── */
-        .letter-header {
-            width: 100%;
-            margin-bottom: 12px;
-        }
-
-        .header-columns {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            width: 100%;
-        }
-
-        .header-ar {
-            width: 38%;
-            text-align: right;
-            font-family: 'Amiri', serif;
-            font-size: 13pt;
-            font-weight: 700;
-            line-height: 1.35;
-            color: #000;
-        }
-
-        .header-logo {
-            width: 24%;
-            text-align: center;
-        }
-
-        .header-logo img {
-            max-width: 130px;
-            max-height: 80px;
-            object-fit: contain;
-        }
-
-        .header-en {
-            width: 38%;
-            text-align: left;
-            direction: ltr;
-            font-family: 'Times New Roman', serif;
-            font-size: 10.5pt;
-            font-weight: 700;
-            line-height: 1.25;
-            color: #000;
-        }
-
-        .header-meta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 12px;
-            font-size: 13pt;
-            font-weight: 700;
-            color: #000;
-        }
-
-        .memo-divider {
-            text-align: center;
-            margin: 10px 0 14px 0;
-            font-size: 12.5pt;
-            font-weight: 700;
-            letter-spacing: 2px;
-            color: #000;
-            border-top: 2px solid #000;
-            border-bottom: 2px solid #000;
-            padding: 3px 0;
-        }
-
-        /* ─── متن الكتاب والقواعد الحرفية للخطوط ─── */
-        .letter-body {
+        .content-main {
             flex: 1;
-            color: #000;
         }
 
-        /* التوجيه: السيد المدير العام (14 غامق) */
+        /* القواعد الصارمة للخطوط وأحجامها (Times New Roman) */
         .addressee {
+            font-family: 'Times New Roman', Times, serif;
             font-size: 14pt;
             font-weight: bold;
             margin-bottom: 12px;
@@ -218,28 +266,28 @@
             color: #000;
         }
 
-        /* العنوان: 14 غامق في المنتصف */
         .subject {
+            font-family: 'Times New Roman', Times, serif;
             font-size: 14pt;
             font-weight: bold;
             text-align: center;
-            margin: 14px 0 16px 0;
-            line-height: 1.5;
+            margin: 12px 0 16px 0;
+            line-height: 1.6;
             text-decoration: underline;
             text-underline-offset: 4px;
             color: #000;
         }
 
-        /* التحية: 14 */
         .salutation {
+            font-family: 'Times New Roman', Times, serif;
             font-size: 14pt;
             font-weight: normal;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             color: #000;
         }
 
-        /* المتن: 14 */
         .paragraph {
+            font-family: 'Times New Roman', Times, serif;
             font-size: 14pt;
             font-weight: normal;
             text-align: justify;
@@ -249,43 +297,18 @@
             color: #000;
         }
 
-        /* عبارة الختام: تفضلكم بالاطلاع وامركم مع التقدير ... (14 في المنتصف) */
         .closing {
+            font-family: 'Times New Roman', Times, serif;
             font-size: 14pt;
             font-weight: normal;
             text-align: center;
-            margin: 14px 0 18px 0;
+            margin: 14px 0 16px 0;
             color: #000;
         }
 
-        /* الجداول الرسمية في الموقف الشهري */
-        .official-table {
-            width: 100%;
-            margin: 16px auto;
-            border-collapse: collapse;
-            font-size: 13.5pt;
-            border: 2px solid #000;
-        }
-
-        .official-table th, .official-table td {
-            border: 1.5px solid #000;
-            padding: 7px 10px;
-            text-align: center;
-            font-weight: 700;
-        }
-
-        .official-table th {
-            background-color: #f8fafc;
-            font-size: 14pt;
-        }
-
-        .official-table tr.total-row {
-            background-color: #f1f5f9;
-        }
-
-        /* المرافقات: حجم 12 */
         .attachments-section {
-            margin-top: 14px;
+            font-family: 'Times New Roman', Times, serif;
+            margin-top: 10px;
             font-size: 12pt;
             line-height: 1.6;
             color: #000;
@@ -298,9 +321,11 @@
             margin-bottom: 4px;
         }
 
-        /* التوقيع الرسمي */
+        .signature-spacer-2lines {
+            height: 2.8em;
+        }
+
         .signature-section {
-            margin-top: 25px;
             display: flex;
             justify-content: flex-end;
             text-align: center;
@@ -308,31 +333,32 @@
 
         .signature-box {
             min-width: 250px;
+            font-family: 'Times New Roman', Times, serif;
             font-size: 14pt;
             font-weight: bold;
-            line-height: 1.5;
+            line-height: 1.45;
             color: #000;
         }
 
         .signature-name {
-            font-size: 14.5pt;
-            font-weight: 900;
+            font-size: 14pt;
+            font-weight: bold;
             margin-bottom: 2px;
         }
 
         .signature-date {
-            margin-top: 6px;
+            margin-top: 4px;
             font-size: 13pt;
+            font-weight: bold;
         }
 
-        /* صورة منه إلى: حجم 12 */
         .copies-section {
-            margin-top: 24px;
-            border-top: 1px dashed #64748b;
-            padding-top: 8px;
+            font-family: 'Times New Roman', Times, serif;
+            margin-top: 14px;
+            padding-top: 4px;
             font-size: 12pt;
             line-height: 1.5;
-            color: #1e293b;
+            color: #000;
         }
 
         .copies-title {
@@ -341,68 +367,82 @@
             margin-bottom: 4px;
         }
 
-        /* ─── الفوتر الرسمي مطابق للنموذج الأصلي ─── */
-        .letter-footer {
+        .official-table {
             width: 100%;
-            margin-top: 15px;
-            padding-top: 6px;
-            border-top: 1px solid #94a3b8;
-            font-family: 'Tajawal', 'Segoe UI', Tahoma, sans-serif;
-            font-size: 9.5pt;
-            color: #334155;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+            margin: 12px auto;
+            border-collapse: collapse;
+            font-family: 'Times New Roman', Times, serif;
+            font-size: 13.5pt;
+            border: 2px solid #000;
         }
 
-        .memo-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            direction: ltr;
-        }
-
-        .central-footer {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 9pt;
-            line-height: 1.35;
-        }
-
-        .central-footer .col-left {
-            text-align: left;
-            direction: ltr;
-        }
-
-        .central-footer .col-center {
+        .official-table th, .official-table td {
+            border: 1.5px solid #000;
+            padding: 6px 10px;
             text-align: center;
+            font-weight: 700;
+            color: #000;
         }
 
-        .central-footer .col-right {
-            text-align: right;
-            direction: ltr;
-            font-weight: 600;
+        .official-table th {
+            background-color: #f8fafc;
+            font-size: 14pt;
+        }
+
+        .official-table tr.total-row {
+            background-color: #f1f5f9;
         }
 
         @media print {
             body {
-                background: transparent;
-                padding: 0;
-                margin: 0;
+                background: transparent !important;
+                padding: 0 !important;
+                margin: 0 !important;
             }
             .no-print-bar {
                 display: none !important;
             }
+            .sheet-divider {
+                display: none !important;
+            }
             .a4-sheet {
-                box-shadow: none;
-                margin: 0;
-                padding: 0;
-                width: 100%;
-                min-height: auto;
+                box-shadow: none !important;
+                margin: 0 !important;
+                width: 210mm !important;
+                height: 297mm !important;
+                min-height: 297mm !important;
+                max-height: 297mm !important;
+                page-break-after: avoid !important;
+                page-break-inside: avoid !important;
+                -webkit-print-color-adjust: exact !important;
+                print-color-adjust: exact !important;
+            }
+            .sheet-preprinted {
+                page-break-before: always !important;
+                break-before: page !important;
+            }
+            body.print-only-official .sheet-preprinted {
+                display: none !important;
+            }
+            body.print-only-preprinted .sheet-official {
+                display: none !important;
             }
         }
     </style>
+    <script>
+        function printLetter(mode) {
+            document.body.classList.remove('print-only-official', 'print-only-preprinted');
+            if (mode === 'official') {
+                document.body.classList.add('print-only-official');
+            } else if (mode === 'preprinted') {
+                document.body.classList.add('print-only-preprinted');
+            }
+            window.print();
+            setTimeout(() => {
+                document.body.classList.remove('print-only-official', 'print-only-preprinted');
+            }, 1000);
+        }
+    </script>
     @yield('styles')
 </head>
 <body>
@@ -412,16 +452,27 @@
         <div class="title">
             <span>{{ $title }}</span>
             @if(!empty($is_central_out))
-                <span class="badge badge-central">صادر مركزي (يسحب فارغاً للختم)</span>
+                <span class="badge badge-central">صادر مركزي (ورقتان: رسمية كاملة + مروّسة صفراء)</span>
             @else
                 <span class="badge badge-memo">مذكرة داخلية رسمية</span>
             @endif
         </div>
         <div class="btn-group">
-            <button onclick="window.print()" class="btn btn-print">
-                <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
-                طباعة A4 / حفظ PDF
-            </button>
+            @if(!empty($is_central_out))
+                <button onclick="printLetter('all')" class="btn btn-print" title="طباعة الورقتين معاً">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    طباعة الكل (صفحتين)
+                </button>
+                <button onclick="printLetter('preprinted')" class="btn btn-print-yellow" title="طباعة الورقة الثانية المفرغة على الورق الأصفر المروّس">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                    طباعة على الورق الأصفر (مفرغة)
+                </button>
+            @else
+                <button onclick="window.print()" class="btn btn-print">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4H7v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"></path></svg>
+                    طباعة A4 / حفظ PDF
+                </button>
+            @endif
             <a href="{{ route('admin.official-letters.docx', ['type' => $current_type, 'fiscal_year_id' => $fiscal_year?->id, 'month_id' => $month?->id, 'memo_number' => $memo_number, 'memo_date' => $memo_date]) }}" class="btn btn-docx">
                 <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                 تحميل ملف Word (.docx)
@@ -432,10 +483,7 @@
         </div>
     </div>
 
-    <!-- ورقة A4 -->
-    <div class="a4-sheet">
-        @yield('content')
-    </div>
+    @yield('content')
 
 </body>
 </html>
