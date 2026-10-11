@@ -421,14 +421,52 @@ class OfficialLettersService
                 $prevYear = $data['prev_year'] ?? ($year - 1);
 
                 if ($type === 'revenue_memo' || $type === 'capacity_memo') {
-                    // استبدال أسماء وأرقام الشهور والسنوات
-                    $docXml = str_replace(['اب', 'آب', 'ايلول', 'أيلول'], $monthName, $docXml);
-                    $docXml = preg_replace('/\b8\s*\/\s*2026\b/', "{$monthNum}/ {$year}", $docXml);
-                    $docXml = preg_replace('/\b2025\s*-\s*2026\b/', "{$prevYear} - {$year}", $docXml);
+                    // 1. استبدال اسم الشهر فقط عندما يكون عقدة مستقلة (w:t) لتجنب تشويه كلمات مثل (المتابعة)
+                    $docXml = preg_replace(
+                        '/<w:t([^>]*)>\s*(?:اب|آب|ايلول|أيلول)\s*<\/w:t>/u',
+                        '<w:t$1>'.$monthName.' </w:t>',
+                        $docXml
+                    );
+
+                    // 2. استبدال رقم الشهر (8) في العقد المستقلة
+                    $docXml = preg_replace(
+                        '/<w:t([^>]*)>\s*8\s*<\/w:t>/u',
+                        '<w:t$1>'.$monthNum.'</w:t>',
+                        $docXml
+                    );
+
+                    // 3. استبدال السنة في العقد المستقلة
+                    $docXml = preg_replace(
+                        '/<w:t([^>]*)>\s*2026\s*<\/w:t>/u',
+                        '<w:t$1>'.$year.'</w:t>',
+                        $docXml
+                    );
+
+                    // 4. استبدال كسر التاريخ مثل / 2026) أو /2026)
+                    $docXml = preg_replace(
+                        '/\/\s*20\d\d\s*\)/u',
+                        "/ {$year})",
+                        $docXml
+                    );
+
+                    // 5. استبدال مقارنة السنوات (2025 - 2026)
+                    $docXml = preg_replace(
+                        '/20\d\d\s*-\s*20\d\d/u',
+                        "{$prevYear} - {$year}",
+                        $docXml
+                    );
                 } elseif ($type === 'containers_letter') {
-                    $docXml = str_replace(['ايلول', 'أيلول', 'اب', 'آب'], $monthName, $docXml);
-                    $docXml = str_replace('/ 9 / 2026', "/ {$monthNum} / {$year}", $docXml);
-                    $docXml = str_replace('/ 9 /', "/ {$monthNum} /", $docXml);
+                    // استبدال في عنوان الموقف والمتن بدقة دون المساس بكلمة المتابعة
+                    $docXml = preg_replace(
+                        '/لشهر\s+(?:ايلول|أيلول|اب|آب)\s+20\d\d/u',
+                        "لشهر {$monthName} {$year}",
+                        $docXml
+                    );
+                    $docXml = preg_replace(
+                        '/\/\s*\d+\s*\/\s*20\d\d/u',
+                        "/ {$monthNum} / {$year}",
+                        $docXml
+                    );
 
                     // استبدال قيم جدول الحاويات بالأرقام الحقيقية المغذاة من النظام
                     $t = $data['table'];
@@ -442,9 +480,17 @@ class OfficialLettersService
                     $docXml = preg_replace('/<w:t>2742<\/w:t>/u', "<w:t>{$t['totals']['private']}</w:t>", $docXml);
                     $docXml = preg_replace('/<w:t>2904<\/w:t>/u', "<w:t>{$t['totals']['grand_total']}</w:t>", $docXml);
                 } elseif ($type === 'cargo_letter') {
-                    $docXml = str_replace(['اب', 'آب', 'ايلول', 'أيلول'], $monthName, $docXml);
-                    $docXml = str_replace('/ 9 / 2026', "/ {$monthNum} / {$year}", $docXml);
-                    $docXml = str_replace('/ 8 / 2026', "/ {$monthNum} / {$year}", $docXml);
+                    // استبدال في عنوان الموقف والمتن بدقة دون المساس بكلمة المتابعة
+                    $docXml = preg_replace(
+                        '/لشهر\s+(?:اب|آب|ايلول|أيلول)\s+20\d\d/u',
+                        "لشهر {$monthName} {$year}",
+                        $docXml
+                    );
+                    $docXml = preg_replace(
+                        '/\/\s*\d+\s*\/\s*20\d\d/u',
+                        "/ {$monthNum} / {$year}",
+                        $docXml
+                    );
 
                     // استبدال قيم جدول البضائع بالأرقام الحقيقية المغذاة من النظام
                     $t = $data['table'];
