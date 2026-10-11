@@ -55,15 +55,19 @@ class OfficialLetters extends Page
 
     public string $capacity_memo_date = '';
 
-    // حقول موقف الحاويات (صادر مركزي - بدون رقم وتاريخ)
+    // حقول موقف الحاويات (صادر مركزي)
     public ?int $containers_fiscal_year_id = null;
 
     public ?int $containers_month_id = null;
 
-    // حقول موقف البضائع (صادر مركزي - بدون رقم وتاريخ)
+    public string $containers_signature_date = '';
+
+    // حقول موقف البضائع (صادر مركزي)
     public ?int $cargo_fiscal_year_id = null;
 
     public ?int $cargo_month_id = null;
+
+    public string $cargo_signature_date = '';
 
     public function mount(): void
     {
@@ -74,7 +78,7 @@ class OfficialLetters extends Page
         $monthAugust = Month::where('month_number', 8)->first() ?? Month::first();
         $monthSeptember = Month::where('month_number', 9)->first() ?? $monthAugust;
 
-        $todayDate = date('d / m / Y');
+        $todayDate = date('d/m/Y');
 
         // الإيراد
         $this->revenue_fiscal_year_id = $defaultFyId;
@@ -91,10 +95,12 @@ class OfficialLetters extends Page
         // الحاويات
         $this->containers_fiscal_year_id = $defaultFyId;
         $this->containers_month_id = $monthSeptember?->id;
+        $this->containers_signature_date = $todayDate;
 
         // البضائع
         $this->cargo_fiscal_year_id = $defaultFyId;
         $this->cargo_month_id = $monthAugust?->id;
+        $this->cargo_signature_date = $todayDate;
     }
 
     public function getFiscalYearsProperty()

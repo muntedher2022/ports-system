@@ -176,13 +176,15 @@ class OfficialLettersService
     /**
      * جلب بيانات كتاب الموقف الشهري للحاويات المتخلفة والخطرة (صادر مركزي)
      */
-    public static function getContainersLetterData(?int $fiscalYearId = null, ?int $monthId = null): array
+    public static function getContainersLetterData(?int $fiscalYearId = null, ?int $monthId = null, ?string $memoDate = null): array
     {
         $fy = $fiscalYearId ? FiscalYear::find($fiscalYearId) : (FiscalYear::where('is_current', true)->first() ?? FiscalYear::latest('year')->first());
 
         // الافتراضي شهر تتوفر فيه بيانات حقيقية (أيلول / شهر 9)
         $month = $monthId ? Month::find($monthId) : (Month::where('month_number', 9)->first() ?? Month::first());
         $currentYearNum = $fy ? (int) $fy->year : (int) date('Y');
+
+        $signatureDate = ! empty($memoDate) ? preg_replace('/\s*\/\s*/', '/', trim($memoDate)) : date('d/m/Y');
 
         // احتساب الحاويات المتخلفة والخطرة مقسمة بحسب القطاع الحكومي والخاص
         $abandonedPriv = ContainerItem::where('status', 'in_port')
@@ -228,7 +230,8 @@ class OfficialLettersService
             'month_name' => $month?->name_ar ?? 'أيلول',
             'month_number' => $month?->month_number ?? 9,
             'memo_number' => '', // يسحب فارغاً للصادر المركزي
-            'memo_date' => '', // يسحب فارغاً للصادر المركزي
+            'memo_date' => $signatureDate,
+            'signature_date' => $signatureDate,
             'is_central_out' => true,
             'table' => [
                 'abandoned' => [
@@ -258,13 +261,15 @@ class OfficialLettersService
     /**
      * جلب بيانات كتاب الموقف الشهري للمواد والبضائع المتخلفة (صادر مركزي)
      */
-    public static function getCargoLetterData(?int $fiscalYearId = null, ?int $monthId = null): array
+    public static function getCargoLetterData(?int $fiscalYearId = null, ?int $monthId = null, ?string $memoDate = null): array
     {
         $fy = $fiscalYearId ? FiscalYear::find($fiscalYearId) : (FiscalYear::where('is_current', true)->first() ?? FiscalYear::latest('year')->first());
 
         // الافتراضي شهر تتوفر فيه بيانات حقيقية (آب / شهر 8)
         $month = $monthId ? Month::find($monthId) : (Month::where('month_number', 8)->first() ?? Month::first());
         $currentYearNum = $fy ? (int) $fy->year : (int) date('Y');
+
+        $signatureDate = ! empty($memoDate) ? preg_replace('/\s*\/\s*/', '/', trim($memoDate)) : date('d/m/Y');
 
         // جلب سجلات البضائع للشهر والسنة
         $cargoRecords = CargoStatusRecord::where('fiscal_year_id', $fy?->id)
@@ -297,7 +302,8 @@ class OfficialLettersService
             'month_name' => $month?->name_ar ?? 'آب',
             'month_number' => $month?->month_number ?? 8,
             'memo_number' => '', // يسحب فارغاً للصادر المركزي
-            'memo_date' => '', // يسحب فارغاً للصادر المركزي
+            'memo_date' => $signatureDate,
+            'signature_date' => $signatureDate,
             'is_central_out' => true,
             'table' => [
                 'abandoned' => [
@@ -326,8 +332,8 @@ class OfficialLettersService
         return match ($type) {
             'revenue_memo' => static::getRevenueLetterData($fiscalYearId, $monthId, $memoNumber, $memoDate),
             'capacity_memo' => static::getCapacityLetterData($fiscalYearId, $monthId, $memoNumber, $memoDate),
-            'containers_letter' => static::getContainersLetterData($fiscalYearId, $monthId),
-            'cargo_letter' => static::getCargoLetterData($fiscalYearId, $monthId),
+            'containers_letter' => static::getContainersLetterData($fiscalYearId, $monthId, $memoDate),
+            'cargo_letter' => static::getCargoLetterData($fiscalYearId, $monthId, $memoDate),
             default => static::getRevenueLetterData($fiscalYearId, $monthId, $memoNumber, $memoDate),
         };
     }
@@ -462,9 +468,10 @@ class OfficialLettersService
                         "لشهر {$monthName} {$year}",
                         $docXml
                     );
+                    $sigDate = $data['signature_date'] ?? date('d/m/Y');
                     $docXml = preg_replace(
                         '/\/\s*\d+\s*\/\s*20\d\d/u',
-                        "/ {$monthNum} / {$year}",
+                        $sigDate,
                         $docXml
                     );
 
@@ -486,9 +493,10 @@ class OfficialLettersService
                         "لشهر {$monthName} {$year}",
                         $docXml
                     );
+                    $sigDate = $data['signature_date'] ?? date('d/m/Y');
                     $docXml = preg_replace(
                         '/\/\s*\d+\s*\/\s*20\d\d/u',
-                        "/ {$monthNum} / {$year}",
+                        $sigDate,
                         $docXml
                     );
 

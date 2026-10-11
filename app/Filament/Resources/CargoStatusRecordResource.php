@@ -425,7 +425,11 @@ class CargoStatusRecordResource extends Resource
 
                             DatePicker::make('target_report_date')
                                 ->label('تاريخ التقرير الجديد')
-                                ->default(now()->toDateString())
+                                ->native(false)
+                                ->displayFormat('d/m/Y')
+                                ->format('Y-m-d')
+                                ->closeOnDateSelection()
+                                ->default(now())
                                 ->required(),
                         ])
                         ->action(function (CargoStatusRecord $record, array $data) {

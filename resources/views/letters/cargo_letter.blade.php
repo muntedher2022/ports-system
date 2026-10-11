@@ -71,7 +71,7 @@
                         <div class="signature-name">{{ $signatory_name }}</div>
                         <div>{{ $signatory_title }}</div>
                         <div>الشركة العامة لموانئ العراق</div>
-                        <div class="signature-date">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;{{ $month_number }}&nbsp;&nbsp; / &nbsp;&nbsp;{{ $year }}</div>
+                        <div class="signature-date">{{ $signature_date ?? ($memo_date ?: date('d/m/Y')) }}</div>
                     </div>
                 </div>
             </div>
@@ -165,7 +165,7 @@
                         <div class="signature-name">{{ $signatory_name }}</div>
                         <div>{{ $signatory_title }}</div>
                         <div>الشركة العامة لموانئ العراق</div>
-                        <div class="signature-date">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; / &nbsp;&nbsp;{{ $month_number }}&nbsp;&nbsp; / &nbsp;&nbsp;{{ $year }}</div>
+                        <div class="signature-date">{{ $signature_date ?? ($memo_date ?: date('d/m/Y')) }}</div>
                     </div>
                 </div>
             </div>
