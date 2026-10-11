@@ -340,16 +340,26 @@ class OfficialLettersService
         $types = static::getLetterTypes();
         $meta = $types[$type] ?? $types['revenue_memo'];
 
-        $sourceTemplate = base_path('نماذج/'.$meta['default_file_name']);
-        if (! file_exists($sourceTemplate)) {
-            // محاولة بديلة في حال اختلاف التشفير
-            $candidates = glob(base_path('نماذج/*.docx'));
-            foreach ($candidates as $c) {
-                if (str_contains(basename($c), $type === 'revenue_memo' ? 'الايراد' : ($type === 'capacity_memo' ? 'الطاقة' : ($type === 'containers_letter' ? 'الحاويات' : 'المواد')))) {
-                    $sourceTemplate = $c;
-                    break;
+        $resourceTemplate = resource_path("templates/letters/{$type}.docx");
+        if (file_exists($resourceTemplate)) {
+            $sourceTemplate = $resourceTemplate;
+        } else {
+            $sourceTemplate = base_path('نماذج/'.$meta['default_file_name']);
+            if (! file_exists($sourceTemplate)) {
+                // محاولة بديلة في حال اختلاف التشفير
+                $candidates = glob(base_path('نماذج/*.docx')) ?: [];
+                foreach ($candidates as $c) {
+                    $base = basename($c);
+                    if (str_contains($base, $type === 'revenue_memo' ? 'الايراد' : ($type === 'capacity_memo' ? 'الطاقة' : ($type === 'containers_letter' ? 'حاويات' : 'المواد')))) {
+                        $sourceTemplate = $c;
+                        break;
+                    }
                 }
             }
+        }
+
+        if (! file_exists($sourceTemplate)) {
+            throw new \RuntimeException("نموذج ملف Word غير متوفر للنوع: {$type}");
         }
 
         $outputDir = storage_path('app/letters_generated');
@@ -359,9 +369,12 @@ class OfficialLettersService
 
         $monthName = $data['month_name'] ?? 'الشهر';
         $year = $data['year'] ?? date('Y');
+        $memoNumSafe = preg_replace('~[/\\\\:*?"<>|]+~u', '-', (string) ($data['memo_number'] ?? ''));
+        $memoNumSafe = trim($memoNumSafe) ?: 'بدون_رقم';
+
         $safeFileName = match ($type) {
-            'revenue_memo' => "مذكرة_الإيراد_رقم_{$data['memo_number']}_{$monthName}_{$year}.docx",
-            'capacity_memo' => "مذكرة_الطاقة_رقم_{$data['memo_number']}_{$monthName}_{$year}.docx",
+            'revenue_memo' => "مذكرة_الإيراد_رقم_{$memoNumSafe}_{$monthName}_{$year}.docx",
+            'capacity_memo' => "مذكرة_الطاقة_رقم_{$memoNumSafe}_{$monthName}_{$year}.docx",
             'containers_letter' => "كتاب_موقف_الحاويات_{$monthName}_{$year}.docx",
             'cargo_letter' => "كتاب_موقف_البضائع_{$monthName}_{$year}.docx",
             default => "كتاب_رسمي_{$type}.docx",
@@ -377,8 +390,22 @@ class OfficialLettersService
             if ($type === 'revenue_memo' || $type === 'capacity_memo') {
                 $headerXml = $zip->getFromName('word/header1.xml');
                 if ($headerXml) {
-                    $headerXml = preg_replace('/م\.ت\s*\d+/', 'م.ت '.$data['memo_number'], $headerXml);
+                    if (! empty($data['memo_number'])) {
+                        // استبدال رقم المذكرة بعد م.ت في XML
+                        $headerXml = preg_replace(
+                            '/(<w:t>م\.ت<\/w:t>.*?<w:t>)[^<]*(<\/w:t>)/su',
+                            '${1}'.htmlspecialchars((string) $data['memo_number'], ENT_XML1).'${2}',
+                            $headerXml
+                        );
+                        $headerXml = preg_replace('/م\.ت\s*\d+/', 'م.ت '.$data['memo_number'], $headerXml);
+                    }
                     if (! empty($data['memo_date'])) {
+                        // استبدال تاريخ المذكرة بعد خ: في XML
+                        $headerXml = preg_replace(
+                            '/(<w:t>خ:<\/w:t><\/w:r>).*?(<\/w:p>)/su',
+                            '$1<w:r><w:rPr><w:rFonts w:asciiTheme="majorBidi" w:hAnsiTheme="majorBidi" w:cstheme="majorBidi" w:hint="cs"/><w:b/><w:bCs/><w:sz w:val="28"/><w:szCs w:val="28"/><w:rtl/><w:lang w:bidi="ar-IQ"/></w:rPr><w:t xml:space="preserve"> '.htmlspecialchars((string) $data['memo_date'], ENT_XML1).'</w:t></w:r>$2',
+                            $headerXml
+                        );
                         $headerXml = preg_replace('/\d+\s*\/\s*\d+\s*\/\s*20\d\d/', $data['memo_date'], $headerXml);
                     }
                     $zip->addFromString('word/header1.xml', $headerXml);
