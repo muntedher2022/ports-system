@@ -148,4 +148,107 @@ class ReportPdfController extends Controller
             'Content-Disposition' => 'inline; filename="تقرير_الانحراف_المعياري_والاستقرار.pdf"',
         ]);
     }
+
+    /**
+     * 7. معاينة طباعة الموقف اليومي لحركة السفن (A4 Landscape)
+     */
+    public function previewDailyVesselTraffic(Request $request)
+    {
+        $fromDate = $request->input('from_date') ?: now()->startOfMonth()->format('Y-m-d');
+        $toDate = $request->input('to_date') ?: now()->endOfMonth()->format('Y-m-d');
+
+        $records = \App\Models\DailyVesselStatus::whereDate('record_date', '>=', $fromDate)
+            ->whereDate('record_date', '<=', $toDate)
+            ->orderBy('record_date', 'asc')
+            ->get();
+
+        $count = $records->count();
+        $sums = [
+            'oil_port_waiting' => $records->sum('oil_port_waiting'),
+            'oil_port_berth' => $records->sum('oil_port_berth'),
+            'anchorage_waiting' => $records->sum('anchorage_waiting'),
+            'um_qasr_north' => $records->sum('um_qasr_north'),
+            'um_qasr_south' => $records->sum('um_qasr_south'),
+            'khor_al_zubair' => $records->sum('khor_al_zubair'),
+            'abu_flus' => $records->sum('abu_flus'),
+            'lpg_berth' => $records->sum('lpg_berth'),
+            'total_berthed' => $records->sum('total_berthed'),
+            'total_overall' => $records->sum('total_overall'),
+        ];
+        $averages = [];
+        foreach ($sums as $k => $v) {
+            $averages[$k] = $count > 0 ? round($v / $count, 1) : 0;
+        }
+
+        $fromFormatted = \Carbon\Carbon::parse($fromDate)->format('d/m/Y');
+        $toFormatted = \Carbon\Carbon::parse($toDate)->format('d/m/Y');
+
+        ActivityLogger::log('viewed_report', "معاينة طباعة إحصائية حركة السفن اليومية ({$fromFormatted} - {$toFormatted})");
+
+        return view('reports.daily-vessel-traffic-report', [
+            'records' => $records,
+            'fromDate' => $fromDate,
+            'toDate' => $toDate,
+            'fromFormatted' => $fromFormatted,
+            'toFormatted' => $toFormatted,
+            'sums' => $sums,
+            'averages' => $averages,
+        ]);
+    }
+
+    /**
+     * 8. تحميل PDF مباشر لإحصائية حركة السفن اليومية عبر Spatie PDF
+     */
+    public function exportDailyVesselTrafficPdf(Request $request): Response
+    {
+        $fromDate = $request->input('from_date') ?: now()->startOfMonth()->format('Y-m-d');
+        $toDate = $request->input('to_date') ?: now()->endOfMonth()->format('Y-m-d');
+
+        $records = \App\Models\DailyVesselStatus::whereDate('record_date', '>=', $fromDate)
+            ->whereDate('record_date', '<=', $toDate)
+            ->orderBy('record_date', 'asc')
+            ->get();
+
+        $count = $records->count();
+        $sums = [
+            'oil_port_waiting' => $records->sum('oil_port_waiting'),
+            'oil_port_berth' => $records->sum('oil_port_berth'),
+            'anchorage_waiting' => $records->sum('anchorage_waiting'),
+            'um_qasr_north' => $records->sum('um_qasr_north'),
+            'um_qasr_south' => $records->sum('um_qasr_south'),
+            'khor_al_zubair' => $records->sum('khor_al_zubair'),
+            'abu_flus' => $records->sum('abu_flus'),
+            'lpg_berth' => $records->sum('lpg_berth'),
+            'total_berthed' => $records->sum('total_berthed'),
+            'total_overall' => $records->sum('total_overall'),
+        ];
+        $averages = [];
+        foreach ($sums as $k => $v) {
+            $averages[$k] = $count > 0 ? round($v / $count, 1) : 0;
+        }
+
+        $fromFormatted = \Carbon\Carbon::parse($fromDate)->format('d/m/Y');
+        $toFormatted = \Carbon\Carbon::parse($toDate)->format('d/m/Y');
+
+        ActivityLogger::log('exported_pdf', "تصدير إحصائية حركة السفن اليومية (PDF) للفترة ({$fromFormatted} - {$toFormatted})");
+
+        $pdf = \Spatie\LaravelPdf\Facades\Pdf::view('reports.daily-vessel-traffic-report', [
+            'records' => $records,
+            'fromDate' => $fromDate,
+            'toDate' => $toDate,
+            'fromFormatted' => $fromFormatted,
+            'toFormatted' => $toFormatted,
+            'sums' => $sums,
+            'averages' => $averages,
+        ])
+        ->format('a4')
+        ->landscape();
+
+        $fileName = 'موقف_حركة_السفن_' . str_replace('/', '-', $fromFormatted) . '_' . str_replace('/', '-', $toFormatted) . '.pdf';
+
+        return response($pdf->generatePdfContent(), 200, [
+            'Content-Type' => 'application/pdf',
+            'Content-Disposition' => 'inline; filename="' . $fileName . '"',
+        ]);
+    }
 }

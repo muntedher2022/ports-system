@@ -112,6 +112,33 @@ class AdminPanelProvider extends PanelProvider
                     </style>
                 ')
             )
+            ->renderHook(
+                'panels::body.end',
+                fn () => new HtmlString('
+                    <script>
+                        (function() {
+                            const iraqiMonths = [
+                                "كانون الثاني", "شباط", "آذار", "نيسان", "أيار", "حزيران",
+                                "تموز", "آب", "أيلول", "تشرين الأول", "تشرين الثاني", "كانون الأول"
+                            ];
+                            function patchDayjs() {
+                                if (window.dayjs && typeof window.dayjs.locale === "function") {
+                                    try {
+                                        window.dayjs.locale("ar", {
+                                            months: iraqiMonths,
+                                            monthsShort: iraqiMonths
+                                        }, true);
+                                    } catch(e) {}
+                                }
+                            }
+                            patchDayjs();
+                            document.addEventListener("DOMContentLoaded", patchDayjs);
+                            document.addEventListener("livewire:navigated", patchDayjs);
+                            document.addEventListener("livewire:initialized", patchDayjs);
+                        })();
+                    </script>
+                ')
+            )
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

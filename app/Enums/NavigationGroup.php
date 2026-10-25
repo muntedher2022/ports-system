@@ -16,6 +16,7 @@ enum NavigationGroup implements HasLabel
     case Analytics;
     case Containers;
     case Cargo;
+    case VesselTraffic;
     case Reports;
     case SystemAdmin;
 
@@ -28,6 +29,7 @@ enum NavigationGroup implements HasLabel
             self::Analytics => 'التحليلات والمقارنات',
             self::Containers => 'الحاويات المتخلفة والخطرة',
             self::Cargo => 'المواد والبضائع المتخلفة والخطرة',
+            self::VesselTraffic => 'موقف حركة السفن اليومي',
             self::Reports => 'التقارير',
             self::SystemAdmin => 'إدارة النظام',
         };

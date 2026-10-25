@@ -161,4 +161,36 @@ class ReportExcelController extends Controller
             $fileName
         );
     }
+
+    /**
+     * تصدير إحصائية حركة السفن اليومية التراكمية إلى Excel طبق الأصل
+     */
+    public function exportDailyVesselTraffic(Request $request): BinaryFileResponse
+    {
+        $fromDate = $request->input('from_date') ?: now()->startOfMonth()->format('Y-m-d');
+        $toDate = $request->input('to_date') ?: now()->endOfMonth()->format('Y-m-d');
+
+        $records = \App\Models\DailyVesselStatus::whereDate('record_date', '>=', $fromDate)
+            ->whereDate('record_date', '<=', $toDate)
+            ->orderBy('record_date', 'asc')
+            ->get();
+
+        $fromFormatted = \Carbon\Carbon::parse($fromDate)->format('d/m/Y');
+        $toFormatted = \Carbon\Carbon::parse($toDate)->format('d/m/Y');
+
+        ActivityLogger::log(
+            'exported_excel',
+            "تصدير إحصائية حركة السفن اليومية للفترة ({$fromFormatted} - {$toFormatted})",
+            \App\Models\DailyVesselStatus::class,
+            null,
+            ['from_date' => $fromDate, 'to_date' => $toDate]
+        );
+
+        $fileName = 'موقف_حركة_السفن_'.str_replace('/', '-', $fromFormatted).'_'.str_replace('/', '-', $toFormatted).'.xlsx';
+
+        return Excel::download(
+            new \App\Exports\DailyVesselTrafficExport($records, $fromFormatted, $toFormatted),
+            $fileName
+        );
+    }
 }

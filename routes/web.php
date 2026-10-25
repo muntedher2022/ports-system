@@ -19,9 +19,13 @@ Route::middleware(['auth'])->prefix('admin/reports')->name('admin.reports.')->gr
     Route::get('multi-year-comparison/pdf', [ReportPdfController::class, 'exportMultiYearComparison'])->name('multi-year-comparison.pdf');
     Route::get('standard-deviation/pdf', [ReportPdfController::class, 'exportStandardDeviation'])->name('standard-deviation.pdf');
 
+    Route::get('daily-vessel-traffic/preview', [ReportPdfController::class, 'previewDailyVesselTraffic'])->name('daily-vessel-traffic.preview');
+    Route::get('daily-vessel-traffic/pdf', [ReportPdfController::class, 'exportDailyVesselTrafficPdf'])->name('daily-vessel-traffic.pdf');
+
     // تصدير Excel
     Route::get('monthly-port-records/excel', [\App\Http\Controllers\ReportExcelController::class, 'exportMonthlyPortRecords'])->name('monthly-port-records.excel');
     Route::get('revenue-records/excel', [\App\Http\Controllers\ReportExcelController::class, 'exportRevenueRecords'])->name('revenue-records.excel');
+    Route::get('daily-vessel-traffic/excel', [\App\Http\Controllers\ReportExcelController::class, 'exportDailyVesselTraffic'])->name('daily-vessel-traffic.excel');
 });
 
 // ─── مسارات الحاويات المتخلفة والخطرة ───
