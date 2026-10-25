@@ -65,8 +65,10 @@ class DailyVesselStatusResource extends Resource
                         Grid::make(2)->schema([
                             DatePicker::make('record_date')
                                 ->label('تاريخ الموقف اليومي')
-                                ->displayFormat('d/m/Y')
                                 ->native(false)
+                                ->displayFormat('d/m/Y')
+                                ->format('Y-m-d')
+                                ->closeOnDateSelection()
                                 ->required()
                                 ->unique(ignoreRecord: true)
                                 ->default(now()),
@@ -271,8 +273,18 @@ class DailyVesselStatusResource extends Resource
             ->filters([
                 Filter::make('date_range')
                     ->form([
-                        DatePicker::make('from_date')->label('من تاريخ')->displayFormat('d/m/Y'),
-                        DatePicker::make('to_date')->label('إلى تاريخ')->displayFormat('d/m/Y'),
+                        DatePicker::make('from_date')
+                            ->label('من تاريخ')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->closeOnDateSelection(),
+                        DatePicker::make('to_date')
+                            ->label('إلى تاريخ')
+                            ->native(false)
+                            ->displayFormat('d/m/Y')
+                            ->format('Y-m-d')
+                            ->closeOnDateSelection(),
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
