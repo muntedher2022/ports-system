@@ -164,6 +164,8 @@ class ReportPdfController extends Controller
 
         $count = $records->count();
         $sums = [
+            'control_vessels_in' => $records->sum('control_vessels_in'),
+            'control_vessels_out' => $records->sum('control_vessels_out'),
             'oil_port_waiting' => $records->sum('oil_port_waiting'),
             'oil_port_berth' => $records->sum('oil_port_berth'),
             'anchorage_waiting' => $records->sum('anchorage_waiting'),
@@ -211,6 +213,8 @@ class ReportPdfController extends Controller
 
         $count = $records->count();
         $sums = [
+            'control_vessels_in' => $records->sum('control_vessels_in'),
+            'control_vessels_out' => $records->sum('control_vessels_out'),
             'oil_port_waiting' => $records->sum('oil_port_waiting'),
             'oil_port_berth' => $records->sum('oil_port_berth'),
             'anchorage_waiting' => $records->sum('anchorage_waiting'),

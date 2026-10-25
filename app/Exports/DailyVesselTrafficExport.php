@@ -40,16 +40,18 @@ class DailyVesselTrafficExport implements WithColumnWidths, WithEvents, WithStri
     {
         return [
             'A' => 14, // التاريخ
-            'B' => 18, // انتظار نفطي
-            'C' => 15, // الميناء النفطي
-            'D' => 16, // المخطاف
-            'E' => 16, // أم قصر الشمالي
-            'F' => 16, // أم قصر الجنوبي
-            'G' => 16, // خور الزبير
-            'H' => 15, // أبو فلوس
-            'I' => 15, // رصيف الغاز
-            'J' => 15, // إجمالي الراسية
-            'K' => 18, // الموقف الإجمالي
+            'B' => 13, // سفن الدخول
+            'C' => 13, // سفن المغادرة
+            'D' => 16, // منطقة الانتظار (مخطاف)
+            'E' => 14, // الميناء النفطي
+            'F' => 16, // منطقة الانتظار
+            'G' => 15, // أم قصر الشمالي
+            'H' => 15, // أم قصر الجنوبي
+            'I' => 15, // خور الزبير
+            'J' => 14, // أبو فلوس
+            'K' => 14, // رصيف الغاز
+            'L' => 15, // إجمالي الراسية
+            'M' => 18, // الموقف الإجمالي
         ];
     }
 
@@ -66,15 +68,15 @@ class DailyVesselTrafficExport implements WithColumnWidths, WithEvents, WithStri
                 $sheet->setShowGridLines(true);
 
                 // ─── 1. ترويسة التقرير (العنوان والفترة) ───
-                $sheet->mergeCells('A2:K2');
-                $sheet->setCellValue('A2', 'إحصائية حركة السفن اليومية (في الانتظار والراسية) في الموانئ العراقية');
+                $sheet->mergeCells('A2:M2');
+                $sheet->setCellValue('A2', 'إحصائية حركة السفن اليومية (في الانتظار والراسية وموقف السيطرة) في الموانئ العراقية');
                 $sheet->getStyle('A2')->applyFromArray([
                     'font' => ['name' => 'Calibri', 'size' => 14, 'bold' => true, 'color' => ['rgb' => '1B365D']],
                     'alignment' => ['horizontal' => Alignment::HORIZONTAL_CENTER, 'vertical' => Alignment::VERTICAL_CENTER],
                 ]);
                 $sheet->getRowDimension(2)->setRowHeight(30);
 
-                $sheet->mergeCells('A3:K3');
+                $sheet->mergeCells('A3:M3');
                 $sheet->setCellValue('A3', "للفترة من {$this->fromDate} لغاية {$this->toDate}");
                 $sheet->getStyle('A3')->applyFromArray([
                     'font' => ['name' => 'Calibri', 'size' => 11, 'bold' => true, 'color' => ['rgb' => '4A5568']],
@@ -86,30 +88,34 @@ class DailyVesselTrafficExport implements WithColumnWidths, WithEvents, WithStri
                 $sheet->mergeCells('A5:A6');
                 $sheet->setCellValue('A5', 'التاريخ');
 
-                $sheet->mergeCells('B5:B6');
-                $sheet->setCellValue('B5', "منطقة انتظار\nالميناء النفطي");
-
-                $sheet->mergeCells('C5:C6');
-                $sheet->setCellValue('C5', "الميناء\nالنفطي");
-
-                $sheet->mergeCells('D5:I5');
-                $sheet->setCellValue('D5', 'منطقة الانتظار والسفن الراسية في الموانئ والأرصفة');
-
+                $sheet->mergeCells('B5:D5');
+                $sheet->setCellValue('B5', 'السيطرة البحرية والانتظار');
+                $sheet->setCellValue('B6', "سفن\nالدخول");
+                $sheet->setCellValue('C6', "سفن\nالمغادرة");
                 $sheet->setCellValue('D6', "منطقة الانتظار\n(مخطاف)");
-                $sheet->setCellValue('E6', "أم قصر الشمالي\n(UMQ-N)");
-                $sheet->setCellValue('F6', "أم قصر الجنوبي\n(UMQ-S)");
-                $sheet->setCellValue('G6', "خور الزبير\n(KZ)");
-                $sheet->setCellValue('H6', "أبو فلوس\n(ABF)");
-                $sheet->setCellValue('I6', "رصيف الغاز\n(LPG)");
 
-                $sheet->mergeCells('J5:J6');
-                $sheet->setCellValue('J5', "إجمالي السفن\nالراسية");
+                $sheet->mergeCells('E5:F5');
+                $sheet->setCellValue('E5', 'الميناء النفطي');
+                $sheet->setCellValue('E6', "الميناء\nالنفطي");
+                $sheet->setCellValue('F6', "منطقة الانتظار");
 
-                $sheet->mergeCells('K5:K6');
-                $sheet->setCellValue('K5', "الموقف الإجمالي\n(راسية + انتظار)");
+                $sheet->mergeCells('G5:K5');
+                $sheet->setCellValue('G5', 'السفن الراسية في الموانئ والأرصفة');
+
+                $sheet->setCellValue('G6', "أم قصر الشمالي\n(UMQ-N)");
+                $sheet->setCellValue('H6', "أم قصر الجنوبي\n(UMQ-S)");
+                $sheet->setCellValue('I6', "خور الزبير\n(KZ)");
+                $sheet->setCellValue('J6', "أبو فلوس\n(ABF)");
+                $sheet->setCellValue('K6', "رصيف الغاز\n(LPG)");
+
+                $sheet->mergeCells('L5:L6');
+                $sheet->setCellValue('L5', "إجمالي السفن\nالراسية");
+
+                $sheet->mergeCells('M5:M6');
+                $sheet->setCellValue('M5', "الموقف الإجمالي\n(راسية + انتظار)");
 
                 // تنسيق رؤوس الأعمدة الرئيسية (الصف 5)
-                $sheet->getStyle('A5:K5')->applyFromArray([
+                $sheet->getStyle('A5:M5')->applyFromArray([
                     'font' => ['name' => 'Calibri', 'size' => 11, 'bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '1B365D']],
                     'alignment' => [
@@ -119,8 +125,8 @@ class DailyVesselTrafficExport implements WithColumnWidths, WithEvents, WithStri
                     ],
                 ]);
 
-                // تنسيق الرؤوس الفرعية (الصف 6: D6:I6)
-                $sheet->getStyle('D6:I6')->applyFromArray([
+                // تنسيق الرؤوس الفرعية (الصف 6)
+                $sheet->getStyle('B6:K6')->applyFromArray([
                     'font' => ['name' => 'Calibri', 'size' => 10, 'bold' => true, 'color' => ['rgb' => 'FFFFFF']],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => '24497D']],
                     'alignment' => [
@@ -141,18 +147,20 @@ class DailyVesselTrafficExport implements WithColumnWidths, WithEvents, WithStri
                     $dateStr = $r->record_date ? Carbon::parse($r->record_date)->format('d/m/Y') : '—';
 
                     $sheet->setCellValue("A{$currentRow}", $dateStr);
-                    $sheet->setCellValue("B{$currentRow}", (int) $r->oil_port_waiting);
-                    $sheet->setCellValue("C{$currentRow}", (int) $r->oil_port_berth);
+                    $sheet->setCellValue("B{$currentRow}", (int) $r->control_vessels_in);
+                    $sheet->setCellValue("C{$currentRow}", (int) $r->control_vessels_out);
                     $sheet->setCellValue("D{$currentRow}", (int) $r->anchorage_waiting);
-                    $sheet->setCellValue("E{$currentRow}", (int) $r->um_qasr_north);
-                    $sheet->setCellValue("F{$currentRow}", (int) $r->um_qasr_south);
-                    $sheet->setCellValue("G{$currentRow}", (int) $r->khor_al_zubair);
-                    $sheet->setCellValue("H{$currentRow}", (int) $r->abu_flus);
-                    $sheet->setCellValue("I{$currentRow}", (int) $r->lpg_berth);
+                    $sheet->setCellValue("E{$currentRow}", (int) $r->oil_port_berth);
+                    $sheet->setCellValue("F{$currentRow}", (int) $r->oil_port_waiting);
+                    $sheet->setCellValue("G{$currentRow}", (int) $r->um_qasr_north);
+                    $sheet->setCellValue("H{$currentRow}", (int) $r->um_qasr_south);
+                    $sheet->setCellValue("I{$currentRow}", (int) $r->khor_al_zubair);
+                    $sheet->setCellValue("J{$currentRow}", (int) $r->abu_flus);
+                    $sheet->setCellValue("K{$currentRow}", (int) $r->lpg_berth);
 
                     // صيغ الإجمالي لكل يوم مطابقة لملف الإكسل
-                    $sheet->setCellValue("J{$currentRow}", "=SUM(E{$currentRow}:I{$currentRow})");
-                    $sheet->setCellValue("K{$currentRow}", "=SUM(D{$currentRow},J{$currentRow})");
+                    $sheet->setCellValue("L{$currentRow}", "=SUM(G{$currentRow}:K{$currentRow})");
+                    $sheet->setCellValue("M{$currentRow}", "=SUM(D{$currentRow},L{$currentRow})");
 
                     $sheet->getRowDimension($currentRow)->setRowHeight(20);
                     $currentRow++;
@@ -162,7 +170,7 @@ class DailyVesselTrafficExport implements WithColumnWidths, WithEvents, WithStri
 
                 // تنسيق خلايا البيانات
                 if ($endDataRow >= $startDataRow) {
-                    $sheet->getStyle("A{$startDataRow}:K{$endDataRow}")->applyFromArray([
+                    $sheet->getStyle("A{$startDataRow}:M{$endDataRow}")->applyFromArray([
                         'font' => ['name' => 'Calibri', 'size' => 10],
                         'alignment' => [
                             'horizontal' => Alignment::HORIZONTAL_CENTER,
@@ -170,12 +178,26 @@ class DailyVesselTrafficExport implements WithColumnWidths, WithEvents, WithStri
                         ],
                     ]);
 
-                    // تمييز عمودي الإجماليات (J و K) بلون خفيف
-                    $sheet->getStyle("J{$startDataRow}:J{$endDataRow}")->applyFromArray([
+                    // تمييز أعمدة السيطرة ومناطق الانتظار (مخطاف وانتظار نفطي)
+                    $sheet->getStyle("B{$startDataRow}:B{$endDataRow}")->applyFromArray([
+                        'font' => ['bold' => true, 'color' => ['rgb' => '1D4ED8']],
+                    ]);
+                    $sheet->getStyle("C{$startDataRow}:C{$endDataRow}")->applyFromArray([
+                        'font' => ['bold' => true, 'color' => ['rgb' => 'B91C1C']],
+                    ]);
+                    $sheet->getStyle("D{$startDataRow}:D{$endDataRow}")->applyFromArray([
+                        'font' => ['bold' => true, 'color' => ['rgb' => 'B45309']],
+                    ]);
+                    $sheet->getStyle("F{$startDataRow}:F{$endDataRow}")->applyFromArray([
+                        'font' => ['bold' => true, 'color' => ['rgb' => 'B45309']],
+                    ]);
+
+                    // تمييز عمودي الإجماليات (L و M) بلون خفيف
+                    $sheet->getStyle("L{$startDataRow}:L{$endDataRow}")->applyFromArray([
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'F0F4F8']],
                         'font' => ['bold' => true],
                     ]);
-                    $sheet->getStyle("K{$startDataRow}:K{$endDataRow}")->applyFromArray([
+                    $sheet->getStyle("M{$startDataRow}:M{$endDataRow}")->applyFromArray([
                         'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E6F4EA']],
                         'font' => ['bold' => true, 'color' => ['rgb' => '137333']],
                     ]);
@@ -194,8 +216,10 @@ class DailyVesselTrafficExport implements WithColumnWidths, WithEvents, WithStri
                 $sheet->setCellValue("I{$totalRow}", "=SUM(I{$startDataRow}:I{$endDataRow})");
                 $sheet->setCellValue("J{$totalRow}", "=SUM(J{$startDataRow}:J{$endDataRow})");
                 $sheet->setCellValue("K{$totalRow}", "=SUM(K{$startDataRow}:K{$endDataRow})");
+                $sheet->setCellValue("L{$totalRow}", "=SUM(L{$startDataRow}:L{$endDataRow})");
+                $sheet->setCellValue("M{$totalRow}", "=SUM(M{$startDataRow}:M{$endDataRow})");
 
-                $sheet->getStyle("A{$totalRow}:K{$totalRow}")->applyFromArray([
+                $sheet->getStyle("A{$totalRow}:M{$totalRow}")->applyFromArray([
                     'font' => ['name' => 'Calibri', 'size' => 11, 'bold' => true, 'color' => ['rgb' => '0F2D59']],
                     'fill' => ['fillType' => Fill::FILL_SOLID, 'startColor' => ['rgb' => 'E2E8F0']],
                     'alignment' => [
@@ -206,7 +230,7 @@ class DailyVesselTrafficExport implements WithColumnWidths, WithEvents, WithStri
                 $sheet->getRowDimension($totalRow)->setRowHeight(25);
 
                 // تطبيق الحدود (Borders) على كامل الجدول من الصف 5 إلى سطر المجموع
-                $sheet->getStyle("A5:K{$totalRow}")->applyFromArray([
+                $sheet->getStyle("A5:M{$totalRow}")->applyFromArray([
                     'borders' => [
                         'allBorders' => [
                             'borderStyle' => Border::BORDER_THIN,
@@ -217,7 +241,7 @@ class DailyVesselTrafficExport implements WithColumnWidths, WithEvents, WithStri
 
                 // ─── 5. سطر الملاحظات ───
                 $notesRow = $totalRow + 2;
-                $sheet->mergeCells("A{$notesRow}:K{$notesRow}");
+                $sheet->mergeCells("A{$notesRow}:M{$notesRow}");
                 $defaultNotes = $this->notes ?: "ملاحظة/ الموقف إحصائي تراكمي لحركة السفن الراسية وفي الانتظار صادر عن الشركة العامة لموانئ العراق (GCPI).";
                 $sheet->setCellValue("A{$notesRow}", $defaultNotes);
                 $sheet->getStyle("A{$notesRow}")->applyFromArray([

@@ -28,6 +28,8 @@ class DailyVesselStatus extends Model implements Auditable
         'khor_al_zubair',
         'abu_flus',
         'lpg_berth',
+        'control_vessels_in',
+        'control_vessels_out',
         'total_berthed',
         'total_overall',
         'notes',
@@ -47,6 +49,8 @@ class DailyVesselStatus extends Model implements Auditable
         'khor_al_zubair' => 'integer',
         'abu_flus' => 'integer',
         'lpg_berth' => 'integer',
+        'control_vessels_in' => 'integer',
+        'control_vessels_out' => 'integer',
         'total_berthed' => 'integer',
         'total_overall' => 'integer',
     ];

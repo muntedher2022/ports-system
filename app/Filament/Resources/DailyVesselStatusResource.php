@@ -47,7 +47,7 @@ class DailyVesselStatusResource extends Resource
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (! $user) {
+        if (!$user) {
             return false;
         }
 
@@ -80,19 +80,51 @@ class DailyVesselStatusResource extends Resource
                         ]),
                     ]),
 
-                Section::make('2. الميناء النفطي')
-                    ->description('عدد السفن المتواجدة في الميناء النفطي ومنطقة انتظاره')
+                Section::make('2. موقف السيطرة والملاحة البحرية')
+                    ->description('حركة ملاحة السفن (الدخول، المغادرة، ومنطقة الانتظار بالمخطاف)')
                     ->schema([
-                        Grid::make(2)->schema([
-                            TextInput::make('oil_port_waiting')
-                                ->label('منطقة انتظار الميناء النفطي')
+                        Grid::make(3)->schema([
+                            TextInput::make('control_vessels_in')
+                                ->label('السفن الداخلة')
+                                ->helperText('سفن الدخول المسجلة بالسيطرة البحرية')
                                 ->numeric()
                                 ->minValue(0)
                                 ->default(0)
                                 ->required(),
 
+                            TextInput::make('control_vessels_out')
+                                ->label('السفن المغادرة')
+                                ->helperText('سفن المغادرة المسجلة بالسيطرة البحرية')
+                                ->numeric()
+                                ->minValue(0)
+                                ->default(0)
+                                ->required(),
+
+                            TextInput::make('anchorage_waiting')
+                                ->label('منطقة الانتظار (مخطاف)')
+                                ->helperText('السفن في منطقة الانتظار (مخطاف)')
+                                ->numeric()
+                                ->minValue(0)
+                                ->default(0)
+                                ->required()
+                                ->live(onBlur: true)
+                                ->afterStateUpdated(fn($set, $get) => self::recalculateTotals($set, $get)),
+                        ]),
+                    ]),
+
+                Section::make('3. الميناء النفطي')
+                    ->description('عدد السفن المتواجدة في الميناء النفطي ومنطقة انتظاره')
+                    ->schema([
+                        Grid::make(2)->schema([
                             TextInput::make('oil_port_berth')
                                 ->label('الميناء النفطي')
+                                ->numeric()
+                                ->minValue(0)
+                                ->default(0)
+                                ->required(),
+
+                            TextInput::make('oil_port_waiting')
+                                ->label('منطقة الانتظار')
                                 ->numeric()
                                 ->minValue(0)
                                 ->default(0)
@@ -100,19 +132,10 @@ class DailyVesselStatusResource extends Resource
                         ]),
                     ]),
 
-                Section::make('3. منطقة الانتظار والسفن الراسية في الموانئ والأرصفة')
-                    ->description('عدد سفن المخطاف والسفن الراسية فعلياً على الأرصفة في كل ميناء')
+                Section::make('4. السفن الراسية في الموانئ والأرصفة')
+                    ->description('عدد السفن الراسية فعلياً على الأرصفة في كل ميناء')
                     ->schema([
-                        Grid::make(6)->schema([
-                            TextInput::make('anchorage_waiting')
-                                ->label('منطقة الانتظار (مخطاف)')
-                                ->numeric()
-                                ->minValue(0)
-                                ->default(0)
-                                ->required()
-                                ->live(onBlur: true)
-                                ->afterStateUpdated(fn ($set, $get) => self::recalculateTotals($set, $get)),
-
+                        Grid::make(5)->schema([
                             TextInput::make('um_qasr_north')
                                 ->label('أم قصر الشمالي (UMQ-N)')
                                 ->numeric()
@@ -120,7 +143,7 @@ class DailyVesselStatusResource extends Resource
                                 ->default(0)
                                 ->required()
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(fn ($set, $get) => self::recalculateTotals($set, $get)),
+                                ->afterStateUpdated(fn($set, $get) => self::recalculateTotals($set, $get)),
 
                             TextInput::make('um_qasr_south')
                                 ->label('أم قصر الجنوبي (UMQ-S)')
@@ -129,7 +152,7 @@ class DailyVesselStatusResource extends Resource
                                 ->default(0)
                                 ->required()
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(fn ($set, $get) => self::recalculateTotals($set, $get)),
+                                ->afterStateUpdated(fn($set, $get) => self::recalculateTotals($set, $get)),
 
                             TextInput::make('khor_al_zubair')
                                 ->label('خور الزبير (KZ)')
@@ -138,7 +161,7 @@ class DailyVesselStatusResource extends Resource
                                 ->default(0)
                                 ->required()
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(fn ($set, $get) => self::recalculateTotals($set, $get)),
+                                ->afterStateUpdated(fn($set, $get) => self::recalculateTotals($set, $get)),
 
                             TextInput::make('abu_flus')
                                 ->label('أبو فلوس (ABF)')
@@ -147,7 +170,7 @@ class DailyVesselStatusResource extends Resource
                                 ->default(0)
                                 ->required()
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(fn ($set, $get) => self::recalculateTotals($set, $get)),
+                                ->afterStateUpdated(fn($set, $get) => self::recalculateTotals($set, $get)),
 
                             TextInput::make('lpg_berth')
                                 ->label('رصيف الغاز (LPG)')
@@ -156,11 +179,11 @@ class DailyVesselStatusResource extends Resource
                                 ->default(0)
                                 ->required()
                                 ->live(onBlur: true)
-                                ->afterStateUpdated(fn ($set, $get) => self::recalculateTotals($set, $get)),
+                                ->afterStateUpdated(fn($set, $get) => self::recalculateTotals($set, $get)),
                         ]),
                     ]),
 
-                Section::make('4. الإجماليات المحسوبة تلقائياً')
+                Section::make('5. الإجماليات المحسوبة تلقائياً')
                     ->description('تُحتسب المجاميع آلياً بمجرد إدخال أعداد السفن أعلاه')
                     ->schema([
                         Grid::make(2)->schema([
@@ -209,18 +232,36 @@ class DailyVesselStatusResource extends Resource
                     ->sortable()
                     ->searchable(),
 
-                TextColumn::make('oil_port_waiting')
-                    ->label('انتظار نفطي')
+                TextColumn::make('control_vessels_in')
+                    ->label('دخول السيطرة')
                     ->alignCenter()
-                    ->sortable(),
+                    ->sortable()
+                    ->badge()
+                    ->color('primary')
+                    ->toggleable(isToggledHiddenByDefault: false),
+
+                TextColumn::make('control_vessels_out')
+                    ->label('مغادرة السيطرة')
+                    ->alignCenter()
+                    ->sortable()
+                    ->badge()
+                    ->color('danger')
+                    ->toggleable(isToggledHiddenByDefault: false),
+
+                TextColumn::make('anchorage_waiting')
+                    ->label('انتظار (مخطاف)')
+                    ->alignCenter()
+                    ->sortable()
+                    ->badge()
+                    ->color('warning'),
 
                 TextColumn::make('oil_port_berth')
                     ->label('الميناء النفطي')
                     ->alignCenter()
                     ->sortable(),
 
-                TextColumn::make('anchorage_waiting')
-                    ->label('مخطاف')
+                TextColumn::make('oil_port_waiting')
+                    ->label('منطقة الانتظار')
                     ->alignCenter()
                     ->sortable()
                     ->badge()
@@ -288,8 +329,8 @@ class DailyVesselStatusResource extends Resource
                     ])
                     ->query(function (Builder $query, array $data): Builder {
                         return $query
-                            ->when($data['from_date'] ?? null, fn (Builder $q, $date) => $q->whereDate('record_date', '>=', $date))
-                            ->when($data['to_date'] ?? null, fn (Builder $q, $date) => $q->whereDate('record_date', '<=', $date));
+                            ->when($data['from_date'] ?? null, fn(Builder $q, $date) => $q->whereDate('record_date', '>=', $date))
+                            ->when($data['to_date'] ?? null, fn(Builder $q, $date) => $q->whereDate('record_date', '<=', $date));
                     }),
 
                 TrashedFilter::make(),

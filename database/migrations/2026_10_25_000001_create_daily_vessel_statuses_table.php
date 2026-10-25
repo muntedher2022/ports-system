@@ -20,7 +20,7 @@ return new class extends Migration
             $table->foreignId('month_id')->nullable()->constrained('months')->nullOnDelete();
 
             // 1. منطقة انتظار الميناء النفطي والميناء النفطي
-            $table->unsignedInteger('oil_port_waiting')->default(0)->comment('منطقة انتظار الميناء النفطي');
+            $table->unsignedInteger('oil_port_waiting')->default(0)->comment('منطقة الانتظار');
             $table->unsignedInteger('oil_port_berth')->default(0)->comment('الميناء النفطي');
 
             // 2. منطقة الانتظار (مخطاف)

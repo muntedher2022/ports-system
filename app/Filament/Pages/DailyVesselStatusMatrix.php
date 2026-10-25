@@ -208,6 +208,8 @@ class DailyVesselStatusMatrix extends Page implements HasForms
             'khor_al_zubair' => $records->sum('khor_al_zubair'),
             'abu_flus' => $records->sum('abu_flus'),
             'lpg_berth' => $records->sum('lpg_berth'),
+            'control_vessels_in' => $records->sum('control_vessels_in'),
+            'control_vessels_out' => $records->sum('control_vessels_out'),
             'total_berthed' => $records->sum('total_berthed'),
             'total_overall' => $records->sum('total_overall'),
         ];
@@ -235,6 +237,35 @@ class DailyVesselStatusMatrix extends Page implements HasForms
                 ->icon('heroicon-o-plus')
                 ->color('primary')
                 ->url(fn (): string => \App\Filament\Resources\DailyVesselStatusResource::getUrl('create')),
+
+            Action::make('import_marine_control')
+                ->label('استيراد موقف السيطرة البحرية')
+                ->icon('heroicon-o-arrow-up-tray')
+                ->color('warning')
+                ->form([
+                    FileUpload::make('marine_control_file')
+                        ->label('اختر ملف ملخص موقف السيطرة البحرية (.xlsx)')
+                        ->acceptedFileTypes(['application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'application/vnd.ms-excel'])
+                        ->disk('local')
+                        ->directory('temp_imports')
+                        ->required(),
+                ])
+                ->action(function (array $data): void {
+                    $filePath = storage_path('app/'.$data['marine_control_file']);
+                    if (! file_exists($filePath)) {
+                        Notification::make()->title('الملف غير موجود')->danger()->send();
+
+                        return;
+                    }
+
+                    $importedCount = $this->importMarineControlFile($filePath);
+                    @unlink($filePath);
+
+                    Notification::make()
+                        ->title("تم تحديث موقف السيطرة البحرية لـ {$importedCount} يوم بنجاح!")
+                        ->success()
+                        ->send();
+                }),
 
             Action::make('import_excel')
                 ->label('استيراد من ملف Excel')
@@ -318,6 +349,51 @@ class DailyVesselStatusMatrix extends Page implements HasForms
             );
 
             $imported++;
+        }
+
+        return $imported;
+    }
+
+    protected function importMarineControlFile(string $filePath): int
+    {
+        $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($filePath);
+        $sheet = $spreadsheet->getSheet(0);
+        $highestRow = $sheet->getHighestRow();
+        $imported = 0;
+
+        for ($row = 3; $row <= $highestRow; $row++) {
+            $dateCell = trim((string) $sheet->getCell("A$row")->getFormattedValue());
+            if (! $dateCell || str_contains($dateCell, 'المجموع')) {
+                continue;
+            }
+
+            try {
+                $date = Carbon::parse($dateCell)->format('Y-m-d');
+            } catch (\Exception $e) {
+                continue;
+            }
+
+            $in = (int) $sheet->getCell("B$row")->getValue();
+            $out = (int) $sheet->getCell("C$row")->getValue();
+            $waiting = (int) $sheet->getCell("E$row")->getValue();
+
+            $record = DailyVesselStatus::where('record_date', $date)->first();
+            if ($record) {
+                $record->update([
+                    'control_vessels_in' => $in,
+                    'control_vessels_out' => $out,
+                    'anchorage_waiting' => $waiting,
+                ]);
+                $imported++;
+            } else {
+                DailyVesselStatus::create([
+                    'record_date' => $date,
+                    'control_vessels_in' => $in,
+                    'control_vessels_out' => $out,
+                    'anchorage_waiting' => $waiting,
+                ]);
+                $imported++;
+            }
         }
 
         return $imported;
