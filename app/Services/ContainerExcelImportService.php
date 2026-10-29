@@ -831,6 +831,7 @@ class ContainerExcelImportService
 
                     // Search for any previous record of this container across any port
                     $prevContainerAnyPort = ContainerItem::where('container_number', $cNo)
+                        ->where('container_type', $containerType)
                         ->where(function ($q) use ($fiscalYearId, $monthId) {
                             $q->where('fiscal_year_id', '<', $fiscalYearId)
                                 ->orWhere(function ($q2) use ($fiscalYearId, $monthId) {
@@ -841,9 +842,15 @@ class ContainerExcelImportService
                         ->latest('id')
                         ->first();
 
+                    $wasInPortBeforeCurrentImport = $prevContainerAnyPort
+                        && ($prevContainerAnyPort->status === 'in_port'
+                            || ($prevContainerAnyPort->status === 'discharged'
+                                && (int) $prevContainerAnyPort->discharge_fiscal_year_id === (int) $fiscalYearId
+                                && (int) $prevContainerAnyPort->discharge_month_id === (int) $monthId));
+
                     $prevPortNameForThis = '-';
                     // C. Check for Port Change Anomaly
-                    if ($prevContainerAnyPort && (int) $prevContainerAnyPort->port_id !== (int) $portId) {
+                    if ($wasInPortBeforeCurrentImport && (int) $prevContainerAnyPort->port_id !== (int) $portId) {
                         $prevPortObj = Port::find($prevContainerAnyPort->port_id);
                         $prevPortName = $prevPortObj?->name_ar ?? 'ميناء سابق';
                         $prevPortNameForThis = $prevPortName;
@@ -888,7 +895,7 @@ class ContainerExcelImportService
                     // D. Check for Date Mismatch against previous records
                     $prevContainer = $prevItemsByNumber->get($cNo) ?? $prevContainerAnyPort;
 
-                    if ($prevContainer) {
+                    if ($prevContainer && $wasInPortBeforeCurrentImport) {
                         $prevDate = $prevContainer->arrival_date ? $prevContainer->arrival_date->format('Y-m-d') : null;
                         $prevYear = trim((string) $prevContainer->arrival_year);
 
