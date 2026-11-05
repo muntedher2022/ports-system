@@ -8,6 +8,7 @@ use App\Models\FiscalYear;
 use App\Models\Month;
 use App\Models\MonthlyPortRecord;
 use App\Models\RevenueRecord;
+use App\Models\Setting;
 use Illuminate\Support\Facades\File;
 use ZipArchive;
 
@@ -114,8 +115,8 @@ class OfficialLettersService
             'prev_net_revenue' => $prevNetRevenue,
             'growth_net_percent' => round($growthNetPercent, 2),
             'records' => $records,
-            'signatory_name' => 'احمد حسين درويش',
-            'signatory_title' => 'م/ المتابعة المركزية والعمليات',
+            'signatory_name' => Setting::get('central_followup_officer_name', 'احمد حسين درويش'),
+            'signatory_title' => Setting::get('central_followup_officer_title', 'م/ المتابعة المركزية والعمليات'),
         ];
     }
 
@@ -168,8 +169,8 @@ class OfficialLettersService
             'prev_total_cargo' => $prevTotalCargo,
             'prev_total_teu' => $prevTotalTeu,
             'port_records' => $portRecords,
-            'signatory_name' => 'احمد حسين درويش',
-            'signatory_title' => 'م/ المتابعة المركزية والعمليات',
+            'signatory_name' => Setting::get('central_followup_officer_name', 'احمد حسين درويش'),
+            'signatory_title' => Setting::get('central_followup_officer_title', 'م/ المتابعة المركزية والعمليات'),
         ];
     }
 
@@ -184,35 +185,35 @@ class OfficialLettersService
         $month = $monthId ? Month::find($monthId) : (Month::where('month_number', 9)->first() ?? Month::first());
         $currentYearNum = $fy ? (int) $fy->year : (int) date('Y');
 
-        $signatureDate = ! empty($memoDate) ? preg_replace('/\s*\/\s*/', '/', trim($memoDate)) : date('d/m/Y');
+        $signatureDate = !empty($memoDate) ? preg_replace('/\s*\/\s*/', '/', trim($memoDate)) : date('d/m/Y');
 
         // احتساب الحاويات المتخلفة والخطرة مقسمة بحسب القطاع الحكومي والخاص
         $abandonedPriv = ContainerItem::where('status', 'in_port')
             ->where('container_type', 'abandoned')
             ->where('fiscal_year_id', $fy?->id)
             ->where('month_id', $month?->id)
-            ->whereHas('entity', fn ($q) => $q->where('entity_type', 'private'))
+            ->whereHas('entity', fn($q) => $q->where('entity_type', 'private'))
             ->count();
 
         $abandonedGov = ContainerItem::where('status', 'in_port')
             ->where('container_type', 'abandoned')
             ->where('fiscal_year_id', $fy?->id)
             ->where('month_id', $month?->id)
-            ->whereHas('entity', fn ($q) => $q->where('entity_type', 'government'))
+            ->whereHas('entity', fn($q) => $q->where('entity_type', 'government'))
             ->count();
 
         $dangerousPriv = ContainerItem::where('status', 'in_port')
             ->where('container_type', 'dangerous')
             ->where('fiscal_year_id', $fy?->id)
             ->where('month_id', $month?->id)
-            ->whereHas('entity', fn ($q) => $q->where('entity_type', 'private'))
+            ->whereHas('entity', fn($q) => $q->where('entity_type', 'private'))
             ->count();
 
         $dangerousGov = ContainerItem::where('status', 'in_port')
             ->where('container_type', 'dangerous')
             ->where('fiscal_year_id', $fy?->id)
             ->where('month_id', $month?->id)
-            ->whereHas('entity', fn ($q) => $q->where('entity_type', 'government'))
+            ->whereHas('entity', fn($q) => $q->where('entity_type', 'government'))
             ->count();
 
         $abandonedTotal = $abandonedPriv + $abandonedGov;
@@ -253,8 +254,8 @@ class OfficialLettersService
                     'grand_total' => $grandTotal,
                 ],
             ],
-            'signatory_name' => 'علاء عبد الحسن علي عبيد',
-            'signatory_title' => 'المدير العام / وكالة - رئيس مجلس الإدارة',
+            'signatory_name' => Setting::get('general_manager_name', 'عبد الله عاتي عبد الله'),
+            'signatory_title' => Setting::get('general_manager_title', 'المدير العام / وكالة - رئيس مجلس الإدارة'),
         ];
     }
 
@@ -269,7 +270,7 @@ class OfficialLettersService
         $month = $monthId ? Month::find($monthId) : (Month::where('month_number', 8)->first() ?? Month::first());
         $currentYearNum = $fy ? (int) $fy->year : (int) date('Y');
 
-        $signatureDate = ! empty($memoDate) ? preg_replace('/\s*\/\s*/', '/', trim($memoDate)) : date('d/m/Y');
+        $signatureDate = !empty($memoDate) ? preg_replace('/\s*\/\s*/', '/', trim($memoDate)) : date('d/m/Y');
 
         // جلب سجلات البضائع للشهر والسنة
         $cargoRecords = CargoStatusRecord::where('fiscal_year_id', $fy?->id)
@@ -319,8 +320,8 @@ class OfficialLettersService
                     'grand_total' => $abandonedTotal,
                 ],
             ],
-            'signatory_name' => 'علاء عبد الحسن علي عبيد',
-            'signatory_title' => 'المدير العام / وكالة - رئيس مجلس الإدارة',
+            'signatory_name' => Setting::get('general_manager_name', 'عبد الله عاتي عبد الله'),
+            'signatory_title' => Setting::get('general_manager_title', 'المدير العام / وكالة - رئيس مجلس الإدارة'),
         ];
     }
 
@@ -350,8 +351,8 @@ class OfficialLettersService
         if (file_exists($resourceTemplate)) {
             $sourceTemplate = $resourceTemplate;
         } else {
-            $sourceTemplate = base_path('نماذج/'.$meta['default_file_name']);
-            if (! file_exists($sourceTemplate)) {
+            $sourceTemplate = base_path('نماذج/' . $meta['default_file_name']);
+            if (!file_exists($sourceTemplate)) {
                 // محاولة بديلة في حال اختلاف التشفير
                 $candidates = glob(base_path('نماذج/*.docx')) ?: [];
                 foreach ($candidates as $c) {
@@ -364,12 +365,12 @@ class OfficialLettersService
             }
         }
 
-        if (! file_exists($sourceTemplate)) {
+        if (!file_exists($sourceTemplate)) {
             throw new \RuntimeException("نموذج ملف Word غير متوفر للنوع: {$type}");
         }
 
         $outputDir = storage_path('app/letters_generated');
-        if (! File::isDirectory($outputDir)) {
+        if (!File::isDirectory($outputDir)) {
             File::makeDirectory($outputDir, 0777, true, true);
         }
 
@@ -386,7 +387,7 @@ class OfficialLettersService
             default => "كتاب_رسمي_{$type}.docx",
         };
 
-        $outputPath = $outputDir.'/'.$safeFileName;
+        $outputPath = $outputDir . '/' . $safeFileName;
         copy($sourceTemplate, $outputPath);
 
         $zip = new ZipArchive;
@@ -396,20 +397,20 @@ class OfficialLettersService
             if ($type === 'revenue_memo' || $type === 'capacity_memo') {
                 $headerXml = $zip->getFromName('word/header1.xml');
                 if ($headerXml) {
-                    if (! empty($data['memo_number'])) {
+                    if (!empty($data['memo_number'])) {
                         // استبدال رقم المذكرة بعد م.ت في XML
                         $headerXml = preg_replace(
                             '/(<w:t>م\.ت<\/w:t>.*?<w:t>)[^<]*(<\/w:t>)/su',
-                            '${1}'.htmlspecialchars((string) $data['memo_number'], ENT_XML1).'${2}',
+                            '${1}' . htmlspecialchars((string) $data['memo_number'], ENT_XML1) . '${2}',
                             $headerXml
                         );
-                        $headerXml = preg_replace('/م\.ت\s*\d+/', 'م.ت '.$data['memo_number'], $headerXml);
+                        $headerXml = preg_replace('/م\.ت\s*\d+/', 'م.ت ' . $data['memo_number'], $headerXml);
                     }
-                    if (! empty($data['memo_date'])) {
+                    if (!empty($data['memo_date'])) {
                         // استبدال تاريخ المذكرة بعد خ: في XML
                         $headerXml = preg_replace(
                             '/(<w:t>خ:<\/w:t><\/w:r>).*?(<\/w:p>)/su',
-                            '$1<w:r><w:rPr><w:rFonts w:asciiTheme="majorBidi" w:hAnsiTheme="majorBidi" w:cstheme="majorBidi" w:hint="cs"/><w:b/><w:bCs/><w:sz w:val="28"/><w:szCs w:val="28"/><w:rtl/><w:lang w:bidi="ar-IQ"/></w:rPr><w:t xml:space="preserve"> '.htmlspecialchars((string) $data['memo_date'], ENT_XML1).'</w:t></w:r>$2',
+                            '$1<w:r><w:rPr><w:rFonts w:asciiTheme="majorBidi" w:hAnsiTheme="majorBidi" w:cstheme="majorBidi" w:hint="cs"/><w:b/><w:bCs/><w:sz w:val="28"/><w:szCs w:val="28"/><w:rtl/><w:lang w:bidi="ar-IQ"/></w:rPr><w:t xml:space="preserve"> ' . htmlspecialchars((string) $data['memo_date'], ENT_XML1) . '</w:t></w:r>$2',
                             $headerXml
                         );
                         $headerXml = preg_replace('/\d+\s*\/\s*\d+\s*\/\s*20\d\d/', $data['memo_date'], $headerXml);
@@ -425,26 +426,66 @@ class OfficialLettersService
                 $monthNum = $data['month_number'];
                 $year = $data['year'];
                 $prevYear = $data['prev_year'] ?? ($year - 1);
+                $signatoryName = $data['signatory_name'] ?? '';
+                $signatoryTitle = $data['signatory_title'] ?? '';
+
+                // استبدال أسماء الموقعين ديناميكياً في أي قالب Word
+                if ($type === 'revenue_memo' || $type === 'capacity_memo') {
+                    if (!empty($signatoryName)) {
+                        // استبدال (احمد حسين درويش) سواء كانت في عقدة واحدة أو مجزأة عبر عقد متعددة
+                        $docXml = preg_replace(
+                            '/<w:t[^>]*>\s*احمد\s*<\/w:t>.*?<w:t[^>]*>\s*حسين\s*<\/w:t>.*?<w:t[^>]*>\s*درويش\s*<\/w:t>/su',
+                            '<w:t xml:space="preserve">' . htmlspecialchars($signatoryName, ENT_XML1) . '</w:t>',
+                            $docXml
+                        );
+                        $docXml = preg_replace('/احمد\s+حسين\s+درويش/u', htmlspecialchars($signatoryName, ENT_XML1), $docXml);
+                    }
+                    if (!empty($signatoryTitle)) {
+                        $docXml = preg_replace(
+                            '/<w:t[^>]*>\s*م\/\s*المتابعة\s+المركزية\s+والعمليات\s*<\/w:t>/su',
+                            '<w:t xml:space="preserve"> ' . htmlspecialchars($signatoryTitle, ENT_XML1) . '</w:t>',
+                            $docXml
+                        );
+                        $docXml = preg_replace('/م\/\s*المتابعة\s+المركزية\s+والعمليات/u', htmlspecialchars($signatoryTitle, ENT_XML1), $docXml);
+                    }
+                } else {
+                    if (!empty($signatoryName)) {
+                        $docXml = preg_replace(
+                            '/<w:t[^>]*>\s*(?:علاء\s+عبد\s+الحسن\s+علي\s+عبيد|عبد\s+الله\s+عاتي\s+عبد\s+الله)\s*<\/w:t>/su',
+                            '<w:t xml:space="preserve">' . htmlspecialchars($signatoryName, ENT_XML1) . '</w:t>',
+                            $docXml
+                        );
+                        $docXml = preg_replace('/(?:علاء\s+عبد\s+الحسن\s+علي\s+عبيد|عبد\s+الله\s+عاتي\s+عبد\s+الله)/u', htmlspecialchars($signatoryName, ENT_XML1), $docXml);
+                    }
+                    if (!empty($signatoryTitle)) {
+                        $docXml = preg_replace(
+                            '/<w:t[^>]*>\s*المدير\s+العام\s*\/\s*وكالة\s*-\s*رئيس\s+مجلس\s+الإدارة\s*<\/w:t>/su',
+                            '<w:t xml:space="preserve">' . htmlspecialchars($signatoryTitle, ENT_XML1) . '</w:t>',
+                            $docXml
+                        );
+                        $docXml = preg_replace('/المدير\s+العام\s*\/\s*وكالة\s*-\s*رئيس\s+مجلس\s+الإدارة/u', htmlspecialchars($signatoryTitle, ENT_XML1), $docXml);
+                    }
+                }
 
                 if ($type === 'revenue_memo' || $type === 'capacity_memo') {
                     // 1. استبدال اسم الشهر فقط عندما يكون عقدة مستقلة (w:t) لتجنب تشويه كلمات مثل (المتابعة)
                     $docXml = preg_replace(
                         '/<w:t([^>]*)>\s*(?:اب|آب|ايلول|أيلول)\s*<\/w:t>/u',
-                        '<w:t$1>'.$monthName.' </w:t>',
+                        '<w:t$1>' . $monthName . ' </w:t>',
                         $docXml
                     );
 
                     // 2. استبدال رقم الشهر (8) في العقد المستقلة
                     $docXml = preg_replace(
                         '/<w:t([^>]*)>\s*8\s*<\/w:t>/u',
-                        '<w:t$1>'.$monthNum.'</w:t>',
+                        '<w:t$1>' . $monthNum . '</w:t>',
                         $docXml
                     );
 
                     // 3. استبدال السنة في العقد المستقلة
                     $docXml = preg_replace(
                         '/<w:t([^>]*)>\s*2026\s*<\/w:t>/u',
-                        '<w:t$1>'.$year.'</w:t>',
+                        '<w:t$1>' . $year . '</w:t>',
                         $docXml
                     );
 
@@ -462,12 +503,31 @@ class OfficialLettersService
                         $docXml
                     );
                 } elseif ($type === 'containers_letter') {
-                    // استبدال في عنوان الموقف والمتن بدقة دون المساس بكلمة المتابعة
+                    // استبدال اسم الشهر والسنة في الورقتين الأولى والثانية
+                    // الورقة الأولى: م / الموقف الشهري للحاويات ... لشهر [ايلول] [2026]
+                    $docXml = preg_replace(
+                        '/(<w:t[^>]*>\s*لشهر\s*<\/w:t>\s*<w:r[^>]*>.*?<w:t[^>]*>)\s*(?:ايلول|أيلول|اب|آب)\s*(<\/w:t>)/su',
+                        '${1}' . $monthName . '${2}',
+                        $docXml
+                    );
+                    $docXml = preg_replace(
+                        '/(<w:t[^>]*>\s*لشهر\s*(?:ايلول|أيلول|اب|آب)\s*<\/w:t>\s*<w:r[^>]*>.*?<w:t[^>]*>)\s*20\d\d\s*(<\/w:t>)/su',
+                        '${1}' . $year . '${2}',
+                        $docXml
+                    );
+                    // الورقة الثانية: الموقف الشهري للحاويات المتخلفة والخطرة لشهر ايلول 2026 في عقدة واحدة
                     $docXml = preg_replace(
                         '/لشهر\s+(?:ايلول|أيلول|اب|آب)\s+20\d\d/u',
                         "لشهر {$monthName} {$year}",
                         $docXml
                     );
+                    // أي عقدة مستقلة تحمل اسم الشهر فقط في سياق التاريخ
+                    $docXml = preg_replace(
+                        '/(<w:t[^>]*>\s*لشهر\s*<\/w:t>[\s\S]{0,300}?<w:t[^>]*>)\s*(?:ايلول|أيلول|اب|آب)\s*(<\/w:t>)/u',
+                        '${1}' . $monthName . '${2}',
+                        $docXml
+                    );
+
                     $sigDate = $data['signature_date'] ?? date('d/m/Y');
                     $docXml = preg_replace(
                         '/\/\s*\d+\s*\/\s*20\d\d/u',
@@ -487,12 +547,28 @@ class OfficialLettersService
                     $docXml = preg_replace('/<w:t>2742<\/w:t>/u', "<w:t>{$t['totals']['private']}</w:t>", $docXml);
                     $docXml = preg_replace('/<w:t>2904<\/w:t>/u', "<w:t>{$t['totals']['grand_total']}</w:t>", $docXml);
                 } elseif ($type === 'cargo_letter') {
-                    // استبدال في عنوان الموقف والمتن بدقة دون المساس بكلمة المتابعة
+                    // استبدال اسم الشهر والسنة في الورقتين الأولى والثانية
+                    $docXml = preg_replace(
+                        '/(<w:t[^>]*>\s*لشهر\s*<\/w:t>\s*<w:r[^>]*>.*?<w:t[^>]*>)\s*(?:اب|آب|ايلول|أيلول)\s*(<\/w:t>)/su',
+                        '${1}' . $monthName . '${2}',
+                        $docXml
+                    );
+                    $docXml = preg_replace(
+                        '/(<w:t[^>]*>\s*لشهر\s*(?:اب|آب|ايلول|أيلول)\s*<\/w:t>\s*<w:r[^>]*>.*?<w:t[^>]*>)\s*20\d\d\s*(<\/w:t>)/su',
+                        '${1}' . $year . '${2}',
+                        $docXml
+                    );
                     $docXml = preg_replace(
                         '/لشهر\s+(?:اب|آب|ايلول|أيلول)\s+20\d\d/u',
                         "لشهر {$monthName} {$year}",
                         $docXml
                     );
+                    $docXml = preg_replace(
+                        '/(<w:t[^>]*>\s*لشهر\s*<\/w:t>[\s\S]{0,300}?<w:t[^>]*>)\s*(?:اب|آب|ايلول|أيلول)\s*(<\/w:t>)/u',
+                        '${1}' . $monthName . '${2}',
+                        $docXml
+                    );
+
                     $sigDate = $data['signature_date'] ?? date('d/m/Y');
                     $docXml = preg_replace(
                         '/\/\s*\d+\s*\/\s*20\d\d/u',

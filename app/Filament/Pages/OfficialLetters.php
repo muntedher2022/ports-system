@@ -5,6 +5,8 @@ namespace App\Filament\Pages;
 use App\Enums\NavigationGroup;
 use App\Models\FiscalYear;
 use App\Models\Month;
+use App\Models\Setting;
+use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Facades\Auth;
@@ -69,6 +71,15 @@ class OfficialLetters extends Page
 
     public string $cargo_signature_date = '';
 
+    // إعدادات الموقعين الرسميين (ديناميكية)
+    public string $general_manager_name = '';
+
+    public string $general_manager_title = '';
+
+    public string $central_followup_officer_name = '';
+
+    public string $central_followup_officer_title = '';
+
     public function mount(): void
     {
         $currentFy = FiscalYear::where('is_current', true)->first() ?? FiscalYear::latest('year')->first();
@@ -101,6 +112,28 @@ class OfficialLetters extends Page
         $this->cargo_fiscal_year_id = $defaultFyId;
         $this->cargo_month_id = $monthAugust?->id;
         $this->cargo_signature_date = $todayDate;
+
+        // تحميل بيانات الموقعين الرسميين من قاعدة البيانات
+        $this->general_manager_name = Setting::get('general_manager_name', 'عبد الله عاتي عبد الله');
+        $this->general_manager_title = Setting::get('general_manager_title', 'المدير العام / وكالة - رئيس مجلس الإدارة');
+        $this->central_followup_officer_name = Setting::get('central_followup_officer_name', 'احمد حسين درويش');
+        $this->central_followup_officer_title = Setting::get('central_followup_officer_title', 'م/ المتابعة المركزية والعمليات');
+    }
+
+    /**
+     * حفظ أسماء وصفات الموقعين الرسميين فوراً
+     */
+    public function saveSignatories(): void
+    {
+        Setting::set('general_manager_name', trim($this->general_manager_name), 'official_letters');
+        Setting::set('general_manager_title', trim($this->general_manager_title), 'official_letters');
+        Setting::set('central_followup_officer_name', trim($this->central_followup_officer_name), 'official_letters');
+        Setting::set('central_followup_officer_title', trim($this->central_followup_officer_title), 'official_letters');
+
+        Notification::make()
+            ->title('تم حفظ وتحديث بيانات التواقيع الرسمية بنجاح')
+            ->success()
+            ->send();
     }
 
     public function getFiscalYearsProperty()

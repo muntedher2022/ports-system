@@ -263,6 +263,40 @@
             background: #0369a1;
             color: #ffffff;
         }
+
+        .settings-card {
+            background: #ffffff;
+            border: 1px solid #e2e8f0;
+            border-radius: 16px;
+            box-shadow: 0 4px 15px -3px rgba(0, 0, 0, 0.05);
+            margin-bottom: 24px;
+            overflow: hidden;
+            transition: all 0.25s ease;
+        }
+
+        .dark .settings-card {
+            background: #1e293b;
+            border-color: #334155;
+        }
+
+        .btn-save-settings {
+            background: #10b981;
+            color: #ffffff;
+            font-weight: 700;
+            padding: 8px 18px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.95rem;
+            transition: background 0.2s ease;
+        }
+
+        .btn-save-settings:hover {
+            background: #059669;
+        }
     </style>
 
     <div class="letters-container">
@@ -276,6 +310,52 @@
                 <span class="tag-badge tag-internal" style="font-size: 0.85rem; padding: 6px 14px;">
                     4 نماذج رسمية معتمدة
                 </span>
+            </div>
+        </div>
+
+        <!-- بطاقة إدارة أسماء وصفات الموقعين ديناميكياً -->
+        <div class="settings-card">
+            <div class="card-top" style="background: #f8fafc;">
+                <div class="card-title-group">
+                    <h3 style="display: flex; align-items: center; gap: 8px;">
+                        <svg width="20" height="20" fill="none" stroke="#2563eb" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        بيانات التواقيع الرسمية والمصادقة (إدارة ديناميكية)
+                    </h3>
+                    <p>يمكنك تعديل اسم وصفة السيد المدير العام ومسؤول المتابعة المركزية وسيتم تطبيقها فوراً على جميع المعاينات وملفات الـ Word.</p>
+                </div>
+            </div>
+
+            <div class="card-body-section" style="padding: 20px 24px;">
+                <form wire:submit.prevent="saveSignatories">
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; margin-bottom: 16px;">
+                        <!-- المدير العام -->
+                        <div class="field-group">
+                            <label class="field-label" style="font-weight: 700; color: #1e3a8a;">اسم السيد المدير العام</label>
+                            <input type="text" wire:model="general_manager_name" class="field-input" placeholder="مثال: عبد الله عاتي عبد الله">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">صفة / منصب المدير العام</label>
+                            <input type="text" wire:model="general_manager_title" class="field-input" placeholder="المدير العام / وكالة - رئيس مجلس الإدارة">
+                        </div>
+
+                        <!-- مسؤول المتابعة المركزية -->
+                        <div class="field-group">
+                            <label class="field-label" style="font-weight: 700; color: #1e3a8a;">اسم مسؤول المتابعة المركزية</label>
+                            <input type="text" wire:model="central_followup_officer_name" class="field-input" placeholder="مثال: احمد حسين درويش">
+                        </div>
+                        <div class="field-group">
+                            <label class="field-label">صفة / منصب مسؤول المتابعة</label>
+                            <input type="text" wire:model="central_followup_officer_title" class="field-input" placeholder="م/ المتابعة المركزية والعمليات">
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end;">
+                        <button type="submit" class="btn-save-settings">
+                            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            حفظ واعتماد التواقيع
+                        </button>
+                    </div>
+                </form>
             </div>
         </div>
 
