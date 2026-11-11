@@ -5,7 +5,9 @@ namespace App\Providers;
 use App\Licensing\HardwareFingerprint;
 use App\Licensing\LicensingService;
 use App\Licensing\VerifyLicenseMiddleware;
+use App\Models\Activity;
 use App\Models\Report;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -72,5 +74,29 @@ class AppServiceProvider extends ServiceProvider
         if (! class_exists('Report')) {
             class_alias(Report::class, 'Report');
         }
+
+        // مشاركة إحصائيات الأقسام وشريط الأخبار العاجلة مع كافة صفحات البوابة الإخبارية
+        View::composer('layouts.news', function ($view) {
+            $categoriesStats = Activity::where('is_confidential', false)
+                ->selectRaw('category, count(*) as count')
+                ->groupBy('category')
+                ->pluck('count', 'category')
+                ->toArray();
+
+            $totalPublicActivities = Activity::where('is_confidential', false)->count();
+
+            $breakingNews = Activity::where('is_confidential', false)
+                ->where(function ($q) {
+                    $q->where('importance', 'urgent')
+                      ->orWhere('category', 'قرار وتوجيه');
+                })
+                ->orderBy('activity_date', 'desc')
+                ->orderBy('activity_time', 'desc')
+                ->orderBy('id', 'desc')
+                ->take(5)
+                ->get();
+
+            $view->with(compact('categoriesStats', 'totalPublicActivities', 'breakingNews'));
+        });
     }
 }

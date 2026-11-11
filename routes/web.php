@@ -6,10 +6,16 @@ use App\Http\Controllers\ReportPdfController;
 use Illuminate\Support\Facades\Route;
 use Maatwebsite\Excel\Facades\Excel;
 
-Route::get('/', function () {
-    return redirect('/admin');
-});
-Route::get('/login', fn () => redirect()->to('/admin/login'))->name('login');
+// ─── البوابة الإخبارية والواجهة الأمامية الرسمية (Front-end) ───
+Route::get('/', [\App\Http\Controllers\NewsController::class, 'index'])->name('news.index');
+Route::get('/news/live-pulse', [\App\Http\Controllers\NewsController::class, 'livePulse'])->name('news.pulse');
+Route::get('/news/{activity}', [\App\Http\Controllers\NewsController::class, 'show'])->name('news.show');
+
+// توجيه إضافي متوافق للمسار القديم
+Route::get('/activities', fn () => redirect()->route('news.index'));
+Route::get('/activities/{activity}', fn ($activity) => redirect()->route('news.show', ['activity' => $activity]));
+
+Route::get('/login', fn () => redirect()->to('/ports/admin/login'))->name('login');
 
 Route::middleware(['auth'])->prefix('admin/reports')->name('admin.reports.')->group(function () {
     Route::get('total-revenue-matrix/pdf', [ReportPdfController::class, 'exportTotalRevenueMatrix'])->name('total-revenue-matrix.pdf');
@@ -54,6 +60,21 @@ Route::middleware(['auth'])->prefix('admin/templates')->name('admin.templates.')
 Route::middleware(['auth'])->prefix('admin/official-letters')->name('admin.official-letters.')->group(function () {
     Route::get('{type}/preview', [\App\Http\Controllers\OfficialLetterController::class, 'preview'])->name('preview');
     Route::get('{type}/docx', [\App\Http\Controllers\OfficialLetterController::class, 'downloadDocx'])->name('docx');
+});
+
+// المرفقات المحمية للأنشطة
+Route::get('/attachments/{attachment}/stream', [\App\Http\Controllers\ProtectedAttachmentController::class, 'stream'])
+    ->name('attachments.stream');
+Route::get('/attachments/{attachment}/download', [\App\Http\Controllers\ProtectedAttachmentController::class, 'download'])
+    ->name('attachments.download');
+
+// تقارير الأنشطة PDF
+Route::middleware(['web', 'auth'])->group(function () {
+    Route::get('/reports/periodic-pdf', [\App\Http\Controllers\ActivityReportController::class, 'generatePeriodicPdf'])
+        ->name('reports.periodic.pdf');
+
+    Route::get('/activities-pdf/{activity}', [\App\Http\Controllers\ActivityReportController::class, 'generateSingleActivityPdf'])
+        ->name('activities.single.pdf');
 });
 
 
