@@ -16,47 +16,55 @@
     <div class="vessels-ticker-bar">
         <div class="vessels-ticker-inner">
             <div class="vessels-ticker-badge">
-                <span class="vessels-ticker-pulse"></span>
-                <x-heroicon-o-signal style="width: 17px; height: 17px;" />
-                <span>حركة الموانئ اليومية</span>
-                <span class="vessels-ticker-date">({{ $vessel->record_date?->format('d/m/Y') }})</span>
+                <div class="vessels-ticker-badge-main">
+                    <span class="vessels-ticker-pulse"></span>
+                    <x-heroicon-o-signal style="width: 16px; height: 16px; flex-shrink: 0;" />
+                    <span class="vessels-ticker-title">حركة الموانئ اليومية</span>
+                </div>
+                <span class="vessels-ticker-date">{{ $vessel->record_date?->format('d/m/Y') }}</span>
             </div>
             <div class="vessels-ticker-scroll">
-                <div class="vessel-kpi-chip chip-highlight">
-                    <span>إجمالي السفن بالموانئ:</span>
-                    <strong>{{ $vessel->total_overall }} سفينة</strong>
-                </div>
-                <div class="vessel-kpi-chip">
-                    <span>على الأرصفة:</span>
-                    <strong>{{ $vessel->total_berthed }}</strong>
-                </div>
-                <div class="vessel-kpi-chip">
-                    <span>بالمخطاف والانتظار:</span>
-                    <strong>{{ $vessel->anchorage_waiting }}</strong>
-                </div>
-                <div class="vessel-kpi-chip">
-                    <span>أم قصر الشمالي:</span>
-                    <strong>{{ $vessel->um_qasr_north }}</strong>
-                </div>
-                <div class="vessel-kpi-chip">
-                    <span>أم قصر الجنوبي:</span>
-                    <strong>{{ $vessel->um_qasr_south }}</strong>
-                </div>
-                <div class="vessel-kpi-chip">
-                    <span>خور الزبير:</span>
-                    <strong>{{ $vessel->khor_al_zubair }}</strong>
-                </div>
-                <div class="vessel-kpi-chip">
-                    <span>أبو فلوس:</span>
-                    <strong>{{ $vessel->abu_flus }}</strong>
-                </div>
-                <div class="vessel-kpi-chip">
-                    <span>ميناء النفط:</span>
-                    <strong>{{ $vessel->oil_port_berth }} راسية / {{ $vessel->oil_port_waiting }} انتظار</strong>
-                </div>
-                <div class="vessel-kpi-chip">
-                    <span>السيطرة البحرية:</span>
-                    <strong>{{ $vessel->control_vessels_in }} دخول &bull; {{ $vessel->control_vessels_out }} خروج</strong>
+                <div class="vessels-ticker-track">
+                    @for($vg = 0; $vg < 2; $vg++)
+                    <div class="vessels-ticker-group" @if($vg === 1) aria-hidden="true" @endif>
+                        <div class="vessel-kpi-chip chip-highlight">
+                            <span>إجمالي السفن بالموانئ:</span>
+                            <strong>{{ $vessel->total_overall }} سفينة</strong>
+                        </div>
+                        <div class="vessel-kpi-chip">
+                            <span>على الأرصفة:</span>
+                            <strong>{{ $vessel->total_berthed }}</strong>
+                        </div>
+                        <div class="vessel-kpi-chip">
+                            <span>بالمخطاف والانتظار:</span>
+                            <strong>{{ $vessel->anchorage_waiting }}</strong>
+                        </div>
+                        <div class="vessel-kpi-chip">
+                            <span>أم قصر الشمالي:</span>
+                            <strong>{{ $vessel->um_qasr_north }}</strong>
+                        </div>
+                        <div class="vessel-kpi-chip">
+                            <span>أم قصر الجنوبي:</span>
+                            <strong>{{ $vessel->um_qasr_south }}</strong>
+                        </div>
+                        <div class="vessel-kpi-chip">
+                            <span>خور الزبير:</span>
+                            <strong>{{ $vessel->khor_al_zubair }}</strong>
+                        </div>
+                        <div class="vessel-kpi-chip">
+                            <span>أبو فلوس:</span>
+                            <strong>{{ $vessel->abu_flus }}</strong>
+                        </div>
+                        <div class="vessel-kpi-chip">
+                            <span>ميناء النفط:</span>
+                            <strong>{{ $vessel->oil_port_berth }} راسية / {{ $vessel->oil_port_waiting }} انتظار</strong>
+                        </div>
+                        <div class="vessel-kpi-chip">
+                            <span>السيطرة البحرية:</span>
+                            <strong>{{ $vessel->control_vessels_in }} دخول &bull; {{ $vessel->control_vessels_out }} خروج</strong>
+                        </div>
+                    </div>
+                    @endfor
                 </div>
             </div>
         </div>

@@ -86,14 +86,8 @@ class AppServiceProvider extends ServiceProvider
             $totalPublicActivities = Activity::where('is_confidential', false)->count();
 
             $breakingNews = Activity::where('is_confidential', false)
-                ->where(function ($q) {
-                    $q->where('importance', 'urgent')
-                      ->orWhere('category', 'قرار وتوجيه');
-                })
-                ->orderBy('activity_date', 'desc')
-                ->orderBy('activity_time', 'desc')
-                ->orderBy('id', 'desc')
-                ->take(5)
+                ->latest('id')
+                ->take(10)
                 ->get();
 
             $view->with(compact('categoriesStats', 'totalPublicActivities', 'breakingNews'));

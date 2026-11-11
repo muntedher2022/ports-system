@@ -939,35 +939,47 @@
     .vessels-ticker-bar {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         color: #ffffff;
-        padding: 10px 18px;
+        padding: 10px 14px;
         border-bottom: 1px solid #334155;
     }
 
     .vessels-ticker-inner {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 12px;
         overflow: hidden;
     }
 
     .vessels-ticker-badge {
         background: #2563eb;
         color: #ffffff;
-        padding: 5px 12px;
-        border-radius: var(--radius-full);
-        font-size: 0.82rem;
+        padding: 4px 12px;
+        border-radius: 10px;
+        font-size: 0.78rem;
         font-weight: 800;
         display: inline-flex;
+        flex-direction: column;
         align-items: center;
-        gap: 6px;
+        justify-content: center;
+        gap: 1px;
         flex-shrink: 0;
         box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
+        z-index: 2;
+        line-height: 1.2;
+    }
+
+    .vessels-ticker-badge-main {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        white-space: nowrap;
     }
 
     .vessels-ticker-date {
-        font-size: 0.75rem;
-        color: #bfdbfe;
-        font-weight: 600;
+        font-size: 0.68rem;
+        color: #dbeafe;
+        font-weight: 700;
+        letter-spacing: 0.4px;
     }
 
     .vessels-ticker-pulse {
@@ -980,16 +992,33 @@
     }
 
     .vessels-ticker-scroll {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        overflow-x: auto;
+        flex-grow: 1;
+        overflow: hidden;
         white-space: nowrap;
-        scrollbar-width: none;
+        position: relative;
+        direction: rtl;
         padding: 2px 0;
     }
-    .vessels-ticker-scroll::-webkit-scrollbar {
-        display: none;
+
+    .vessels-ticker-track {
+        display: flex;
+        width: max-content;
+        align-items: center;
+        animation: rtlTickerMove 28s linear infinite;
+        will-change: transform;
+    }
+
+    .vessels-ticker-scroll:hover .vessels-ticker-track,
+    .vessels-ticker-scroll:active .vessels-ticker-track {
+        animation-play-state: paused;
+    }
+
+    .vessels-ticker-group {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding-left: 10px;
+        flex-shrink: 0;
     }
 
     .vessel-kpi-chip {
@@ -1002,6 +1031,29 @@
         align-items: center;
         gap: 6px;
         color: #e2e8f0;
+        flex-shrink: 0;
+    }
+
+    @media (max-width: 640px) {
+        .vessels-ticker-bar {
+            padding: 7px 8px;
+        }
+        .vessels-ticker-inner {
+            gap: 8px;
+        }
+        .vessels-ticker-badge {
+            padding: 3px 8px;
+            font-size: 0.7rem;
+            border-radius: 8px;
+            gap: 1px;
+        }
+        .vessels-ticker-date {
+            font-size: 0.62rem;
+        }
+        .vessel-kpi-chip {
+            font-size: 0.75rem;
+            padding: 3px 9px;
+        }
     }
 
     .vessel-kpi-chip.chip-highlight {
@@ -1691,7 +1743,7 @@
     let currentSlide = 0;
     let autoplayInterval = null;
     let isAutoplayPaused = false;
-    const SLIDE_DURATION = 5500; // 5.5 ثوانٍ لكل نشاط
+    const SLIDE_DURATION = 10000; // 10 ثوانٍ لكل نشاط
     let progressStartTime = 0;
     let progressAnimFrame = null;
 
@@ -2195,6 +2247,43 @@
         }
     }
 
+    function prependNewActivityToTicker(item) {
+        const groups = document.querySelectorAll('#breakingTickerTrack .ticker-track-group');
+        if (!groups.length) return;
+
+        groups.forEach(group => {
+            if (group.querySelector(`[data-ticker-id="${item.id}"]`)) return;
+
+            const link = document.createElement('a');
+            link.href = item.url;
+            link.className = 'ticker-item';
+            link.setAttribute('data-ticker-id', item.id);
+            link.innerHTML = `<span style="color: #facc15;">&bull;</span><span>${item.title} (${item.formatted_date})</span>`;
+
+            group.prepend(link);
+
+            // الحفاظ على آخر 10 أخبار فقط في الشريط
+            const allItems = group.querySelectorAll('.ticker-item');
+            if (allItems.length > 10) {
+                allItems[allItems.length - 1].remove();
+            }
+        });
+    }
+
+    function rebuildTickerFromFallback(items) {
+        const groups = document.querySelectorAll('#breakingTickerTrack .ticker-track-group');
+        if (!groups.length || !items || !items.length) return;
+
+        let html = '';
+        items.slice(0, 10).forEach(item => {
+            html += `<a href="${item.url}" class="ticker-item" data-ticker-id="${item.id}"><span style="color: #facc15;">&bull;</span><span>${item.title} (${item.formatted_date})</span></a>`;
+        });
+
+        groups.forEach(group => {
+            group.innerHTML = html;
+        });
+    }
+
     function checkLiveUpdates() {
         // جمع كافة معرفات الأنشطة المعروضة حالياً على شاشة المستخدم
         const visibleElements = document.querySelectorAll('[data-activity-id]');
@@ -2227,14 +2316,16 @@
                     });
                 });
 
-                // إذا توفرت بيانات السلايد شو البديلة المحدثة، نعيد بناء السلايدر بدقة ومباشرة
+                // إذا توفرت بيانات السلايد شو البديلة المحدثة، نعيد بناء السلايدر والشريط بدقة ومباشرة
                 if (data.slider_fallback && data.slider_fallback.length > 0) {
                     rebuildSlideshowFromFallback(data.slider_fallback);
+                    rebuildTickerFromFallback(data.slider_fallback);
                 } else {
                     // أو نحذف العناصر التي تحمل المعرف المحذوف
                     data.deleted_ids.forEach(delId => {
                         document.querySelectorAll(`.slide-item[data-activity-id="${delId}"]`).forEach(s => s.remove());
                         document.querySelectorAll(`.slider-thumb-item[data-activity-id="${delId}"]`).forEach(t => t.remove());
+                        document.querySelectorAll(`.ticker-item[data-ticker-id="${delId}"]`).forEach(tk => tk.remove());
                     });
                     const allSlides = getSlides();
                     const allThumbs = getThumbs();
@@ -2271,6 +2362,7 @@
                     showLiveToast(item);
                     prependNewActivityToSlideshow(item);
                     prependNewActivityToGrid(item);
+                    prependNewActivityToTicker(item);
                 });
             }
         })

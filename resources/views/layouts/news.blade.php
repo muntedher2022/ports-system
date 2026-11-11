@@ -108,7 +108,8 @@
         .gov-meta-items {
             display: flex;
             align-items: center;
-            gap: 18px;
+            flex-wrap: wrap;
+            gap: 10px;
             font-size: 0.8rem;
             color: #94a3b8;
         }
@@ -119,11 +120,13 @@
             border: 1px solid rgba(217, 119, 6, 0.4);
             padding: 4px 12px;
             border-radius: var(--radius-full);
-            font-size: 0.8rem;
+            font-size: 0.78rem;
             font-weight: 700;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            white-space: nowrap;
+            flex-shrink: 0;
             transition: var(--transition);
         }
 
@@ -343,20 +346,64 @@
             flex-grow: 1;
             overflow: hidden;
             white-space: nowrap;
-            padding: 6px 16px;
+            padding: 6px 0;
             font-size: 0.9rem;
             color: #e2e8f0;
+            position: relative;
+            direction: rtl;
+        }
+
+        .ticker-track {
+            display: flex;
+            width: max-content;
+            align-items: center;
+            animation: rtlTickerMove 65s linear infinite;
+            will-change: transform;
+        }
+
+        .ticker-marquee:hover .ticker-track,
+        .ticker-marquee:active .ticker-track {
+            animation-play-state: paused;
+        }
+
+        .ticker-track-group {
+            display: flex;
+            align-items: center;
+            flex-shrink: 0;
+        }
+
+        @keyframes rtlTickerMove {
+            0% {
+                transform: translate3d(0, 0, 0);
+            }
+            100% {
+                transform: translate3d(50%, 0, 0);
+            }
         }
 
         .ticker-item {
-            display: inline-block;
-            margin-left: 30px;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin-left: 38px;
             font-weight: 600;
+            white-space: nowrap;
+            flex-shrink: 0;
         }
 
         .ticker-item:hover {
             color: var(--accent-gold);
             text-decoration: underline;
+        }
+
+        @media (max-width: 640px) {
+            .ticker-badge {
+                padding: 7px 12px;
+                font-size: 0.78rem;
+            }
+            .ticker-marquee {
+                font-size: 0.84rem;
+            }
         }
 
         /* Navigation Menu & Categories */
@@ -733,11 +780,18 @@
                         <span>عاجل وهام</span>
                     </div>
                     <div class="ticker-marquee">
-                        @foreach($breakingNews as $item)
-                            <a href="{{ route('news.show', $item->id) }}" class="ticker-item">
-                                &bull; {{ $item->title }} ({{ $item->formatted_date }})
-                            </a>
-                        @endforeach
+                        <div class="ticker-track" id="breakingTickerTrack">
+                            @for($group = 0; $group < 2; $group++)
+                                <div class="ticker-track-group" @if($group === 1) aria-hidden="true" @endif>
+                                    @foreach($breakingNews as $item)
+                                        <a href="{{ route('news.show', $item->id) }}" class="ticker-item" data-ticker-id="{{ $item->id }}">
+                                            <span style="color: #facc15;">&bull;</span>
+                                            <span>{{ $item->title }} ({{ $item->formatted_date }})</span>
+                                        </a>
+                                    @endforeach
+                                </div>
+                            @endfor
+                        </div>
                     </div>
                 </div>
             </div>

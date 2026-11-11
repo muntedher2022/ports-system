@@ -49,16 +49,10 @@ class NewsController extends Controller
             $query->whereDate('activity_date', '<=', $dateTo);
         }
 
-        // الأنشطة العاجلة والهامة لشريط الأخبار العاجلة (حسب أحدث تاريخ وقوع للنشاط)
+        // آخر 10 أخبار ونشاطات مضافة لشريط الأخبار المتحرك (يتحدث تلقائياً مع كل إضافة جديدة)
         $breakingNews = Activity::where('is_confidential', false)
-            ->where(function ($q) {
-                $q->where('importance', 'urgent')
-                  ->orWhere('category', 'قرار وتوجيه');
-            })
-            ->orderBy('activity_date', 'desc')
-            ->orderBy('activity_time', 'desc')
-            ->orderBy('id', 'desc')
-            ->take(5)
+            ->latest('id')
+            ->take(10)
             ->get();
 
         // إحصائيات وأعداد التصنيفات لشريط التبويبات
@@ -306,6 +300,11 @@ class NewsController extends Controller
             $relatedActivities = $relatedActivities->merge($moreActivities);
         }
 
-        return view('news.show', compact('activity', 'relatedActivities'));
+        $breakingNews = Activity::where('is_confidential', false)
+            ->latest('id')
+            ->take(10)
+            ->get();
+
+        return view('news.show', compact('activity', 'relatedActivities', 'breakingNews'));
     }
 }
