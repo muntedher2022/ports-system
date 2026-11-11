@@ -21,7 +21,7 @@ class LatestActivitiesWidget extends BaseWidget
             ->query(
                 Activity::query()
                     ->when(
-                        auth()->check() && ! auth()->user()->hasAnyRole(['super_admin', 'director_general']),
+                        auth()->check() && ! auth()->user()->isGeneralManager(),
                         fn ($q) => $q->where('is_confidential', false)
                     )
                     ->latest('activity_date')

@@ -480,6 +480,7 @@ class ContainerItemResource extends Resource
                             }
                         }),
                     ForceDeleteAction::make()->label('حذف نهائي')
+                        ->visible(fn () => Auth::user()?->isGeneralManager())
                         ->after(function (ContainerItem $record) {
                             if ($record->container_status_record_id) {
                                 ContainerItem::syncRecordDetails($record->container_status_record_id);
@@ -489,7 +490,9 @@ class ContainerItemResource extends Resource
             ])
             ->bulkActions([
                 DeleteBulkAction::make()->label('حذف المحدد'),
-                ForceDeleteBulkAction::make()->label('حذف نهائي للمحدد'),
+                ForceDeleteBulkAction::make()
+                    ->label('حذف نهائي للمحدد')
+                    ->visible(fn () => Auth::user()?->isGeneralManager()),
                 RestoreBulkAction::make()->label('استعادة المحدد'),
             ])
             ->defaultSort('id', 'desc');
@@ -511,10 +514,17 @@ class ContainerItemResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->withoutGlobalScopes([
                 SoftDeletingScope::class,
             ])
             ->with(['port', 'entity', 'fiscalYear', 'month']);
+
+        $user = Auth::user();
+        if ($user?->isPortRestricted() && $user?->port_id) {
+            $query->where('container_items.port_id', $user->port_id);
+        }
+
+        return $query;
     }
 }

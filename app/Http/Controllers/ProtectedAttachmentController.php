@@ -17,7 +17,7 @@ class ProtectedAttachmentController extends Controller
     {
         // إذا كان النشاط سرياً، لا يراه إلا المدير العام أو المشرف
         if ($attachment->activity && $attachment->activity->is_confidential) {
-            if (! auth()->check() || ! auth()->user()->hasAnyRole(['super_admin', 'director_general'])) {
+            if (! auth()->check() || ! auth()->user()->isGeneralManager()) {
                 abort(403, 'هذا النشاط سري ومخصص للمدير العام فقط');
             }
         }
@@ -43,7 +43,7 @@ class ProtectedAttachmentController extends Controller
     public function download(Request $request, ActivityAttachment $attachment): BinaryFileResponse
     {
         if ($attachment->activity && $attachment->activity->is_confidential) {
-            if (! auth()->check() || ! auth()->user()->hasAnyRole(['super_admin', 'director_general'])) {
+            if (! auth()->check() || ! auth()->user()->isGeneralManager()) {
                 abort(403, 'هذا النشاط سري ومخصص للمدير العام فقط');
             }
         }

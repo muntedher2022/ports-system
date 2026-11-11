@@ -171,4 +171,75 @@ class MonthlyPortRecord extends Model implements Auditable
     {
         return in_array($this->status, ['approved', 'locked']);
     }
+
+    protected static function booted(): void
+    {
+        static::saving(function (MonthlyPortRecord $record) {
+            if ($record->port_id && $record->fiscal_year_id && $record->month_id) {
+                $centerId = RevenueCenter::where('port_id', $record->port_id)->value('id');
+                if ($centerId) {
+                    $gross = RevenueRecord::where('revenue_center_id', $centerId)
+                        ->where('fiscal_year_id', $record->fiscal_year_id)
+                        ->where('month_id', $record->month_id)
+                        ->value('gross_revenue');
+
+                    if ($gross !== null && (float) $gross > 0) {
+                        $record->total_revenue = (float) $gross;
+                    }
+                }
+            }
+        });
+    }
+
+    /**
+     * جلب وتحديث الإيراد الكلي لهذا السجل من جدول الإيرادات
+     */
+    public function syncRevenueFromRevenueRecord(): ?float
+    {
+        $centerId = RevenueCenter::where('port_id', $this->port_id)->value('id');
+        if (! $centerId) {
+            return null;
+        }
+
+        $gross = RevenueRecord::where('revenue_center_id', $centerId)
+            ->where('fiscal_year_id', $this->fiscal_year_id)
+            ->where('month_id', $this->month_id)
+            ->value('gross_revenue');
+
+        if ($gross !== null) {
+            $this->updateQuietly(['total_revenue' => (float) $gross]);
+
+            return (float) $gross;
+        }
+
+        return null;
+    }
+
+    /**
+     * مزامنة الإيراد الكلي لكافة السجلات التشغيلية مع جدول الإيرادات
+     */
+    public static function syncAllRevenues(): int
+    {
+        $centersByPort = RevenueCenter::whereNotNull('port_id')->pluck('id', 'port_id');
+        $updatedCount = 0;
+
+        foreach (static::all() as $record) {
+            $centerId = $centersByPort[$record->port_id] ?? null;
+            if (! $centerId) {
+                continue;
+            }
+
+            $gross = RevenueRecord::where('revenue_center_id', $centerId)
+                ->where('fiscal_year_id', $record->fiscal_year_id)
+                ->where('month_id', $record->month_id)
+                ->value('gross_revenue');
+
+            if ($gross !== null && (float) $record->total_revenue !== (float) $gross) {
+                $record->updateQuietly(['total_revenue' => (float) $gross]);
+                $updatedCount++;
+            }
+        }
+
+        return $updatedCount;
+    }
 }

@@ -50,4 +50,41 @@ class RevenueRecord extends Model implements Auditable
     {
         return in_array($this->status, ['approved', 'locked']);
     }
+
+    protected static function booted(): void
+    {
+        static::saved(function (RevenueRecord $record) {
+            $record->syncToMonthlyPortRecord();
+        });
+
+        static::restored(function (RevenueRecord $record) {
+            $record->syncToMonthlyPortRecord();
+        });
+
+        static::deleted(function (RevenueRecord $record) {
+            $portId = RevenueCenter::where('id', $record->revenue_center_id)->value('port_id');
+            if ($portId) {
+                MonthlyPortRecord::where('port_id', $portId)
+                    ->where('fiscal_year_id', $record->fiscal_year_id)
+                    ->where('month_id', $record->month_id)
+                    ->update(['total_revenue' => 0]);
+            }
+        });
+    }
+
+    /**
+     * مزامنة الإيراد الكلي تلقائياً مع السجل التشغيلي للميناء لنفس الشهر والسنة
+     */
+    public function syncToMonthlyPortRecord(): void
+    {
+        $portId = RevenueCenter::where('id', $this->revenue_center_id)->value('port_id');
+        if (! $portId || ! $this->fiscal_year_id || ! $this->month_id) {
+            return;
+        }
+
+        MonthlyPortRecord::where('port_id', $portId)
+            ->where('fiscal_year_id', $this->fiscal_year_id)
+            ->where('month_id', $this->month_id)
+            ->update(['total_revenue' => (float) $this->gross_revenue]);
+    }
 }

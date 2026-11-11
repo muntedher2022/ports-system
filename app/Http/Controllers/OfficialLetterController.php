@@ -13,6 +13,8 @@ class OfficialLetterController extends Controller
      */
     public function preview(Request $request, string $type)
     {
+        abort_if(auth()->user()?->isPortRestricted(), 403, 'غير مصرح لك بإصدار الكتب والمذكرات المركزية للشركة.');
+
         $fiscalYearId = $request->integer('fiscal_year_id') ?: null;
         $monthId = $request->integer('month_id') ?: null;
         $memoNumber = $request->filled('memo_number') ? $request->input('memo_number') : null;
@@ -45,6 +47,8 @@ class OfficialLetterController extends Controller
      */
     public function downloadDocx(Request $request, string $type)
     {
+        abort_if(auth()->user()?->isPortRestricted(), 403, 'غير مصرح لك بتحميل الكتب والمذكرات المركزية للشركة.');
+
         $fiscalYearId = $request->integer('fiscal_year_id') ?: null;
         $monthId = $request->integer('month_id') ?: null;
         $memoNumber = $request->filled('memo_number') ? $request->input('memo_number') : null;

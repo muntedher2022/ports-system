@@ -935,140 +935,213 @@
         overflow: hidden;
     }
 
-    /* Vessels Ticker Bar */
-    .vessels-ticker-bar {
+    /* Vessels Summary Ribbon (Structured Executive Maritime Header) */
+    .vessels-summary-ribbon {
         background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
         color: #ffffff;
-        padding: 10px 14px;
+        padding: 12px 18px;
         border-bottom: 1px solid #334155;
-    }
-
-    .vessels-ticker-inner {
         display: flex;
         align-items: center;
-        gap: 12px;
-        overflow: hidden;
+        justify-content: space-between;
+        gap: 14px;
     }
 
-    .vessels-ticker-badge {
-        background: #2563eb;
+    .vessels-ribbon-header {
+        display: flex;
+        flex-direction: column;
+        align-items: flex-start;
+        justify-content: center;
+        gap: 4px;
+        flex-shrink: 0;
+        padding-left: 14px;
+        border-left: 1px solid rgba(255, 255, 255, 0.14);
+    }
+
+    .vessels-ribbon-badge {
+        background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
         color: #ffffff;
-        padding: 4px 12px;
-        border-radius: 10px;
-        font-size: 0.78rem;
+        padding: 5px 12px;
+        border-radius: 8px;
+        font-size: 0.8rem;
         font-weight: 800;
         display: inline-flex;
-        flex-direction: column;
         align-items: center;
-        justify-content: center;
-        gap: 1px;
-        flex-shrink: 0;
-        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.4);
-        z-index: 2;
-        line-height: 1.2;
-    }
-
-    .vessels-ticker-badge-main {
-        display: inline-flex;
-        align-items: center;
-        gap: 5px;
+        gap: 6px;
+        box-shadow: 0 2px 8px rgba(37, 99, 235, 0.35);
         white-space: nowrap;
     }
 
-    .vessels-ticker-date {
-        font-size: 0.68rem;
-        color: #dbeafe;
+    .vessels-ribbon-date {
+        display: inline-flex;
+        align-items: center;
+        gap: 5px;
+        font-size: 0.71rem;
+        color: #cbd5e1;
         font-weight: 700;
-        letter-spacing: 0.4px;
+        padding-right: 2px;
+        white-space: nowrap;
     }
 
     .vessels-ticker-pulse {
         width: 8px;
         height: 8px;
-        background: #60a5fa;
+        background: #34d399;
         border-radius: 50%;
         display: inline-block;
         animation: pulseRing 1.8s infinite;
     }
 
-    .vessels-ticker-scroll {
-        flex-grow: 1;
-        overflow: hidden;
+    .vessels-ribbon-grid {
+        flex: 1 1 auto;
+        min-width: 0;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr)) 1.25fr 1.85fr;
+        grid-auto-rows: auto;
+        gap: 8px;
+        align-items: center;
+    }
+
+    .vessel-stat-box {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.11);
+        border-radius: 9px;
+        padding: 7px 10px;
+        height: auto;
+        min-height: 0;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: flex-start;
+        gap: 2px;
+        transition: background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .vessel-stat-box:hover {
+        background: rgba(255, 255, 255, 0.09);
+        border-color: rgba(255, 255, 255, 0.22);
+    }
+
+    .vessel-stat-box.stat-total {
+        background: rgba(37, 99, 235, 0.22);
+        border-color: rgba(96, 165, 250, 0.45);
+    }
+
+    .vessel-stat-box.stat-oil {
+        background: rgba(16, 185, 129, 0.12);
+        border-color: rgba(52, 211, 153, 0.3);
+    }
+
+    .vessel-stat-box.stat-control {
+        background: rgba(99, 102, 241, 0.14);
+        border-color: rgba(129, 140, 248, 0.3);
+    }
+
+    .stat-box-label {
+        font-size: 0.72rem;
+        color: #cbd5e1;
+        font-weight: 700;
+        line-height: 1.3;
         white-space: nowrap;
-        position: relative;
-        direction: rtl;
-        padding: 2px 0;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 100%;
     }
 
-    .vessels-ticker-track {
-        display: flex;
-        width: max-content;
-        align-items: center;
-        animation: rtlTickerMove 28s linear infinite;
-        will-change: transform;
-    }
-
-    .vessels-ticker-scroll:hover .vessels-ticker-track,
-    .vessels-ticker-scroll:active .vessels-ticker-track {
-        animation-play-state: paused;
-    }
-
-    .vessels-ticker-group {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding-left: 10px;
-        flex-shrink: 0;
-    }
-
-    .vessel-kpi-chip {
-        background: rgba(255, 255, 255, 0.08);
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        padding: 4px 11px;
-        border-radius: var(--radius-full);
-        font-size: 0.8rem;
+    .stat-box-value {
+        font-size: 0.9rem;
+        font-weight: 900;
+        line-height: 1.3;
+        color: #38bdf8;
+        white-space: nowrap;
         display: inline-flex;
-        align-items: center;
-        gap: 6px;
-        color: #e2e8f0;
-        flex-shrink: 0;
+        align-items: baseline;
+        gap: 4px;
+    }
+
+    .stat-box-value small {
+        font-size: 0.7rem;
+        font-weight: 600;
+        color: #94a3b8;
+    }
+
+    .vessel-stat-box.stat-total .stat-box-value {
+        color: #facc15;
+    }
+
+    .vessel-stat-box.stat-oil .stat-box-value {
+        color: #34d399;
+    }
+
+    .stat-box-value .in-val {
+        color: #4ade80;
+        font-size: 0.79rem;
+    }
+
+    .stat-box-value .out-val {
+        color: #60a5fa;
+        font-size: 0.79rem;
+    }
+
+    .stat-box-value .wait-val {
+        color: #fbbf24;
+        font-size: 0.79rem;
+    }
+
+    .stat-box-value .stat-sep {
+        color: #64748b;
+        font-weight: 400;
+        margin: 0 2px;
+    }
+
+    @media (max-width: 1150px) {
+        .vessels-summary-ribbon {
+            flex-direction: column;
+            align-items: stretch;
+            gap: 10px;
+            padding: 12px 14px;
+        }
+        .vessels-ribbon-header {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            border-left: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            padding-left: 0;
+            padding-bottom: 8px;
+            width: 100%;
+        }
+        .vessels-ribbon-grid {
+            flex: 0 0 auto;
+            width: 100%;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 8px;
+        }
+        .vessel-stat-box {
+            flex-direction: row;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+        }
+        .vessel-stat-box.stat-control {
+            grid-column: span 2;
+        }
     }
 
     @media (max-width: 640px) {
-        .vessels-ticker-bar {
-            padding: 7px 8px;
+        .vessels-summary-ribbon {
+            padding: 10px 12px;
         }
-        .vessels-ticker-inner {
-            gap: 8px;
+        .vessels-ribbon-grid {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 6px;
         }
-        .vessels-ticker-badge {
-            padding: 3px 8px;
-            font-size: 0.7rem;
-            border-radius: 8px;
-            gap: 1px;
+        .vessel-stat-box {
+            padding: 7px 10px;
         }
-        .vessels-ticker-date {
-            font-size: 0.62rem;
+        .vessel-stat-box.stat-control {
+            grid-column: span 2;
         }
-        .vessel-kpi-chip {
-            font-size: 0.75rem;
-            padding: 3px 9px;
-        }
-    }
-
-    .vessel-kpi-chip.chip-highlight {
-        background: rgba(37, 99, 235, 0.25);
-        border-color: rgba(96, 165, 250, 0.4);
-        color: #ffffff;
-    }
-
-    .vessel-kpi-chip strong {
-        color: #38bdf8;
-        font-weight: 800;
-    }
-
-    .chip-highlight strong {
-        color: #facc15;
     }
 
     /* Tabs Header */

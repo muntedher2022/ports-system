@@ -56,7 +56,7 @@ class ActivityResource extends Resource
         $query = parent::getEloquentQuery();
 
         // إخفاء النشاطات السرية إذا لم يكن المستخدم مديراً عاماً أو مديراً للنظام
-        if (auth()->check() && ! auth()->user()->hasAnyRole(['super_admin', 'director_general'])) {
+        if (auth()->check() && ! auth()->user()->isGeneralManager()) {
             $query->where('is_confidential', false);
         }
 

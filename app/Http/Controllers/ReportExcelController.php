@@ -24,7 +24,11 @@ class ReportExcelController extends Controller
 {
     public function exportMonthlyPortRecords(Request $request): BinaryFileResponse
     {
+        $user = auth()->user();
         $portId = $request->input('port_id') ? (int) $request->input('port_id') : null;
+        if ($user?->isPortRestricted() && $user->port_id) {
+            $portId = (int) $user->port_id;
+        }
         $fiscalYearId = $request->input('fiscal_year_id') ? (int) $request->input('fiscal_year_id') : null;
 
         $portName = $portId ? Port::find($portId)?->name_ar : 'كافة_الموانئ';
@@ -49,6 +53,8 @@ class ReportExcelController extends Controller
 
     public function exportRevenueRecords(Request $request): BinaryFileResponse
     {
+        abort_if(auth()->user()?->isPortRestricted(), 403, 'غير مصرح لك بتصدير سجلات الإيراد المالي المركزية.');
+
         $centerId = $request->input('revenue_center_id') ? (int) $request->input('revenue_center_id') : null;
         $fiscalYearId = $request->input('fiscal_year_id') ? (int) $request->input('fiscal_year_id') : null;
 
@@ -74,10 +80,14 @@ class ReportExcelController extends Controller
 
     public function exportContainerStatus(Request $request): BinaryFileResponse
     {
+        $user = auth()->user();
         $type = $request->input('type', 'abandoned');
         $fiscalYearId = $request->input('year') ? (int) $request->input('year') : ($request->input('fiscal_year_id') ? (int) $request->input('fiscal_year_id') : null);
         $monthId = $request->input('month') ? (int) $request->input('month') : ($request->input('month_id') ? (int) $request->input('month_id') : null);
         $portId = $request->input('port') ? (int) $request->input('port') : null;
+        if ($user?->isPortRestricted() && $user->port_id) {
+            $portId = (int) $user->port_id;
+        }
 
         $typeLabel = $type === 'abandoned' ? 'متخلفة' : 'خطرة';
         $monthObj = $monthId ? Month::find($monthId) : Month::first();
@@ -101,10 +111,14 @@ class ReportExcelController extends Controller
 
     public function exportCargoStatus(Request $request): BinaryFileResponse
     {
+        $user = auth()->user();
         $type = $request->input('type', 'abandoned');
         $fiscalYearId = $request->input('year') ? (int) $request->input('year') : ($request->input('fiscal_year_id') ? (int) $request->input('fiscal_year_id') : null);
         $monthId = $request->input('month') ? (int) $request->input('month') : ($request->input('month_id') ? (int) $request->input('month_id') : null);
         $portId = $request->input('port') ? (int) $request->input('port') : null;
+        if ($user?->isPortRestricted() && $user->port_id) {
+            $portId = (int) $user->port_id;
+        }
 
         $typeLabel = $type === 'abandoned' ? 'متخلفة' : 'خطرة';
         $monthObj = $monthId ? Month::find($monthId) : Month::first();
@@ -132,10 +146,14 @@ class ReportExcelController extends Controller
      */
     public function exportContainerItemsDetailed(Request $request): BinaryFileResponse
     {
+        $user = auth()->user();
         $type = $request->input('type', 'abandoned');
         $fiscalYearId = $request->input('year') ? (int) $request->input('year') : ($request->input('fiscal_year_id') ? (int) $request->input('fiscal_year_id') : null);
         $monthId = $request->input('month') ? (int) $request->input('month') : ($request->input('month_id') ? (int) $request->input('month_id') : null);
         $portId = $request->input('port') ? (int) $request->input('port') : ($request->input('port_id') ? (int) $request->input('port_id') : null);
+        if ($user?->isPortRestricted() && $user->port_id) {
+            $portId = (int) $user->port_id;
+        }
 
         $typeLabel = $type === 'dangerous' ? 'الخطرة' : 'المتخلفة';
         $monthObj = $monthId ? Month::find($monthId) : null;

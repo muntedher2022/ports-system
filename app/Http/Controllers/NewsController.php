@@ -128,6 +128,7 @@ class NewsController extends Controller
             $centersBreakdown[] = [
                 'name' => $center->name_ar,
                 'total_gross' => $revData['centerTotals'][$center->id] ?? 0,
+                'total_net' => $revData['centerNetTotals'][$center->id] ?? 0,
             ];
         }
 
@@ -190,13 +191,13 @@ class NewsController extends Controller
             $img = $act->primaryAttachment ?: $act->imageAttachments->first();
             return [
                 'id' => $act->id,
-                'title' => $act->title,
-                'short_description' => \Illuminate\Support\Str::limit($act->short_description, 220),
-                'category' => $act->category,
-                'importance' => $act->importance,
-                'importance_label' => $act->importance_label,
-                'formatted_date' => $act->formatted_date,
-                'location' => $act->location ? \Illuminate\Support\Str::limit($act->location, 25) : null,
+                'title' => e($act->title),
+                'short_description' => e(\Illuminate\Support\Str::limit($act->short_description, 220)),
+                'category' => e($act->category),
+                'importance' => e($act->importance),
+                'importance_label' => e($act->importance_label),
+                'formatted_date' => e($act->formatted_date),
+                'location' => $act->location ? e(\Illuminate\Support\Str::limit($act->location, 25)) : null,
                 'images_count' => $act->imageAttachments->count(),
                 'image_url' => $img ? $img->base64_data_uri : null,
                 'url' => route('news.show', $act->id),
@@ -235,13 +236,13 @@ class NewsController extends Controller
                     $img = $act->primaryAttachment ?: $act->imageAttachments->first();
                     return [
                         'id' => $act->id,
-                        'title' => $act->title,
-                        'short_description' => \Illuminate\Support\Str::limit($act->short_description, 220),
-                        'category' => $act->category,
-                        'importance' => $act->importance,
-                        'importance_label' => $act->importance_label,
-                        'formatted_date' => $act->formatted_date,
-                        'location' => $act->location ? \Illuminate\Support\Str::limit($act->location, 25) : null,
+                        'title' => e($act->title),
+                        'short_description' => e(\Illuminate\Support\Str::limit($act->short_description, 220)),
+                        'category' => e($act->category),
+                        'importance' => e($act->importance),
+                        'importance_label' => e($act->importance_label),
+                        'formatted_date' => e($act->formatted_date),
+                        'location' => $act->location ? e(\Illuminate\Support\Str::limit($act->location, 25)) : null,
                         'images_count' => $act->imageAttachments->count(),
                         'image_url' => $img ? $img->base64_data_uri : null,
                         'url' => route('news.show', $act->id),

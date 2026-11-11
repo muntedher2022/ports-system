@@ -172,9 +172,9 @@ EOD;
             ];
         }
 
-        // 7. التحقق الدوري أونلاين من سيرفر التراخيص (فقط إذا كان النطاق استضافة أو خادم تفعيل خارجي محدد)
+        // 7. التحقق الدوري أونلاين من سيرفر التراخيص (كل 24 ساعة للتأكد من عدم إيقاف الرخصة عن بُعد)
         $serverUrl = env('LICENSING_SERVER_URL');
-        if ($data['type'] === 'hosted' || ($serverUrl && ! str_contains($serverUrl, 'licensing-manager.test'))) {
+        if ($data['type'] === 'hosted' || ! empty($serverUrl)) {
             $onlineCheck = self::checkOnlineLicense($data);
             if (! $onlineCheck['valid']) {
                 return self::$cachedResult = [

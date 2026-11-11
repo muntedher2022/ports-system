@@ -115,30 +115,15 @@ class CreateRevenueRecord extends CreateRecord
         $fiscalYearId = $data['fiscal_year_id'];
         $monthId = $data['month_id'];
         $status = $data['status'] ?? 'approved';
-        $monthlyNet = (float) ($data['monthly_net_revenue'] ?? 0);
         $reopenReason = $data['reopen_reason'] ?? null;
         $userId = Auth::id();
 
         $centers = RevenueCenter::where('is_active', true)->orderBy('sort_order')->get();
-        $totalGross = 0;
-
-        foreach ($centers as $center) {
-            $totalGross += (float) ($data["center_{$center->id}"] ?? 0);
-        }
-
-        $netRatio = $totalGross > 0 ? ($monthlyNet / $totalGross) : 0;
-        $accumulatedNet = 0;
         $lastRecord = null;
 
-        foreach ($centers as $idx => $center) {
-            $gross = (float) ($data["center_{$center->id}"] ?? 0);
-            $isLast = ($idx === count($centers) - 1);
-
-            if ($isLast) {
-                $net = round($monthlyNet - $accumulatedNet, 3);
-            } else {
-                $net = round($gross * $netRatio, 3);
-            }
+        foreach ($centers as $center) {
+            $gross = round(RevenueRecordResource::cleanNumericValue($data["center_{$center->id}"] ?? 0), 3);
+            $net = round(RevenueRecordResource::cleanNumericValue($data["center_net_{$center->id}"] ?? 0), 3);
 
             $existing = RevenueRecord::withTrashed()->where([
                 'revenue_center_id' => $center->id,

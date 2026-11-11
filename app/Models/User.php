@@ -48,11 +48,26 @@ class User extends Authenticatable implements Auditable, FilamentUser
     }
 
     /**
-     * السماح بالوصول للوحة Filament
+     * السماح بالوصول للوحة Filament بحسب نوع اللوحة ودور المستخدم
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        return true; // الصلاحيات تُدار عبر Shield
+        if ($panel->getId() === 'gm-activities') {
+            return $this->isGeneralManager()
+                || $this->hasAnyRole(['مسؤول المتابعة المركزية والعمليات', 'operations_manager'])
+                || $this->user_type === 'operations_manager';
+        }
+
+        return true;
+    }
+
+    /**
+     * هل المستخدم هو المدير العام أو المشرف الأعلى للنظام؟
+     */
+    public function isGeneralManager(): bool
+    {
+        return $this->hasAnyRole(['super_admin', 'المدير العام', 'general_manager', 'director_general'])
+            || $this->user_type === 'general_manager';
     }
 
     public function port(): BelongsTo
@@ -81,6 +96,10 @@ class User extends Authenticatable implements Auditable, FilamentUser
 
     public function isAdmin(): bool
     {
+        if ($this->isGeneralManager()) {
+            return true;
+        }
+
         if (method_exists($this, 'hasRole')) {
             return $this->hasRole('super_admin') || $this->hasRole('admin');
         }

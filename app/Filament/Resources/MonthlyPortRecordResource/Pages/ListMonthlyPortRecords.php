@@ -7,6 +7,7 @@ use App\Filament\Resources\MonthlyPortRecordResource;
 use App\Imports\PortRecordImport;
 use App\Models\FiscalYear;
 use App\Models\Month;
+use App\Models\MonthlyPortRecord;
 use App\Models\Port;
 use App\Services\SinglePortMonthlyImportService;
 use Filament\Actions\Action;
@@ -39,6 +40,23 @@ class ListMonthlyPortRecords extends ListRecords
                     ->label('إضافة سجل تشغيلي (إدخال يدوي مباشر)')
                     ->icon('heroicon-o-plus')
                     ->color('primary'),
+
+                // 1-ب. جلب وتحديث الإيراد الكلي لكافة السجلات التشغيلية دفعة واحدة
+                Action::make('sync_all_revenues')
+                    ->label('جلب وتحديث الإيراد الكلي لكافة السجلات')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('info')
+                    ->action(function () {
+                        $updatedCount = MonthlyPortRecord::syncAllRevenues();
+
+                        Notification::make()
+                            ->title('تمت مزامنة الإيرادات الكلية بنجاح ✓')
+                            ->body($updatedCount > 0
+                                ? "تم جلب وتحديث الإيراد الكلي لـ {$updatedCount} سجل تشغيلي من نافذة الإيرادات."
+                                : 'جميع السجلات التشغيلية محدَّثة بالفعل بأحدث قيم الإيراد الكلي.')
+                            ->success()
+                            ->send();
+                    }),
 
                 // 2. ميزة استيراد بيانات شهر معين لميناء معين من Excel
                 Action::make('import_single_port_month')

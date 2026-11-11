@@ -506,7 +506,8 @@ class CargoStatusRecordResource extends Resource
                     ForceDeleteAction::make()
                         ->label('حذف نهائي')
                         ->modalHeading('⚠️ حذف نهائي لا رجعة فيه!')
-                        ->successNotificationTitle('تم الحذف النهائي'),
+                        ->successNotificationTitle('تم الحذف النهائي')
+                        ->visible(fn () => Auth::user()?->isGeneralManager()),
                 ])
                     ->tooltip('قائمة الإجراءات')
                     ->icon('heroicon-m-ellipsis-vertical'),
@@ -514,15 +515,24 @@ class CargoStatusRecordResource extends Resource
             ->toolbarActions([
                 DeleteBulkAction::make()->label('حذف مؤقت للمحدد'),
                 RestoreBulkAction::make()->label('استرداد المحدد'),
-                ForceDeleteBulkAction::make()->label('حذف نهائي للمحدد'),
+                ForceDeleteBulkAction::make()
+                    ->label('حذف نهائي للمحدد')
+                    ->visible(fn () => Auth::user()?->isGeneralManager()),
             ]);
     }
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()
+        $query = parent::getEloquentQuery()
             ->withoutGlobalScopes([SoftDeletingScope::class])
             ->with(['port', 'fiscalYear', 'month']);
+
+        $user = Auth::user();
+        if ($user?->isPortRestricted() && $user?->port_id) {
+            $query->where('cargo_status_records.port_id', $user->port_id);
+        }
+
+        return $query;
     }
 
     public static function getPages(): array

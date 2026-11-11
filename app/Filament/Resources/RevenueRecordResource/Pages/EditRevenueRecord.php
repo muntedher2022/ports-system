@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\RevenueRecordResource\Pages;
 
 use App\Filament\Resources\RevenueRecordResource;
+use App\Helpers\ArabicTafqeetHelper;
 use App\Models\RevenueCenter;
 use App\Models\RevenueRecord;
 use Filament\Actions\DeleteAction;
@@ -26,13 +27,16 @@ class EditRevenueRecord extends EditRecord
         $totalNet = 0;
 
         foreach ($records as $r) {
-            $data["center_{$r->revenue_center_id}"] = (float) $r->gross_revenue;
-            $totalGross += (float) $r->gross_revenue;
-            $totalNet += (float) $r->net_revenue;
+            $gross = (float) $r->gross_revenue;
+            $net = (float) $r->net_revenue;
+            $data["center_{$r->revenue_center_id}"] = number_format($gross, 0, '.', ',');
+            $data["center_net_{$r->revenue_center_id}"] = number_format($net, 0, '.', ',');
+            $totalGross += $gross;
+            $totalNet += $net;
         }
 
-        $data['total_gross_revenue'] = $totalGross;
-        $data['monthly_net_revenue'] = $totalNet;
+        $data['total_gross_revenue'] = number_format($totalGross, 0, '.', ',');
+        $data['monthly_net_revenue'] = number_format($totalNet, 0, '.', ',');
 
         return $data;
     }
@@ -42,29 +46,13 @@ class EditRevenueRecord extends EditRecord
         $fiscalYearId = $data['fiscal_year_id'] ?? $record->fiscal_year_id;
         $monthId = $data['month_id'] ?? $record->month_id;
         $status = $data['status'] ?? $record->status;
-        $monthlyNet = (float) ($data['monthly_net_revenue'] ?? 0);
         $reopenReason = $data['reopen_reason'] ?? $record->reopen_reason;
 
         $centers = RevenueCenter::where('is_active', true)->orderBy('sort_order')->get();
-        $totalGross = 0;
 
         foreach ($centers as $center) {
-            $totalGross += (float) ($data["center_{$center->id}"] ?? 0);
-        }
-
-        $netRatio = $totalGross > 0 ? ($monthlyNet / $totalGross) : 0;
-        $accumulatedNet = 0;
-
-        foreach ($centers as $idx => $center) {
-            $gross = (float) ($data["center_{$center->id}"] ?? 0);
-            $isLast = ($idx === count($centers) - 1);
-
-            if ($isLast) {
-                $net = round($monthlyNet - $accumulatedNet, 3);
-            } else {
-                $net = round($gross * $netRatio, 3);
-                $accumulatedNet += $net;
-            }
+            $gross = round(RevenueRecordResource::cleanNumericValue($data["center_{$center->id}"] ?? 0), 3);
+            $net = round(RevenueRecordResource::cleanNumericValue($data["center_net_{$center->id}"] ?? 0), 3);
 
             $existing = RevenueRecord::withTrashed()->where([
                 'revenue_center_id' => $center->id,

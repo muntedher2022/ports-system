@@ -640,9 +640,21 @@
         }
 
         @media (max-width: 900px) {
+            .main-header {
+                position: relative;
+            }
             .brand-row {
                 flex-direction: column;
-                align-items: flex-start;
+                align-items: stretch;
+                padding: 10px 0 8px 0;
+                gap: 10px;
+            }
+            .brand-logo-img {
+                width: 56px;
+                height: 56px;
+            }
+            .brand-texts h1 {
+                font-size: 1.2rem;
             }
             .header-search-form {
                 max-width: 100%;

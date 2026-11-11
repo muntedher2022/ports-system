@@ -16,6 +16,7 @@ use App\Models\RevenueCenter;
 use App\Models\RevenueRecord;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -404,10 +405,11 @@ class MonthlyPortRecordResource extends Resource
 
                         TextInput::make('total_revenue')
                             ->label('الإيراد الكلي للميناء (د.ع)')
-                            ->numeric()
-                            ->default(0)
+                            ->default('0')
                             ->readOnly()
-                            ->extraInputAttributes(['style' => 'background-color: #f0fdf4; border-color: #86efac; cursor: not-allowed; font-weight: bold; color: #15803d;'])
+                            ->formatStateUsing(fn ($state) => number_format((float) str_replace(',', '', (string) ($state ?? 0)), 0, '.', ','))
+                            ->dehydrateStateUsing(fn ($state) => (float) str_replace(',', '', (string) ($state ?? 0)))
+                            ->extraInputAttributes(['style' => 'background-color: #f0fdf4; border-color: #86efac; cursor: not-allowed; font-weight: bold; color: #15803d; direction: ltr; text-align: right; font-variant-numeric: tabular-nums;'])
                             ->hintAction(
                                 Action::make('syncRevenue')
                                     ->label('🔄 جلب الإيراد')
@@ -416,7 +418,7 @@ class MonthlyPortRecordResource extends Resource
                                         static::autoFillRevenue($get, $set, true);
                                     })
                             )
-                            ->helperText('يُجلب تلقائياً من جدول الإيرادات للشهر والسنة المحددين (للقراءة فقط)'),
+                            ->helperText('يُجلب ويُحدَّث تلقائياً من نافذة سجلات الإيراد للشهر والسنة المحددين'),
 
                         Textarea::make('reopen_reason')
                             ->label('ملاحظات / سبب إعادة الفتح (إن وجد)')
@@ -443,7 +445,7 @@ class MonthlyPortRecordResource extends Resource
                     ->first();
 
                 if ($revenueRecord && (float) $revenueRecord->gross_revenue > 0) {
-                    $set('total_revenue', (float) $revenueRecord->gross_revenue);
+                    $set('total_revenue', number_format((float) $revenueRecord->gross_revenue, 0, '.', ','));
                     if ($notify) {
                         Notification::make()
                             ->title('تم جلب الإيراد بنجاح')
@@ -544,8 +546,29 @@ class MonthlyPortRecordResource extends Resource
 
                 TextColumn::make('month_id')
                     ->label('الشهر')
+                    ->formatStateUsing(fn ($record) => $record->month ? "{$record->month->month_number} - {$record->month->name_ar}" : $record->month_id)
                     ->sortable()
-                    ->searchable(isIndividual: true)
+                    ->searchable(
+                        isIndividual: true,
+                        query: function (Builder $query, string $search): Builder {
+                            $search = trim($search);
+                            if ($search === '') {
+                                return $query;
+                            }
+
+                            if (is_numeric($search)) {
+                                return $query->where('monthly_port_records.month_id', (int) $search);
+                            }
+
+                            return $query->whereHas('month', function (Builder $q) use ($search) {
+                                if (preg_match('/^(\d+)/', $search, $m)) {
+                                    $q->where('month_number', (int) $m[1]);
+                                } else {
+                                    ArabicSearchHelper::applySearch($q, 'name_ar', $search);
+                                }
+                            });
+                        }
+                    )
                     ->alignCenter()
                     ->badge()
                     ->color('info')
@@ -637,6 +660,29 @@ class MonthlyPortRecordResource extends Resource
                     ViewAction::make()->label('عرض'),
                     EditAction::make()->label('تعديل'),
 
+                    Action::make('sync_revenue')
+                        ->label('جلب الإيراد الكلي للميناء')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('info')
+                        ->visible(fn (MonthlyPortRecord $record) => ! $record->trashed())
+                        ->action(function (MonthlyPortRecord $record) {
+                            $gross = $record->syncRevenueFromRevenueRecord();
+
+                            if ($gross !== null && $gross > 0) {
+                                Notification::make()
+                                    ->title('تم جلب وتحديث الإيراد بنجاح')
+                                    ->body('الإيراد الكلي للميناء: '.number_format($gross, 0).' د.ع')
+                                    ->success()
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title('لا يوجد إيراد مسجل')
+                                    ->body('لم يتم العثور على إيراد كلي مسجل لهذا الميناء في هذا الشهر والسنة.')
+                                    ->warning()
+                                    ->send();
+                            }
+                        }),
+
                     Action::make('submit')
                         ->label('تقديم للاعتماد')
                         ->icon('heroicon-o-paper-airplane')
@@ -665,7 +711,7 @@ class MonthlyPortRecordResource extends Resource
                         ->requiresConfirmation()
                         ->modalHeading('اعتماد السجل التشغيلي')
                         ->modalDescription('سيتم تثبيت واعتماد أرقام هذا الشهر بعد مراجعتها.')
-                        ->visible(fn (MonthlyPortRecord $record) => $record->status === 'submitted' && ! $record->trashed() && Auth::user()?->hasRole(['admin', 'general_manager', 'operations_manager', 'reviewer']))
+                        ->visible(fn (MonthlyPortRecord $record) => $record->status === 'submitted' && ! $record->trashed() && (Auth::user()?->isGeneralManager() || Auth::user()?->hasAnyRole(['admin', 'general_manager', 'المدير العام', 'operations_manager', 'مسؤول المتابعة المركزية والعمليات', 'reviewer', 'مدقق / مراجع']) || in_array(Auth::user()?->user_type, ['general_manager', 'operations_manager', 'reviewer'])))
                         ->action(function (MonthlyPortRecord $record) {
                             $record->update([
                                 'status' => 'approved',
@@ -708,6 +754,26 @@ class MonthlyPortRecordResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    BulkAction::make('sync_revenue_bulk')
+                        ->label('جلب الإيراد الكلي للمحدد')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('info')
+                        ->action(function ($records) {
+                            $count = 0;
+                            foreach ($records as $record) {
+                                $gross = $record->syncRevenueFromRevenueRecord();
+                                if ($gross !== null && $gross > 0) {
+                                    $count++;
+                                }
+                            }
+
+                            Notification::make()
+                                ->title("تم جلب وتحديث الإيراد لـ {$count} سجل بنجاح")
+                                ->success()
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
                     DeleteBulkAction::make()
                         ->label('حذف مؤقت للمحدد')
                         ->before(function ($records, DeleteBulkAction $action) {
@@ -731,7 +797,13 @@ class MonthlyPortRecordResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        return parent::getEloquentQuery()->with(['port', 'fiscalYear']);
+        $query = parent::getEloquentQuery()->with(['port', 'fiscalYear', 'month']);
+        $user = Auth::user();
+        if ($user?->isPortRestricted() && $user?->port_id) {
+            $query->where('monthly_port_records.port_id', $user->port_id);
+        }
+
+        return $query;
     }
 
     public static function getRelations(): array

@@ -22,6 +22,8 @@ class ReportPdfController extends Controller
      */
     public function exportTotalRevenueMatrix(Request $request): Response
     {
+        abort_if(auth()->user()?->isPortRestricted(), 403, 'غير مصرح لك بتصدير مصفوفة الإيراد المالي المركزية.');
+
         $fiscalYearId = $request->integer('fiscal_year_id')
             ?: (FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::first()?->id);
 
@@ -40,11 +42,17 @@ class ReportPdfController extends Controller
      */
     public function exportTotalCumulativeCapacity(Request $request): Response
     {
+        $user = auth()->user();
         $fiscalYearId = $request->integer('fiscal_year_id')
             ?: (FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::first()?->id);
         $monthNumber = $request->integer('month_number', 7);
         $portId = $request->filled('port_id') ? $request->integer('port_id') : null;
         $onlyTotal = $request->boolean('only_total') || $request->input('port_id') === 'total';
+
+        if ($user?->isPortRestricted() && $user->port_id) {
+            $portId = (int) $user->port_id;
+            $onlyTotal = false;
+        }
 
         ActivityLogger::log('exported_pdf', 'تصدير تقرير ملخص الطاقة الإنتاجية التراكمي (PDF)');
 
@@ -82,6 +90,8 @@ class ReportPdfController extends Controller
      */
     public function exportRevenueComparison(Request $request): Response
     {
+        abort_if(auth()->user()?->isPortRestricted(), 403, 'غير مصرح لك بتصدير تقارير مقارنة الإيراد المالي.');
+
         $currYearId = $request->integer('curr_year_id')
             ?: (FiscalYear::where('is_current', true)->first()?->id ?? FiscalYear::orderBy('year', 'desc')->first()?->id);
         $prevYearId = $request->integer('prev_year_id')

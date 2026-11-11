@@ -72,6 +72,7 @@ class TotalRevenueMatrix extends Page
         $matrix = [];
         $runningTotal = 0;
         $centerTotals = array_fill_keys($centers->pluck('id')->toArray(), 0);
+        $centerNetTotals = array_fill_keys($centers->pluck('id')->toArray(), 0);
         $grandGrossTotal = 0;
         $grandNetTotal = 0;
 
@@ -79,6 +80,7 @@ class TotalRevenueMatrix extends Page
             $monthGross = 0;
             $monthNet = 0;
             $centersData = [];
+            $centersNetData = [];
             $hasData = false;
 
             foreach ($centers as $center) {
@@ -93,9 +95,11 @@ class TotalRevenueMatrix extends Page
                 }
 
                 $centersData[$center->id] = $gross;
+                $centersNetData[$center->id] = $net;
                 $monthGross += $gross;
                 $monthNet += $net;
                 $centerTotals[$center->id] += $gross;
+                $centerNetTotals[$center->id] += $net;
             }
 
             if ($hasData) {
@@ -108,6 +112,7 @@ class TotalRevenueMatrix extends Page
             $matrix[] = [
                 'month_name' => $month->name_ar,
                 'centers' => $centersData,
+                'centers_net' => $centersNetData,
                 'monthly_gross_total' => $monthGross,
                 'monthly_net_total' => $monthNet,
                 'cumulative_gross_total' => $hasData ? $runningTotal : 0,
@@ -121,6 +126,7 @@ class TotalRevenueMatrix extends Page
             'centers' => $centers,
             'matrix' => $matrix,
             'centerTotals' => $centerTotals,
+            'centerNetTotals' => $centerNetTotals,
             'grandGrossTotal' => $grandGrossTotal,
             'grandNetTotal' => $grandNetTotal,
         ];

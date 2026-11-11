@@ -222,7 +222,7 @@ class ExecutiveReports extends Page implements HasTable
             $query->where('status', $status);
         }
 
-        if (! auth()->user()?->hasAnyRole(['super_admin', 'director_general'])) {
+        if (! auth()->user()?->isGeneralManager()) {
             $query->where('is_confidential', false);
         }
 

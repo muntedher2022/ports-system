@@ -14,6 +14,15 @@ class LicenseController extends Controller
     public function status()
     {
         $check = LicensingService::check();
+        $isGm = auth()->check() && method_exists(auth()->user(), 'isGeneralManager') && auth()->user()->isGeneralManager();
+
+        // عدم كشف بصمة الجهاز أو تفاصيل الرخصة للزوار غير المخولين عندما يكون النظام مفعلاً
+        if ($check['valid'] && ! $isGm) {
+            return response()->json([
+                'is_activated' => true,
+                'message' => 'التطبيق مرخص ومفعل بنجاح.',
+            ]);
+        }
 
         return response()->json([
             'is_activated' => $check['valid'],
@@ -190,12 +199,26 @@ class LicenseController extends Controller
 
     /**
      * إلغاء تفعيل النظام وحذف ملف الترخيص ومسح الذاكرة المؤقتة.
+     * مسموح فقط في الحالات التالية:
+     * 1. إذا كان النظام مقفلاً حالياً في شاشة التفعيل (ليعمل زر إعادة الضبط في شاشة القفل).
+     * 2. أو من نفس جهاز السيرفر مباشرة (127.0.0.1 / ::1) للمطور.
+     * 3. أو للمدير العام المسجل دخوله.
+     * ويُمنع أي موظف عادي أو عابث على الشبكة المحلية من حذف الرخصة والنظام يعمل.
      */
-    public function reset()
+    public function reset(Request $request)
     {
+        $check = LicensingService::check();
+        $isLicenseInvalid = ! ($check['valid'] ?? false);
+        $isLocalhost = in_array($request->ip(), ['127.0.0.1', '::1'], true);
+        $isGm = auth()->check() && method_exists(auth()->user(), 'isGeneralManager') && auth()->user()->isGeneralManager();
+
+        if (! $isLicenseInvalid && ! $isLocalhost && ! $isGm) {
+            abort(403, 'غير مصرح لك بإلغاء تفعيل النظام.');
+        }
+
         LicensingService::deactivate();
 
-        if (request()->expectsJson()) {
+        if ($request->expectsJson()) {
             return response()->json([
                 'status' => 'success',
                 'message' => '✅ تم إلغاء تفعيل النظام وحذف ملف الترخيص بنجاح.',

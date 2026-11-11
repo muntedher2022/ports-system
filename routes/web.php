@@ -8,7 +8,9 @@ use Maatwebsite\Excel\Facades\Excel;
 
 // ─── البوابة الإخبارية والواجهة الأمامية الرسمية (Front-end) ───
 Route::get('/', [\App\Http\Controllers\NewsController::class, 'index'])->name('news.index');
-Route::get('/news/live-pulse', [\App\Http\Controllers\NewsController::class, 'livePulse'])->name('news.pulse');
+Route::get('/news/live-pulse', [\App\Http\Controllers\NewsController::class, 'livePulse'])
+    ->middleware('throttle:60,1')
+    ->name('news.pulse');
 Route::get('/news/{activity}', [\App\Http\Controllers\NewsController::class, 'show'])->name('news.show');
 
 // توجيه إضافي متوافق للمسار القديم
@@ -79,11 +81,13 @@ Route::middleware(['web', 'auth'])->group(function () {
 
 
 
-// مسارات تفعيل التراخيص والتحقق والـ OTP
-Route::match(['get', 'post'], '/api/license/status', [\App\Licensing\LicenseController::class, 'status']);
-Route::match(['get', 'post'], '/api/license/activate', [\App\Licensing\LicenseController::class, 'activate']);
-Route::match(['get', 'post'], '/api/license/request-otp-phone', [\App\Licensing\LicenseController::class, 'requestPhoneOtp']);
-Route::match(['get', 'post'], '/api/license/verify-otp-phone', [\App\Licensing\LicenseController::class, 'verifyPhoneOtp']);
-Route::match(['get', 'post'], '/api/license/reset', [\App\Licensing\LicenseController::class, 'reset']);
-Route::match(['get', 'post'], '/api/license/deactivate', [\App\Licensing\LicenseController::class, 'reset']);
-Route::match(['get', 'post'], '/license/reset', [\App\Licensing\LicenseController::class, 'reset']);
+// مسارات تفعيل التراخيص والتحقق والـ OTP (مع حماية معدل الطلبات وحماية إعادة الضبط من عبث الشبكة)
+Route::middleware('throttle:20,1')->group(function () {
+    Route::match(['get', 'post'], '/api/license/status', [\App\Licensing\LicenseController::class, 'status']);
+    Route::post('/api/license/activate', [\App\Licensing\LicenseController::class, 'activate']);
+    Route::post('/api/license/request-otp-phone', [\App\Licensing\LicenseController::class, 'requestPhoneOtp']);
+    Route::post('/api/license/verify-otp-phone', [\App\Licensing\LicenseController::class, 'verifyPhoneOtp']);
+    Route::match(['get', 'post'], '/api/license/reset', [\App\Licensing\LicenseController::class, 'reset']);
+    Route::match(['get', 'post'], '/api/license/deactivate', [\App\Licensing\LicenseController::class, 'reset']);
+    Route::match(['get', 'post'], '/license/reset', [\App\Licensing\LicenseController::class, 'reset']);
+});

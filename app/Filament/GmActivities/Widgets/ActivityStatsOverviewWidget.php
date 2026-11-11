@@ -20,7 +20,7 @@ class ActivityStatsOverviewWidget extends BaseWidget
         $endOfMonth = Carbon::now()->endOfMonth();
 
         $query = Activity::query();
-        if (auth()->check() && ! auth()->user()->hasAnyRole(['super_admin', 'director_general'])) {
+        if (auth()->check() && ! auth()->user()->isGeneralManager()) {
             $query->where('is_confidential', false);
         }
 

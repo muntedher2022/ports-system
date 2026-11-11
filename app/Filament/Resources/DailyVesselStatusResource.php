@@ -47,11 +47,13 @@ class DailyVesselStatusResource extends Resource
     public static function canAccess(): bool
     {
         $user = Auth::user();
-        if (!$user) {
+        if (! $user) {
             return false;
         }
 
-        return true;
+        return $user->isGeneralManager()
+            || $user->hasAnyRole(['مسؤول المتابعة المركزية والعمليات', 'operations_manager', 'مدقق / مراجع', 'reviewer'])
+            || in_array($user->user_type, ['general_manager', 'operations_manager', 'reviewer']);
     }
 
     public static function form(Schema $schema): Schema

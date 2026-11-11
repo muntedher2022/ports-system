@@ -15,6 +15,13 @@ class ActivityReportController extends Controller
      */
     public function generatePeriodicPdf(Request $request): mixed
     {
+        $user = auth()->user();
+        abort_unless(
+            $user && ($user->isGeneralManager() || $user->hasAnyRole(['مسؤول المتابعة المركزية والعمليات', 'operations_manager']) || $user->user_type === 'operations_manager'),
+            403,
+            'غير مصرح لك بتوليد تقارير نشاطات المدير العام.'
+        );
+
         $reportType = $request->get('type', 'custom'); // weekly, monthly, yearly, custom
         $startDate = $request->get('start_date');
         $endDate = $request->get('end_date');
@@ -95,7 +102,7 @@ class ActivityReportController extends Controller
         }
 
         // إخفاء الأنشطة السرية لغير المخولين
-        if (! auth()->user()->hasAnyRole(['super_admin', 'director_general'])) {
+        if (! auth()->user()->isGeneralManager()) {
             $query->where('is_confidential', false);
         }
 
@@ -146,7 +153,14 @@ class ActivityReportController extends Controller
      */
     public function generateSingleActivityPdf(Activity $activity): mixed
     {
-        if ($activity->is_confidential && ! auth()->user()->hasAnyRole(['super_admin', 'director_general'])) {
+        $user = auth()->user();
+        abort_unless(
+            $user && ($user->isGeneralManager() || $user->hasAnyRole(['مسؤول المتابعة المركزية والعمليات', 'operations_manager']) || $user->user_type === 'operations_manager'),
+            403,
+            'غير مصرح لك بتوليد تقارير نشاطات المدير العام.'
+        );
+
+        if ($activity->is_confidential && ! $user->isGeneralManager()) {
             abort(403, 'غير مصرح باستعراض هذا النشاط السري');
         }
 

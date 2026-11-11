@@ -67,6 +67,8 @@ class GmActivitiesPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
+                \App\Http\Middleware\VerifyAdminOtp::class,
+                \App\Http\Middleware\VerifyTotpMiddleware::class,
             ]);
     }
 }
